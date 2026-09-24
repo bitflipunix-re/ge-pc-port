@@ -33,6 +33,5 @@ extern long labs(long);
 extern unsigned long long strtoull(const char *, char **, int);
 extern int atexit(void (*)(void));
 extern void abort(void);
-extern void exit(int);
 #endif
 #endif

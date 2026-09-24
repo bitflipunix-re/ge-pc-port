@@ -102,7 +102,7 @@ void bondviewLoadSetupIntroSection(void)
     s32 set_starting_weapon;
     s32 rand_camera_index;
     CreditsEntry *credits;
-    s32 rand_pad_index;
+    s32 rand_pad_index = 0;
     f32 stan_height;
     s32 i;
     struct SetupIntroItem *intro_item;

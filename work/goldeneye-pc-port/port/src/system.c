@@ -25,6 +25,10 @@
 #else
   #define _POSIX_C_SOURCE 199309L
   #include <unistd.h>
+  /* The C stdlib shim deliberately avoids a global exit(int) prototype:
+   * the reconstructed game has a legacy exit(void) declaration. This port
+   * TU calls the host libc function, so declare it locally. */
+  extern void exit(int status);
   #include <time.h>
   #include <sys/stat.h>
 #endif

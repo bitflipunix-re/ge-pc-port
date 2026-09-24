@@ -18,6 +18,8 @@
 #else
 #include <sys/stat.h>
 #define GE_MKDIR(p) mkdir(p, 0777)
+/* Local host-libc declaration; see port/shim/stdlib.h. */
+extern void exit(int status);
 #endif
 
 #include <PR/ultratypes.h>
