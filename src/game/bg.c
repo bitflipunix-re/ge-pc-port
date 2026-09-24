@@ -3324,7 +3324,15 @@ void bgBuildRoomVtxBounds(s32 roomID)
                 points[numpoints].max[i] = -0x8000;
             }
 
+#ifdef PORT
+            /* D312/D313: Gfx_le.dma.par spans the packed low 24 bits; recover
+             * the original G_VTX (n-1) nibble from word0 bits 20-23 instead.
+             * The old read collapsed common 16-vertex batches to one vertex,
+             * breaking room bounds, projectile collision and bullet impacts. */
+            numvertices = (((u32)gdl[cmdindex].words.w0 >> 20) & 0xf) + 1;
+#else
             numvertices = ((gdl[cmdindex].dma.par >> 4) & 0xf) + 1;
+#endif
 
 #ifdef PORT
             vtx = (Vtx *)((u8 *)vertices + SEGMENT_OFFSET(gdl[cmdindex].dma.addr));
