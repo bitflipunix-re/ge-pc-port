@@ -1,0 +1,205 @@
+name: Integrate Tom AArch64 R36S GLES Build
+
+# Stage/setup/model semantic conversion closure proof
+on:
+  push:
+    branches:
+      - integrate-tom-runtime
+    paths:
+      - '.github/workflows/build-integrate-tom.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout latest commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+
+      - name: Show commit
+        run: git log -1 --oneline
+
+      - name: Restore AArch64 compiler cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ccache
+          key: r36s-aarch64-ccache-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'cmake/**') }}
+          restore-keys: |
+            r36s-aarch64-ccache-${{ runner.os }}-
+
+      - name: Archive exact source snapshot
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git archive --format=tar.gz --output=arm-ge-source.tar.gz HEAD
+
+      - name: Upload exact source snapshot
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm-ge-source-snapshot
+          path: arm-ge-source.tar.gz
+          if-no-files-found: error
+
+      - name: Run 64-bit pointer regression
+        run: |
+          cat >/tmp/r36s_pointer_regression.c <<'EOF'
+          #include <stdint.h>
+          #include <stdio.h>
+          #include <stdlib.h>
+          typedef uint8_t u8; typedef uint16_t u16; typedef uint32_t u32;
+          static u8 *align8(u8 *p) { return (u8 *)(((uintptr_t)p + 7u) & ~(uintptr_t)7u); }
+          static u32 *align16_u32(u8 *p) { return (u32 *)(((uintptr_t)p + 15u) & ~(uintptr_t)15u); }
+          static u16 *align8_u16(u8 *p) { return (u16 *)(((uintptr_t)p + 7u) & ~(uintptr_t)7u); }
+          static u32 *gdl_word1(u8 *p) { return (u32 *)(p + 4); }
+          int main(void) {
+              u8 *p = malloc(256);
+              if (!p) return 2;
+              uintptr_t b = (uintptr_t)p;
+              if ((b >> 32) == 0) return 3;
+              if ((uintptr_t)align8(p + 1) < b) return 10;
+              if ((uintptr_t)align16_u32(p + 3) < b) return 11;
+              if ((uintptr_t)align8_u16(p + 5) < b) return 12;
+              if ((uintptr_t)gdl_word1(p + 16) != b + 20) return 13;
+              puts("64-bit pointer regression PASS");
+              free(p);
+              return 0;
+          }
+          EOF
+          cc -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer /tmp/r36s_pointer_regression.c -o /tmp/r36s_pointer_regression
+          ASAN_OPTIONS=detect_leaks=0 /tmp/r36s_pointer_regression
+
+      - name: Run consolidated Portkit gate
+        run: |
+          set -o pipefail
+          python3 tools/n64_port.py gate | tee semantic-audit.log
+
+      - name: Install AArch64 cross-build dependencies
+        run: |
+          sudo dpkg --add-architecture arm64
+
+          # GitHub's Ubuntu 24.04 runner sources point Ubuntu archives at the
+          # amd64 mirrors. ARM64 packages live on ports.ubuntu.com, so keep
+          # amd64 on the normal mirrors and add an explicit arm64 source.
+          sudo tee /etc/apt/sources.list.d/ubuntu.sources >/dev/null <<'EOF'
+          Types: deb
+          URIs: http://archive.ubuntu.com/ubuntu
+          Suites: noble noble-updates noble-backports
+          Components: main universe restricted multiverse
+          Architectures: amd64
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+          Types: deb
+          URIs: http://security.ubuntu.com/ubuntu
+          Suites: noble-security
+          Components: main universe restricted multiverse
+          Architectures: amd64
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+          EOF
+
+          sudo tee /etc/apt/sources.list.d/ubuntu-arm64.sources >/dev/null <<'EOF'
+          Types: deb
+          URIs: http://ports.ubuntu.com/ubuntu-ports
+          Suites: noble noble-updates noble-backports noble-security
+          Components: main universe restricted multiverse
+          Architectures: arm64
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+          EOF
+
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ccache \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            binutils-aarch64-linux-gnu \
+            libc6-dev-arm64-cross \
+            libsdl2-dev \
+            libgles2-mesa-dev \
+            libegl1-mesa-dev \
+            zlib1g-dev \
+            libsdl2-2.0-0:arm64 \
+            libgles2:arm64 \
+            libegl1:arm64 \
+            zlib1g:arm64
+
+          # SDL2's common headers include <SDL2/_real_SDL_config.h>, which is
+          # architecture-specific and normally comes from libsdl2-dev:arm64.
+          # Installing that package conflicts with native dev tooling on the
+          # hosted amd64 runner, so extract only its ARM64 header payload.
+          mkdir -p /tmp/sdl2-arm64-dev
+          cd /tmp
+          apt-get download libsdl2-dev:arm64
+          SDL2_ARM64_DEB="$(ls -1 libsdl2-dev_*_arm64.deb | head -n1)"
+          dpkg-deb -x "$SDL2_ARM64_DEB" /tmp/sdl2-arm64-dev
+          test -f /tmp/sdl2-arm64-dev/usr/include/aarch64-linux-gnu/SDL2/_real_SDL_config.h
+          cd "$GITHUB_WORKSPACE"
+
+          # Runtime packages provide the real ARM64 shared objects but not the
+          # unversioned linker names normally supplied by *-dev:arm64.
+          sudo ln -sf libSDL2-2.0.so.0 /usr/lib/aarch64-linux-gnu/libSDL2.so
+          sudo ln -sf libGLESv2.so.2 /usr/lib/aarch64-linux-gnu/libGLESv2.so
+          sudo ln -sf libEGL.so.1 /usr/lib/aarch64-linux-gnu/libEGL.so
+          sudo ln -sf libz.so.1 /usr/lib/aarch64-linux-gnu/libz.so
+
+          ccache --max-size=1G
+          ccache --zero-stats
+
+      - name: Configure AArch64 GLES cross-build
+        env:
+          PKG_CONFIG_LIBDIR: /usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+          PKG_CONFIG_SYSROOT_DIR: /
+        run: |
+          mkdir -p build-pc
+          cmake -S . -B build-pc \
+            -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/aarch64-linux.cmake \
+            -DROMID=ntsc-final \
+            -DSDL2_INCLUDE_DIR=/usr/include/SDL2 \
+            -DSDL2_LIBRARY=/usr/lib/aarch64-linux-gnu/libSDL2.so \
+            -DZLIB_INCLUDE_DIR=/usr/include \
+            -DZLIB_LIBRARY=/usr/lib/aarch64-linux-gnu/libz.so \
+            -DGL_LIBRARY=/usr/lib/aarch64-linux-gnu/libGLESv2.so \
+            -DCMAKE_C_FLAGS="-DUSE_GLES=1 -I/tmp/sdl2-arm64-dev/usr/include/aarch64-linux-gnu" \
+            -DCMAKE_CXX_FLAGS="-DUSE_GLES=1 -I/tmp/sdl2-arm64-dev/usr/include/aarch64-linux-gnu" \
+            -DCMAKE_EXE_LINKER_FLAGS="-Wl,-Map=ge007.link.map -Wl,--cref" \
+            2>&1 | tee build-pc/configure.log
+
+          # Fail before the expensive compile if cross-target detection
+          # regresses. TARGET_ARCH controls PLATFORM_64BIT and the output name.
+          grep -q "Target arch: aarch64 (64bit=TRUE)" build-pc/configure.log
+          grep -q "Output binary: ge007.aarch64" build-pc/configure.log
+
+      - name: Build ge007.aarch64
+        run: cmake --build build-pc -j$(nproc)
+
+      - name: Show compiler cache stats
+        if: always()
+        run: ccache --show-stats || true
+
+      - name: Verify AArch64 binary and emit symbols
+        run: |
+          file build-pc/ge007.aarch64
+          ls -lh build-pc/ge007.aarch64
+          aarch64-linux-gnu-readelf -h build-pc/ge007.aarch64 | tee build-pc/ge007.elf-header.txt
+          grep -q "Machine:.*AArch64" build-pc/ge007.elf-header.txt
+          aarch64-linux-gnu-nm -n build-pc/ge007.aarch64 > build-pc/ge007.symbols.txt
+          aarch64-linux-gnu-objdump -d build-pc/ge007.aarch64 > build-pc/ge007.disasm.txt
+
+      - name: Upload ge007.aarch64
+        uses: actions/upload-artifact@v4
+        with:
+          name: ge007-aarch64-native-gles-noaudio
+          path: |
+            build-pc/ge007.aarch64
+            build-pc/ge007.link.map
+            build-pc/ge007.symbols.txt
+            build-pc/ge007.disasm.txt
+            build-pc/ge007.elf-header.txt
+          if-no-files-found: error
