@@ -539,7 +539,11 @@ void mpCalculateAwards(bool gameoverdelay)
             if (metrics[i].awards & (1 << awardindex))
             {
                 metrics[i].awards &= ~(1 << awardindex);
+#ifdef PORT
+                g_playerPointers[i]->ptr_text_first_mp_award = (char *)langGet(g_AwardNames[awardindex]);
+#else
                 g_playerPointers[i]->ptr_text_first_mp_award = langGet(g_AwardNames[awardindex]);
+#endif
                 numdone = 1;
             }
 
@@ -558,7 +562,11 @@ void mpCalculateAwards(bool gameoverdelay)
             if (metrics[i].awards & (1 << awardindex))
             {
                 metrics[i].awards &= ~(1 << awardindex);
+#ifdef PORT
+                g_playerPointers[i]->ptr_text_second_mp_award = (char *)langGet(g_AwardNames[awardindex]);
+#else
                 g_playerPointers[i]->ptr_text_second_mp_award = langGet(g_AwardNames[awardindex]);
+#endif
                 numdone = 2;
             }
 
@@ -764,13 +772,19 @@ Gfx *display_text_for_playerdata_on_MP_menu(Gfx *gdl, s32 x, s32 y, s32 points, 
     s32 textwidth;
     s32 textheight;
     s32 unused;
+#ifdef PORT
+    char text[16];
+#define MP_SCORE_TEXT text
+#else
     u16 *text;
+#define MP_SCORE_TEXT (&text)
+#endif
     s16 viX;
     s32 viY;
 
-    sprintf(&text, "%d", points);
+    sprintf(MP_SCORE_TEXT, "%d", points);
 
-    textMeasure(&textheight, &textwidth, &text, ptrFontBankGothicChars, ptrFontBankGothic, 0);
+    textMeasure(&textheight, &textwidth, MP_SCORE_TEXT, ptrFontBankGothicChars, ptrFontBankGothic, 0);
 
     textX = x - (textwidth >> 1);
     textY = y;
@@ -780,40 +794,41 @@ Gfx *display_text_for_playerdata_on_MP_menu(Gfx *gdl, s32 x, s32 y, s32 points, 
         case GREEN_NORMAL:
             viX = viGetX();
             viY = viGetY();
-            gdl = textRender(gdl, &textX, &textY, &text, ptrFontBankGothicChars, ptrFontBankGothic, 0xFF00B0, viX, viY, 0, 0);
+            gdl = textRender(gdl, &textX, &textY, MP_SCORE_TEXT, ptrFontBankGothicChars, ptrFontBankGothic, 0xFF00B0, viX, viY, 0, 0);
             break;
 
         case GREEN_HIGHLIGHT:
             viX = viGetX();
             viY = viGetY();
-            gdl = textRenderOutlined(gdl, &textX, &textY, &text, ptrFontBankGothicChars, ptrFontBankGothic, 0xA0FFA0F0, 0x7000A0, viX, viY, 0, 0);
+            gdl = textRenderOutlined(gdl, &textX, &textY, MP_SCORE_TEXT, ptrFontBankGothicChars, ptrFontBankGothic, 0xA0FFA0F0, 0x7000A0, viX, viY, 0, 0);
             break;
 
         case RED_NORMAL:
             viX = viGetX();
             viY = viGetY();
-            gdl = textRender(gdl, &textX, &textY, &text, ptrFontBankGothicChars, ptrFontBankGothic, 0xFF4040B0, viX, viY, 0, 0);
+            gdl = textRender(gdl, &textX, &textY, MP_SCORE_TEXT, ptrFontBankGothicChars, ptrFontBankGothic, 0xFF4040B0, viX, viY, 0, 0);
             break;
 
         case RED_HIGHLIGHT:
             viX = viGetX();
             viY = viGetY();
-            gdl = textRenderOutlined(gdl, &textX, &textY, &text, ptrFontBankGothicChars, ptrFontBankGothic, 0xFFA0A0F0, 0x700000A0, viX, viY, 0, 0);
+            gdl = textRenderOutlined(gdl, &textX, &textY, MP_SCORE_TEXT, ptrFontBankGothicChars, ptrFontBankGothic, 0xFFA0A0F0, 0x700000A0, viX, viY, 0, 0);
             break;
 
         case BLUE_NORMAL:
             viX = viGetX();
             viY = viGetY();
-            gdl = textRender(gdl, &textX, &textY, &text, ptrFontBankGothicChars, ptrFontBankGothic, 0x4040FFB0, viX, viY, 0, 0);
+            gdl = textRender(gdl, &textX, &textY, MP_SCORE_TEXT, ptrFontBankGothicChars, ptrFontBankGothic, 0x4040FFB0, viX, viY, 0, 0);
             break;
 
         case BLUE_HIGHLIGHT:
             viX = viGetX();
             viY = viGetY();
-            gdl = textRenderOutlined(gdl, &textX, &textY, &text, ptrFontBankGothicChars, ptrFontBankGothic, 0xA0A0FFF0, 0x70A0, viX, viY, 0, 0);
+            gdl = textRenderOutlined(gdl, &textX, &textY, MP_SCORE_TEXT, ptrFontBankGothicChars, ptrFontBankGothic, 0xA0A0FFF0, 0x70A0, viX, viY, 0, 0);
             break;
     }
 
+    #undef MP_SCORE_TEXT
     return gdl;
 }
 
@@ -1061,7 +1076,11 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
     s32 m;
     s32 h1;
     s32 h2;
+#ifdef PORT
+    char rankbuffer[32];
+#else
     char rankbuffer[4];
+#endif
     s32 two_player_x_offset;
     char *text;
     s32 scores[4];
@@ -1403,11 +1422,19 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
                 gdl = textRender(gdl, &x, &y, rankbuffer, ptrFontBankGothicChars, ptrFontBankGothic, 0x00ff00b0, viewleft, h1, 0, 0);
             }
  
+#ifdef PORT
+            {
+                char *q_text = (char *)langGet(getStringID(LMPMENU, MPMENU_STR_1C_P));
+                char *h2_text = (char *)langGet(getStringID(LMPMENU, MPMENU_STR_1D_KILLS));
+                sprintf(rankbuffer, ascii_pnum_KILLS, q_text, curplayernum + 1, h2_text);
+            }
+#else
             q = (s32) langGet(getStringID(LMPMENU, MPMENU_STR_1C_P)); /* P */
  
             // Must remain a comma expression for matching
             h2 = (s32) langGet(getStringID(LMPMENU, MPMENU_STR_1D_KILLS)), /* KILLS */
                 sprintf(rankbuffer, ascii_pnum_KILLS, (char *) q, curplayernum + 1, (char *) h2); /* -> "P<n> KILLS" */
+#endif
  
             textMeasure(&textheight, &textwidth, rankbuffer, ptrFontBankGothicChars, ptrFontBankGothic, 0);
             x = ((viGetViewLeft() + two_player_x_offset) - (textwidth >> 1)) + 80;
@@ -1473,11 +1500,19 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
                 gdl = textRender(gdl, &x, &y, rankbuffer, ptrFontBankGothicChars, ptrFontBankGothic, 0x00ff00b0, viewleft, h1, 0, 0);
             }
  
+#ifdef PORT
+            {
+                char *q_text = (char *)langGet(getStringID(LMPMENU, MPMENU_STR_1C_P));
+                char *h2_text = (char *)langGet(getStringID(LMPMENU, MPMENU_STR_1E_LOSSES));
+                sprintf(rankbuffer, ascii_pnum_LOSSES, q_text, curplayernum + 1, h2_text);
+            }
+#else
             q = (s32) langGet(getStringID(LMPMENU, MPMENU_STR_1C_P)); /* P */
  
             // Must remain a comma expression for matching.
             h2 = (s32) langGet(getStringID(LMPMENU, MPMENU_STR_1E_LOSSES)), /* LOSSES */
                 sprintf(rankbuffer, ascii_pnum_LOSSES, (char *) q, curplayernum + 1, (char *) h2); /* -> "P<n> LOSSES" */
+#endif
  
             textMeasure(&textheight, &textwidth, rankbuffer, ptrFontBankGothicChars, ptrFontBankGothic, 0);
             x = ((viGetViewLeft() + two_player_x_offset) - (textwidth >> 1)) + 80;

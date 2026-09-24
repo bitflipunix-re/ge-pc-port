@@ -9584,7 +9584,11 @@ dummy_label_995911:
                     }
                 }
 
+#ifdef PORT
+                chrpropAddBulletHit(hitinfo, prop, -pos.z, hitpart, node, &hit, mtxindex, hitnode, model, penetrates, (obj->flags2 & PROPFLAG2_00100000) != FALSE);
+#else
                 chrpropAddBulletHit(hitinfo, prop, -pos.z, hitpart, node, &hit, mtxindex, (s32) hitnode, model, penetrates, (obj->flags2 & PROPFLAG2_00100000) != FALSE);
+#endif
             }
         }
     }

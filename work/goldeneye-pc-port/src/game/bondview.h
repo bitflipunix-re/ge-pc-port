@@ -2363,8 +2363,13 @@ struct player
   s16 registeredroom;
   f32 field_2A08;
   f32 field_2A0C;
+#ifdef PORT
+  char *ptr_text_first_mp_award;
+  char *ptr_text_second_mp_award;
+#else
   s32 ptr_text_first_mp_award;
   s32 ptr_text_second_mp_award;
+#endif
   coord3d field_2A18[2];
   s32 field_2A30;
   s32 field_2A34;

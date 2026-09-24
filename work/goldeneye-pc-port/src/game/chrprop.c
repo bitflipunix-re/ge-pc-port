@@ -1210,7 +1210,11 @@ void chraiDefaultWeaponFireHandler(s32 hand)
  * Hitscans gather candidate hits along the bullet path. This function records each candidate hit into shotdata
  * and enforces pentration limits and removes hits that should be blocked by closer objects.
  */
+#ifdef PORT
+void chrpropAddBulletHit(struct ShotData *shotdata, PropRecord *prop, f32 dist, s32 hitpart, ModelNode *node, struct HitThing *hitthing, s32 room, ModelNode *unk44, Model *model, bool countsAsPenetration, s32 blocksFurtherHits)
+#else
 void chrpropAddBulletHit(struct ShotData *shotdata, PropRecord *prop, f32 dist, s32 hitpart, ModelNode *node, struct HitThing *hitthing, s32 room, s32 unk44, Model *model, bool countsAsPenetration, s32 blocksFurtherHits)
+#endif
 {
     s32 pad;
     s32 i;
