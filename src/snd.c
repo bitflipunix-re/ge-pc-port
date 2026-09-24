@@ -358,8 +358,14 @@ void sndHandleEvent(ALSndPlayer *sndp, ALSndpEvent *event) {
                         // Not a looped or retriggered sound, and all retries have been exhausted.
                         if (limitReached) {
                             // Check if we can preempt a lower-priority sound.
+                            /* D285/D305: this list is shared with the main
+                             * thread and can also be empty despite voice-pool
+                             * exhaustion bookkeeping. Protect the walk and do
+                             * not dereference a NULL first node. */
+                            OSIntMask d285Mask = osSetIntMask(OS_IM_NONE);
                             ALSoundState *iterState = (ALSoundState *) D_800243E4.node.prev;
 
+                            if (iterState != NULL)
                             do {
                                 /* D202/M-65 (PORT, experimental): the stock scan refuses to
                                  * preempt any looped or retriggering voice (0x12). That is
@@ -395,6 +401,7 @@ void sndHandleEvent(ALSndPlayer *sndp, ALSndpEvent *event) {
                                 }
                                 iterState = (ALSoundState *) iterState->link.prev;
                             } while (limitReached && iterState != NULL);
+                            osSetIntMask(d285Mask);
 
                             if (!limitReached) {
                                 // Retry the sound that was preempted.
