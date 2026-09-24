@@ -12,7 +12,13 @@
 // unsure if these structs are defined as something else, elsewhere
 struct unk_09B7A0_struct_parent {
     Vertex* unk00;
+#ifdef PORT
+    /* Runtime owner pointer. This metadata is not serialized and must not
+     * retain the N64's 32-bit pointer width on LP64 hosts. */
+    void *unk04;
+#else
     s32 unk04;
+#endif
     s32 unk08;
     s16 unk0C;
     s16 unk0E;
@@ -105,7 +111,13 @@ void sub_GAME_7F09B820(void)
         }
     }
 
+#ifdef PORT
+    /* N64 entries are 0x14 bytes. On LP64 the two pointer-sized fields grow,
+     * so allocating with the old stride overlaps adjacent metadata entries. */
+    tmp = sizeof(struct unk_09B7A0_struct_parent);
+#else
     tmp = 0x14;
+#endif
     dword_CODE_bss_8007A0E8 = mempAllocBytesInBank(dword_CODE_bss_8007A0D4 * tmp, MEMPOOL_STAGE);
     dword_CODE_bss_8007A0E0 = mempAllocBytesInBank(dword_CODE_bss_8007A0D0 * 0x10, MEMPOOL_STAGE);
     dword_CODE_bss_8007A0EC = mempAllocBytesInBank(dword_CODE_bss_8007A0DC * tmp, MEMPOOL_STAGE);
@@ -145,7 +157,11 @@ void sub_GAME_7F09B820(void)
 *  Search all props and their model data for references to the `find` address
 *  and replace it with the `replacement` address.
 */
+#ifdef PORT
+void sub_GAME_7F09BAC4(Vertex *find, Vertex *replacement) {
+#else
 void sub_GAME_7F09BAC4(s32 find, s32 replacement) {
+#endif
     PropRecord* var_s1;
 #ifdef PORT
     /* D255 (M-140): the original decomp read this record's Model* through
@@ -175,7 +191,11 @@ void sub_GAME_7F09BAC4(s32 find, s32 replacement) {
     ChrRecord* var_v0;
 #endif
     Model* temp_a0;
+#ifdef PORT
+    ModelRwData_DisplayList_CollisionRecord *temp_v0_2;
+#else
     s32* temp_v0_2;
+#endif
     ModelNode* var_a1;
     ModelFileHeader* var_v1;
     s32 val;
@@ -195,13 +215,17 @@ void sub_GAME_7F09BAC4(s32 find, s32 replacement) {
                 val = var_a1->Opcode & 0xFF;
                 if (val == 0x18) {
 #ifdef PORT
-                    temp_v0_2 = modelGetNodeRwData((Model*)var_v0->model, var_a1);
+                    temp_v0_2 = (ModelRwData_DisplayList_CollisionRecord *)
+                        modelGetNodeRwData((Model*)var_v0->model, var_a1);
+                    if (find == temp_v0_2->Vertices) {
+                        temp_v0_2->Vertices = replacement;
+                    }
 #else
                     temp_v0_2 = modelGetNodeRwData((Model*)var_v0->chrflags, var_a1);
-#endif
                     if (find == *temp_v0_2) {
                         *temp_v0_2 = replacement;
                     }
+#endif
                     break;
                 } else {
                     if (var_a1->Child != NULL) {
@@ -253,7 +277,12 @@ void sub_GAME_7F09BBBC(void)
                         (dword_CODE_bss_8007A0EC[var_fp].unk04 == dword_CODE_bss_8007A0EC[var_s2].unk04) &&
                         (dword_CODE_bss_8007A0EC[var_fp].unk08 == dword_CODE_bss_8007A0EC[var_s2].unk08))
                     {
+#ifdef PORT
+                        sub_GAME_7F09BAC4(dword_CODE_bss_8007A0EC[var_s2].unk00,
+                                         dword_CODE_bss_8007A0EC[var_fp].unk00);
+#else
                         sub_GAME_7F09BAC4((s32)dword_CODE_bss_8007A0EC[var_s2].unk00, (s32)dword_CODE_bss_8007A0EC[var_fp].unk00);
+#endif
                         var_s6 = 1;
 
                         dword_CODE_bss_8007A0EC[var_fp].unk0E += dword_CODE_bss_8007A0EC[var_s2].unk0E;
@@ -305,7 +334,12 @@ void sub_GAME_7F09BBBC(void)
 * PD name: vtxstore_allocate
 * Description: Allocation for batches within the storage space
 */
-s32 vtxstore_allocate(s32 arg0, s32 type, s32 arg2, s32 arg3) 
+#ifdef PORT
+Vertex *vtxstore_allocate(s32 arg0, s32 type, void *arg2, s32 arg3)
+#else
+s32 vtxstore_allocate(s32 arg0, s32 type, s32 arg2, s32 arg3)
+#endif
+
 {
     s16* var_t3;
     s16 temp_t2;
@@ -383,7 +417,11 @@ s32 vtxstore_allocate(s32 arg0, s32 type, s32 arg2, s32 arg3)
         } else {
             *var_t3 -= temp_t2;
         }
+#ifdef PORT
+        return var_t0[var_a1].unk00;
+#else
         return (s32)var_t0[var_a1].unk00;
+#endif
     }
     return 0;
 }
