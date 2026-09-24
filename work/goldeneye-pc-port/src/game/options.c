@@ -1897,15 +1897,15 @@ Gfx *draw_abort_cancel_confirm(Gfx *gdl)
 
     struct font *pFontFile;
     struct fontchar *pFontChars;
-    s32 sp54;
-    s32 sp50;
-    s32 sp4C;
+    char *sp54;
+    char *sp50;
+    char *sp4C;
 
     pFontFile = ptrFontBankGothic;
     pFontChars = ptrFontBankGothicChars;
-    sp54 = langGet(getStringID(LOPTIONS, OPTION_STR_24_ABORT_LF)); //abort:
-    sp50 = langGet(getStringID(LOPTIONS, OPTION_STR_25_CONFIRM_LF)); //confirm
-    sp4C = langGet(getStringID(LOPTIONS, OPTION_STR_26_CANCEL_LF)); //cancel
+    sp54 = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_24_ABORT_LF)); //abort:
+    sp50 = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_25_CONFIRM_LF)); //confirm
+    sp4C = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_26_CANCEL_LF)); //cancel
     sp7C = 0x51;
 
     sp78 = (j_text_trigger ? 0xF : 0) + 0xBD;
@@ -2093,8 +2093,8 @@ Gfx* draw_current_hand_item_and_ammo(Gfx* gdl) {
     s32 sp88;
     s32 sp84;
     s32 sp80;
-    s32 sp7C;
-    s32 sp78;
+    struct font *sp7C;
+    struct fontchar *sp78;
     s32 temp_v0;
     s32 sp70;
     f32 sp6C;
@@ -2103,8 +2103,8 @@ Gfx* draw_current_hand_item_and_ammo(Gfx* gdl) {
     f32 sp60;
     f32 rotx;
     f32 roty;
-    s8* text;
-    s8* text2;
+    char *text;
+    char *text2;
     struct GunModelFileRecord *gitem;
 
     sp114 = dynAllocateMatrix();
@@ -2122,8 +2122,8 @@ Gfx* draw_current_hand_item_and_ammo(Gfx* gdl) {
     sp60 = bondinvGetDifferent45AngleForIndex(temp_v0);
     rotx = bondinvGetXrotWatchForIndex(temp_v0);
     roty = bondinvGetYrotWatchForIndex(temp_v0);
-    text = bondinvGetFirstTitlebyIndex(temp_v0);
-    text2 = bondinvGetSecondTitlebyIndex(temp_v0);
+    text = (char *)bondinvGetFirstTitlebyIndex(temp_v0);
+    text2 = (char *)bondinvGetSecondTitlebyIndex(temp_v0);
 
     if (get_debug_gunwatchpos_flag() != 0) {
         gitem = &gitem_structs[getCurrentPlayerWeaponId(0)];
