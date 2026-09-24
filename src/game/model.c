@@ -3347,7 +3347,15 @@ void modelSetAnimFrame2WithChrStuff(Model *model, f32 framea, f32 frameb, f32 fr
              * NaN. */
             if (!(frameb > -1.0e6f && frameb < 1.0e6f))
             {
-                frameb = framea;
+                frameb = (framea > -1.0e6f && framea < 1.0e6f) ? framea : 0.0f;
+            }
+            /* D311: framea can itself already be poisoned. Heal both ends of
+             * the root-motion interval before converting them to integers,
+             * otherwise a near-equal pair of huge floats can become billions
+             * of loop iterations and permanently freeze the game. */
+            if (!(framea > -1.0e6f && framea < 1.0e6f))
+            {
+                framea = (frameb > -1.0e6f && frameb < 1.0e6f) ? frameb : 0.0f;
             }
 #endif
 
@@ -3854,7 +3862,17 @@ void modelTickAnim(struct Model *model, s32 numticks, s32 update_chrstuff)
                     (void *)model->anim);
                 fflush(stderr);
             }
+            /* D311: if animframe1 is the poison source, falling back to it
+             * repeats the invalid state forever. Heal storage before reuse. */
+            if (!(model->animframe1 > -1.0e6f && model->animframe1 < 1.0e6f))
+            {
+                model->animframe1 = 0.0f;
+            }
             frame = model->animframe1;
+        }
+        if (!(model->animframe2 > -1.0e6f && model->animframe2 < 1.0e6f))
+        {
+            model->animframe2 = 0.0f;
         }
         if (!(frame2 > -1.0e6f && frame2 < 1.0e6f))
         {
