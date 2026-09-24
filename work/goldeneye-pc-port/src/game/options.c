@@ -1895,8 +1895,8 @@ Gfx *draw_abort_cancel_confirm(Gfx *gdl)
     s32 sp64;
     s32 sp60;
 
-    s32 pFontFile;
-    s32 pFontChars;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
     s32 sp54;
     s32 sp50;
     s32 sp4C;
@@ -1969,30 +1969,30 @@ Gfx *draw_abort_cancel_confirm(Gfx *gdl)
 
 Gfx *draw_text_mission_status(Gfx *gdl)
 {
-    s32 txtptr_1;
-    s32 txtptr_2;
+    char *txtptr_1;
+    char *txtptr_2;
     s32 sp64;
     s32 sp60;
     s32 sp5C;
     s32 sp58;
-    s32 pFontFile;
-    s32 pFontChars;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
     s32 sp4C;
     s32 joffset;
 
-    txtptr_1 = langGet(getStringID(LOPTIONS, OPTION_STR_27_MISSIONSTATUS_LF)); //mission status:
+    txtptr_1 = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_27_MISSIONSTATUS_LF)); //mission status:
     pFontFile = ptrFontBankGothic;
     pFontChars = ptrFontBankGothicChars;
 
     if (objectiveIsAllComplete())
     {
         sp4C = 0xFF00B0;
-        txtptr_2 = langGet(getStringID(LOPTIONS, OPTION_STR_28_COMPLETE_LF)); //complete
+        txtptr_2 = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_28_COMPLETE_LF)); //complete
     }
     else
     {
         sp4C = D_80040AF4;
-        txtptr_2 = langGet(getStringID(LOPTIONS, OPTION_STR_29_INCOMPLETE_LF)); //incomplete
+        txtptr_2 = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_29_INCOMPLETE_LF)); //incomplete
     }
 
     gdl = microcode_constructor(gdl);
@@ -2027,16 +2027,16 @@ Gfx *empty_draw_function(Gfx *gdl) {
 
 Gfx *draw_text_q_watch_v201_beta(Gfx *gdl)
 {
-    s32 txtptr;
+    char *txtptr;
     s32 sp50;
     s32 sp4C;
     s32 sp48;
     s32 sp44;
-    s32 pFontFile;
-    s32 pFontChars;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
     s32 joffset;
 
-    txtptr = langGet(getStringID(LOPTIONS, OPTION_STR_2B_QWATCHVERSION_LF)); //q watch v2.01 beta
+    txtptr = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_2B_QWATCHVERSION_LF)); //q watch v2.01 beta
 
     if (j_text_trigger)
     {
@@ -2369,12 +2369,12 @@ Gfx *draw_watch_inventory_page(Gfx *gdl, Mtx *param_2)
             s32 i;
             s32 textheight;
             s32 textwidth;
-            s32 pFontFile2;
-            s32 pFontChars2;
+            struct font *pFontFile2;
+            struct fontchar *pFontChars2;
             char string_builder_allocation[2000];
 
 #if defined(VERSION_JP) || defined(VERSION_EU)
-            s32 pFontFile;
+            struct font *pFontFile;
             s32 base_y;
             char formattedString[32];
 #endif
@@ -2439,9 +2439,9 @@ Gfx *draw_watch_inventory_page(Gfx *gdl, Mtx *param_2)
             {
 #if !defined(VERSION_JP) && !defined(VERSION_EU)
                 char formattedString[32];
-                s32 pFontFile;
+                struct font *pFontFile;
 #endif
-                s32 pFontChars;
+                struct fontchar *pFontChars;
                 s32 x2;
                 s32 y2;
                 char *invItemName;
@@ -2495,8 +2495,8 @@ Gfx *unused_draw_watch_inventory_page(Gfx *gdl, Mtx *param_2) {
     s32 sp5C;
     s32 sp58;
     s32 sp54;
-    s32 pFontFile;
-    s32 pFontChars;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
 
     u16 *long_name;
     s32 temp_2;
@@ -3227,7 +3227,7 @@ Gfx *sub_GAME_7F0A9AB8(Gfx *gdl)
 
 Gfx *display_text_buttons_dual_control(Gfx *gdl)
 {
-    s32 textptr_aux;
+    char *textptr_aux;
 
     gdl = microcode_constructor(gdl);
 
@@ -3251,11 +3251,11 @@ Gfx *display_text_buttons_dual_control(Gfx *gdl)
 
     if ((g_CurrentPlayer->cur_player_control_type_0 == CONTROLLER_CONFIG_PLENTY) || (g_CurrentPlayer->cur_player_control_type_0 == CONTROLLER_CONFIG_GALORE))
     {
-        textptr_aux = langGet(getStringID(LOPTIONS, OPTION_STR_00_FIRE_LF)); //fire
+        textptr_aux = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_00_FIRE_LF)); //fire
     }
     else
     {
-        textptr_aux = langGet(getStringID(LOPTIONS, OPTION_STR_01_AIM_LF)); //aim
+        textptr_aux = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_01_AIM_LF)); //aim
     }
 
     if (joyGetButtons(PLAYER_1, Z_TRIG))
@@ -3269,11 +3269,11 @@ Gfx *display_text_buttons_dual_control(Gfx *gdl)
 
     if ((g_CurrentPlayer->cur_player_control_type_0 == CONTROLLER_CONFIG_PLENTY) || (g_CurrentPlayer->cur_player_control_type_0 == CONTROLLER_CONFIG_DOMINO))
     {
-        textptr_aux = langGet(getStringID(LOPTIONS, OPTION_STR_05_MOVE_LF)); //move
+        textptr_aux = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_05_MOVE_LF)); //move
     }
     else
     {
-        textptr_aux = langGet(getStringID(LOPTIONS, OPTION_STR_06_LOOK_LF)); //look
+        textptr_aux = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_06_LOOK_LF)); //look
     }
 
     gdl = draw_options_labels(gdl, 0x5A, YOFFSET_4, textptr_aux, 0xAA00B0, 0, -1, 0, 0, 0x3000B0, 0);
@@ -3298,11 +3298,11 @@ Gfx *display_text_buttons_dual_control(Gfx *gdl)
 
     if ((g_CurrentPlayer->cur_player_control_type_0 == CONTROLLER_CONFIG_PLENTY) || (g_CurrentPlayer->cur_player_control_type_0 == CONTROLLER_CONFIG_GALORE))
     {
-        textptr_aux = langGet(getStringID(LOPTIONS, OPTION_STR_01_AIM_LF)); //aim
+        textptr_aux = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_01_AIM_LF)); //aim
     }
     else
     {
-        textptr_aux = langGet(getStringID(LOPTIONS, OPTION_STR_00_FIRE_LF)); //fire
+        textptr_aux = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_00_FIRE_LF)); //fire
     }
 
     if (joyGetButtons(1, Z_TRIG))
@@ -3316,11 +3316,11 @@ Gfx *display_text_buttons_dual_control(Gfx *gdl)
 
     if ((g_CurrentPlayer->cur_player_control_type_0 == CONTROLLER_CONFIG_PLENTY) || (g_CurrentPlayer->cur_player_control_type_0 == CONTROLLER_CONFIG_DOMINO))
     {
-        textptr_aux = langGet(getStringID(LOPTIONS, OPTION_STR_06_LOOK_LF)); //look
+        textptr_aux = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_06_LOOK_LF)); //look
     }
     else
     {
-        textptr_aux = langGet(getStringID(LOPTIONS, OPTION_STR_05_MOVE_LF)); //move
+        textptr_aux = (char *)langGet(getStringID(LOPTIONS, OPTION_STR_05_MOVE_LF)); //move
     }
 
     gdl = draw_options_labels(gdl, 0xE6, YOFFSET_4, textptr_aux, 0xAA00B0, 0, -1, 0, 0, 0x3000B0, 1);
@@ -3510,13 +3510,13 @@ u32 return_arg0_7F0AB4B0(u32 uParm1) {
 
 Gfx *draw_watch_control_options_page(Gfx *gdl, Mtx *param_2) {
     s32 phi_s1;
-    u16 *textptr;
+    char *textptr;
     s32 sp5C;
     s32 sp58;
     s32 sp54;
     s32 sp50;
-    s32 pFontFile;
-    s32 pFontChars;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
 
     gdl = draw_background_health_and_armor(gdl, param_2, 0);
 
@@ -3811,14 +3811,14 @@ Gfx *draw_toggle_options(Gfx *gdl)
 
 Gfx *draw_watch_game_options_page(Gfx *gdl, Mtx *param_2) {
     s32 sp5C;
-    u16 *textptr;
+    char *textptr;
     s32 sp54;
     s32 sp50;
     s32 sp4C;
     s32 sp48;
 
-    s32 pFontFile;
-    s32 pFontChars;
+    struct font *pFontFile;
+    struct fontchar *pFontChars;
 
     gdl = draw_background_health_and_armor(gdl, param_2, 0);
 
