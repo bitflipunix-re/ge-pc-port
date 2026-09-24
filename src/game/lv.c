@@ -467,6 +467,12 @@ void lvlStageLoad(s32 stage)
                  * only; default 0 = unchanged. */
                 extern s32 portSkipIntro;
                 if (portSkipIntro) {
+                    /* D299: the legal-screen init normally populates saves[].
+                     * SkipIntro bypasses that path, so validate saves before
+                     * entering file-select or later save/cheat lookups can
+                     * observe an uninitialized table. */
+                    extern void fileValidateSaves(void);
+                    fileValidateSaves();
                     is_first_time_on_main_menu = FALSE;
                     prev_keypresses = TRUE;
                     maybe_is_in_menu = TRUE;
