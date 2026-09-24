@@ -66,6 +66,9 @@
 #include <assets/image_externs.h>
 #include <PR/gbi.h>
 #include <gbi_extension.h>
+#ifdef PORT
+#include <stdint.h>
+#endif
 
 #define LIGHTFIXTURE_TABLE_MAX 0x64
 #define DARKENED_LIGHT_TABLE_MAX 0x200
@@ -182,12 +185,27 @@ Vtx *lightFindVertexBaseForTri(Gfx *gfx, s32 room_index)
         gfx--; 
     }
 
+#ifdef PORT
+    {
+        uintptr_t raw = (uintptr_t)gfx->dma.addr;
+
+        if ((raw & 0xFF000000u) == 0x0E000000u)
+        {
+            ret = (Vtx *)((u8 *)g_BgRoomInfo[room_index].vertices + (raw & 0x00FFFFFFu));
+        }
+        else
+        {
+            ret = (Vtx *)raw;
+        }
+    }
+#else
     ret = gfx->dma.addr;
 
     if (((s32) ret & 0xFF000000) == 0x0E000000) 
     {
         ret = (s32)g_BgRoomInfo[room_index].vertices + ((s32) ret & 0xFFFFFF);
     }
+#endif
 
     return ret;
 }
@@ -281,7 +299,11 @@ void darken_vertex_in_room(Vtx * vertex, s32 room_index)
     if (darkened_light_table_contains_vertex(vertex, room_index) != 0) { return; }
 
     // weird memory stuff going on here
+#ifdef PORT
+    vtx_index = (s32)(vertex - g_BgRoomInfo[room_index].vertices);
+#else
     vtx_index = ((u32)vertex - (u32)g_BgRoomInfo[room_index].vertices) >> 4;
+#endif
 
     darkened_light_table[cur_entry_darkened_light_table].room_index = (u16) room_index;
     darkened_light_table[cur_entry_darkened_light_table].vtx_index = vtx_index;
@@ -306,7 +328,11 @@ s32 darkened_light_table_contains_vertex(Vtx * vertex, s32 room_index)
     s32 i;
 
     // weird memory stuff going on here
+#ifdef PORT
+    vtx_index = (s32)(vertex - g_BgRoomInfo[room_index].vertices);
+#else
     vtx_index = ((u32)vertex - (u32)g_BgRoomInfo[room_index].vertices) >> 4;
+#endif
 
     for (i = 0; i < DARKENED_LIGHT_TABLE_MAX; i++)
     {
