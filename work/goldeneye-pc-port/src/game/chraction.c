@@ -4982,6 +4982,18 @@ bool chrGoToPad(ChrRecord *self, s32 padid, SPEED speed)
 /**
  * Address 0x7F02AD54.
 */
+#ifdef PORT
+bool if_actor_able_set_on_path(ChrRecord *self, struct patrol_path *path)
+{
+    if (path && chrIsNotDeadOrShot(self))
+    {
+        set_actor_on_path(self, path);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+#else
 bool if_actor_able_set_on_path(ChrRecord *self, s32 pathid)
 {
     if (pathid && chrIsNotDeadOrShot(self))
@@ -4992,6 +5004,7 @@ bool if_actor_able_set_on_path(ChrRecord *self, s32 pathid)
 
     return FALSE;
 }
+#endif
 
 
 

@@ -1768,7 +1768,11 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 {
                     AiStartPatrolRecord *ai   = AiListp + Offset;
                     PathRecord          *path = pathFindById(ai->PATH_NUM);
+#ifdef PORT
+                    if_actor_able_set_on_path(ChrEntityp, (struct patrol_path *)path);
+#else
                     if_actor_able_set_on_path(ChrEntityp, path);
+#endif
                     Offset += sizeof(AiStartPatrolRecord);
                     break;
                 }
