@@ -2173,7 +2173,12 @@ void load_walletbond(void)
             b = (struct ModelNode *)mnode;
             srecord = b->Data;
 
+#ifdef PORT
+            arg0 = (Gfx *)((uintptr_t)srecord->BaseAddr
+                         + ((uintptr_t)srecord->Primary & 0x00ffffffu));
+#else
             arg0 = (s32)srecord->BaseAddr + ((s32)srecord->Primary & 0xffffff);
+#endif
             bgApplyDynamicCCRMLUT(arg0, NULL, CCRMLUT_WALLETBOND);
         }
     }
@@ -2203,7 +2208,11 @@ void frontCleanUpWalletBond(void)
 void init_menu05_fileselect(void)
 {
     s32 size = 0x6e000;
+#ifdef PORT
+    Gfx *DL = (Gfx *)(ptr_logo_and_walletbond_DL + (4096 * 10));
+#else
     Gfx* DL = (s32)(ptr_logo_and_walletbond_DL) + (s32)(4096*10);
+#endif
     int i;
 
     prev_keypresses = FALSE;
@@ -6602,7 +6611,11 @@ void load_briefing_text_for_stage(void)
     s32 argg;
 
     // what is this
+#ifdef PORT
+    temp_s0 = (Gfx *)(ptr_logo_and_walletbond_DL + (4096 * 10));
+#else
     temp_s0 = (s32)(ptr_logo_and_walletbond_DL) + (s32)(4096*10);
+#endif
 
     // alright
     argg = 0x200;
@@ -7760,7 +7773,11 @@ Gfx *constructor_menu16_nocontrollers(Gfx *DL)
     s32 x2;
     s32 x;
     s32 y;
+#ifdef PORT
+    char *text;
+#else
     s32 text;
+#endif
     s32 conConnected = joyGetConnectedControllers();
     s32 numContCon = 0;
 
@@ -7777,7 +7794,11 @@ Gfx *constructor_menu16_nocontrollers(Gfx *DL)
 
 
     if ((numContCon == 0) || (numContCon == 1) || (numContCon == 2) || (numContCon == 3)) {
+#ifdef PORT
+        text = (char *)langGet(getStringID(LTITLE, TITLE_STR_118_NOCONT)); //NO CONTROLLER IN CONTROLLER SOCKET 1
+#else
         text = langGet(getStringID(LTITLE, TITLE_STR_118_NOCONT)); //NO CONTROLLER IN CONTROLLER SOCKET 1
+#endif
     }
     textMeasure(&y2, &x2, text, ptrFontZurichBoldChars, ptrFontZurichBold, 0);
     x = 0xDC - (x2 >> 1);
@@ -7795,7 +7816,11 @@ Gfx *constructor_menu16_nocontrollers(Gfx *DL)
 
 
     if ((numContCon == 0) || (numContCon == 1) || (numContCon == 2) || (numContCon == 3)) {
+#ifdef PORT
+        text = (char *)langGet(getStringID(LTITLE, TITLE_STR_119_ATTACHCONT)); //PLEASE POWER OFF AND ATTACH A CONTROLLER
+#else
         text = langGet(getStringID(LTITLE, TITLE_STR_119_ATTACHCONT)); //PLEASE POWER OFF AND ATTACH A CONTROLLER
+#endif
     }
     textMeasure(&y2, &x2, text, ptrFontZurichBoldChars, ptrFontZurichBold, 0);
     x = 0xDC - (x2 >> 1);
