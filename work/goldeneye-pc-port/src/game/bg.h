@@ -218,7 +218,11 @@ bool bgTestBulletHitBackground(coord3d *from, coord3d *to, s32 roomnum, struct H
 void delete_room_data(s32 roomID);
 void load_bg_file(LEVEL_INDEX stagenum);
 
+#ifdef PORT
+Gfx *bgDebugRemoved7F0B9DE4(Gfx *arg0, s32 arg1, s32 arg2);
+#else
 s32 bgDebugRemoved7F0B9DE4(s32 arg0, s32 arg1, s32 arg2);
+#endif
 void bgRemoved7F0B9DF4(s32 arg0);
 s8 bgSwapConnectedRooms(s32 index);
 s32 bgGetDataPortalsControlBytes1Bit1(s32 index);

@@ -5692,7 +5692,11 @@ void bgToggleDataPortalsContrlBytes1Bit1(s32 portal, s32 toggle)
  *
  * Address 0x7F0B9DE4.
  */
+#ifdef PORT
+Gfx *bgDebugRemoved7F0B9DE4(Gfx *arg0, s32 arg1, s32 arg2)
+#else
 s32 bgDebugRemoved7F0B9DE4(s32 arg0, s32 arg1, s32 arg2)
+#endif
 {
 #if DEBUG
     // removed
