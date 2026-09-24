@@ -454,6 +454,24 @@ void bondviewLoadSetupIntroSection(void)
     g_CurrentPlayer->stanHeight = stan_height;
     g_CurrentPlayer->field_6C = stan_height / FIELD_6C_FACTOR;
     change_player_pos_to_target(&g_CurrentPlayer->field_488, &start_pos, start_stan);
+#if defined(DAM_ONLY_LAB)
+    if (startpadcount > 0 && g_CurrentSetup.pads != NULL && g_Startpad[rand_pad_index] != NULL)
+    {
+        s32 lab_applied_spawn_index =
+            (s32)(g_Startpad[rand_pad_index] - g_CurrentSetup.pads);
+        damLabRecordAppliedSpawn(
+            lab_applied_spawn_index,
+            start_pos.f[0], start_pos.f[1], start_pos.f[2],
+            g_CurrentPlayer->field_488.collision_position.f[0],
+            g_CurrentPlayer->field_488.collision_position.f[1],
+            g_CurrentPlayer->field_488.collision_position.f[2],
+            g_CurrentPlayer->field_488.pos.f[0],
+            g_CurrentPlayer->field_488.pos.f[1],
+            g_CurrentPlayer->field_488.pos.f[2],
+            (uintptr_t)start_stan,
+            (uintptr_t)g_CurrentPlayer->field_488.current_tile_ptr);
+    }
+#endif
     g_CurrentPlayer->field_488.theta_transform.f[0] = -sinf(start_look_angle);
     g_CurrentPlayer->field_488.theta_transform.f[1] = FLOAT_INIT;
     g_CurrentPlayer->field_488.theta_transform.f[2] = cosf(start_look_angle);

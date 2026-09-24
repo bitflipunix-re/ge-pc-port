@@ -25,7 +25,14 @@
  * game code use that nothing else declares. K&R form = compatible with any
  * real prototype. (malloc/calloc/free are in port/include/pc_protos.h and
  * a few port TUs' own local decls — not repeated here to avoid conflicts.) */
-extern char *getenv();
+extern char *getenv(const char *);
 extern void *realloc();
+extern int atoi(const char *);
+extern double atof(const char *);
+extern long labs(long);
+extern unsigned long long strtoull(const char *, char **, int);
+extern int atexit(void (*)(void));
+extern void abort(void);
+extern void exit(int);
 #endif
 #endif

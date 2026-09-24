@@ -22,6 +22,7 @@
 #include <os.h>
 #include <ultraerror.h>
 #ifdef PORT
+#include <stdlib.h>
 #include "audiotrace.h"   /* D202/M-71: evtq drop probe */
 #endif
 

@@ -31,6 +31,7 @@ enum {
     DAMLAB_ANOM_POS_NAN    = 1u << 2,
     DAMLAB_ANOM_POS_JUMP   = 1u << 3,
     DAMLAB_ANOM_ROOM       = 1u << 4,
+    DAMLAB_ANOM_APPLY      = 1u << 5,
 };
 
 void damLabInit(void);
@@ -40,6 +41,11 @@ void damLabGameplayTick(int stage, int camera_mode, int room,
                         float stan_height, uintptr_t stan);
 void damLabRecordSpawn(int spawn_index, float x, float y, float z,
                        float lx, float ly, float lz, uintptr_t stan);
+void damLabRecordAppliedSpawn(int spawn_index,
+                              float request_x, float request_y, float request_z,
+                              float collision_x, float collision_y, float collision_z,
+                              float view_x, float view_y, float view_z,
+                              uintptr_t requested_stan, uintptr_t applied_stan);
 void damLabHostSample(float fps);
 const DamLabSnapshot *damLabGetSnapshot(void);
 void damLabFormatOverlay(char *dst, unsigned dst_size);

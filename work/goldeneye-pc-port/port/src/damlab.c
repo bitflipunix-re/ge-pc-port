@@ -172,6 +172,52 @@ void damLabRecordSpawn(int spawn_index, float x, float y, float z,
     damLog("SPAWN");
 }
 
+void damLabRecordAppliedSpawn(int spawn_index,
+                              float request_x, float request_y, float request_z,
+                              float collision_x, float collision_y, float collision_z,
+                              float view_x, float view_y, float view_z,
+                              uintptr_t requested_stan, uintptr_t applied_stan)
+{
+    g_dam.spawn_index = spawn_index;
+    g_dam.pos_x = collision_x;
+    g_dam.pos_y = collision_y;
+    g_dam.pos_z = collision_z;
+    g_dam.cam_x = view_x;
+    g_dam.cam_y = view_y;
+    g_dam.cam_z = view_z;
+    g_dam.stan = applied_stan;
+
+    if (damAbs(collision_x - request_x) > 0.01f ||
+        damAbs(collision_y - request_y) > 0.01f ||
+        damAbs(collision_z - request_z) > 0.01f ||
+        damAbs(view_x - request_x) > 0.01f ||
+        damAbs(view_y - request_y) > 0.01f ||
+        damAbs(view_z - request_z) > 0.01f ||
+        requested_stan != applied_stan) {
+        g_dam.anomaly_flags |= DAMLAB_ANOM_APPLY;
+    }
+
+    if (!applied_stan)
+        g_dam.anomaly_flags |= DAMLAB_ANOM_STAN_NULL;
+
+    g_dam.sample_seq++;
+#if !defined(DAM_SHOWCASE)
+    if (g_log) {
+        fprintf(g_log,
+            "DAMLAB kind=APPLY seq=%llu spawn=%d "
+            "request=%.3f,%.3f,%.3f collision=%.3f,%.3f,%.3f "
+            "view=%.3f,%.3f,%.3f stan_request=%p stan_applied=%p flags=0x%X\n",
+            (unsigned long long)g_dam.sample_seq, spawn_index,
+            request_x, request_y, request_z,
+            collision_x, collision_y, collision_z,
+            view_x, view_y, view_z,
+            (void *)requested_stan, (void *)applied_stan,
+            g_dam.anomaly_flags);
+        fflush(g_log);
+    }
+#endif
+}
+
 void damLabGameplayTick(int stage, int camera_mode, int room,
                         float pos_x, float pos_y, float pos_z,
                         float cam_x, float cam_y, float cam_z,
@@ -289,6 +335,8 @@ void damLabGameplayTick(int a,int b,int r,float x,float y,float z,float cx,float
 { (void)a;(void)b;(void)r;(void)x;(void)y;(void)z;(void)cx;(void)cy;(void)cz;(void)sh;(void)s; }
 void damLabRecordSpawn(int i,float x,float y,float z,float lx,float ly,float lz,uintptr_t s)
 { (void)i;(void)x;(void)y;(void)z;(void)lx;(void)ly;(void)lz;(void)s; }
+void damLabRecordAppliedSpawn(int i,float rx,float ry,float rz,float cx,float cy,float cz,float vx,float vy,float vz,uintptr_t rs,uintptr_t as)
+{ (void)i;(void)rx;(void)ry;(void)rz;(void)cx;(void)cy;(void)cz;(void)vx;(void)vy;(void)vz;(void)rs;(void)as; }
 void damLabHostSample(float fps) { (void)fps; }
 const DamLabSnapshot *damLabGetSnapshot(void) { static DamLabSnapshot s; return &s; }
 void damLabFormatOverlay(char *dst, unsigned n) { if (dst && n) dst[0]=0; }
