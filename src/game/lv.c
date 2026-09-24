@@ -1175,6 +1175,12 @@ void lvlManageMpGame(void)
 #endif
 #endif
     g_GlobalTimer += g_ClockTimer;
+#ifdef PORT
+    {
+        extern void d318WatchdogTick(void);
+        d318WatchdogTick();
+    }
+#endif
     if ((g_CurrentStageToLoad != LEVELID_TITLE) && (D_80048394 == 0) && (g_ClockTimer > 0))
     {
         if (g_AppendCheatSinglePlayer != 0)
