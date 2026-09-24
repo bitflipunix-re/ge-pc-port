@@ -754,8 +754,13 @@ s32 chraiGoToLabel(AIRecord *AIList, s32 Offset, u8 LabelNum)
 {
     s32   listID;
     char *debAIListTypeString;
-    bool  isGlobalAIList;
+    bool  isGlobalAIList = FALSE;
 
+#ifdef PORT
+    /* D310: resolve list origin once so global PRINT records use their
+     * actual one-byte representation while local PRINT keeps its string. */
+    (void)chraiGetAIListID(AIList, &isGlobalAIList);
+#endif
     for (;;)
     {
         if (AIList[Offset].cmd == AI_Label)
