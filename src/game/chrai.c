@@ -696,6 +696,21 @@ s32 chraiitemsize(u8 *AIList, s32 offset)
     }
 }
 
+#ifdef PORT
+/* D310: global AI_PRINT records are one byte because their macro-built
+ * strings are discarded; level-local lists still embed a NUL-terminated
+ * string. Size PRINT by list origin to avoid walking into following opcodes. */
+static s32 d310ItemSize(u8 *AIList, s32 offset, bool isGlobalAIList)
+{
+    if (isGlobalAIList && AIList[offset] == AI_PRINT)
+    {
+        return 1;
+    }
+
+    return chraiitemsize(AIList, offset);
+}
+#endif
+
 /**
  * Get ID of AIList
  * @param AIList: Ailist to get ID of
@@ -769,7 +784,11 @@ s32 chraiGoToLabel(AIRecord *AIList, s32 Offset, u8 LabelNum)
             return 0;
         }
 
+#ifdef PORT
+        Offset += d310ItemSize((u8 *)AIList, Offset, isGlobalAIList);
+#else
         Offset += chraiitemsize((u8 *)AIList, Offset);
+#endif
     }
 }
 
@@ -3312,6 +3331,10 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                 }
                 case AI_PRINT:
                 {
+#ifdef PORT
+                    bool d310global = FALSE;
+                    (void)chraiGetAIListID(AiListp, &d310global);
+#endif
     #ifdef ENABLE_LOG
                     AIRecord *ai = AiListp + Offset;
                     osSyncPrintf("AI_PRINT: %s\n", ai->val);
@@ -3326,7 +3349,11 @@ void                   ai(PropDefHeaderRecord *Entityp, PROP_TYPE EntityType)
                     }
         #endif
     #endif
+#ifdef PORT
+                    Offset += d310ItemSize((u8 *)AiListp, Offset, d310global);
+#else
                     Offset += chraiitemsize((u8 *)AiListp, Offset);
+#endif
                     break;
                 }
                 case AI_MyTimerStart:
