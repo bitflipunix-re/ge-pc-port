@@ -330,6 +330,7 @@ extern struct Model *cast_model;
 extern struct Model *cast_model_weapon;
 extern u32 full_actor_intro;
 
+char *frontGetPlayersFavoriteWeaponInHand(int player, int hand);
 void frontChangeMenu(MENU menu, s32 reload);
 s32 get_selected_num_players(void);
 void do_extended_cast_display(bool doExtended);

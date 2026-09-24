@@ -5,6 +5,7 @@
 #include <math.h>
 #ifdef PORT
 #include <stdlib.h>
+#include <stdint.h>
 #endif
 #include <os_extension.h>
 #include <PR/libaudio.h>
@@ -257,7 +258,11 @@ void lvInit(void)
     s32 size;
 
     debTryAdd(&lvl_c_debug_notice_list, "lv_c_debug");
+#ifdef PORT
+    size = (s32)((uintptr_t)&_fontdlSegmentRomEnd - (uintptr_t)&_fontdlSegmentRomStart);
+#else
     size = (s32)&_fontdlSegmentRomEnd - (s32)&_fontdlSegmentRomStart;
+#endif
     lvl_c_debug_notice_list = 1;
     ptr_font_DL = mempAllocBytesInBank(size, MEMPOOL_PERMANENT);
     romCopy(ptr_font_DL, &_fontdlSegmentRomStart, size);
