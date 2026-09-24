@@ -471,7 +471,7 @@ s16 viGetX();
 s16 viGetY();
 void viSetColorMode16Bit();
 void viSetColorMode32Bit();
-s32 vtxstore_allocate();
+Vertex *vtxstore_allocate(s32 arg0, s32 type, void *arg2, s32 arg3);
 Gfx* watchRenderController();
 Gfx * watchRenderControllerOpaque();
 u32 weaponLoadProjectileModels();
