@@ -1,0 +1,49 @@
+name: R36S CFW rootfs
+
+on:
+  push:
+    branches: [r36s-cfw]
+    paths:
+      - 'cfw/**'
+      - '.github/workflows/r36s-cfw-rootfs.yml'
+  workflow_dispatch:
+
+jobs:
+  rootfs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Buildroot host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y             build-essential git rsync cpio unzip file             bc bison flex libssl-dev libncurses-dev             python3 perl patch wget curl
+
+      - name: Fetch Buildroot 2026.08
+        run: sh cfw/scripts/fetch-sources.sh buildroot
+
+      - name: Build R36S root filesystem
+        env:
+          JOBS: 4
+        run: sh cfw/scripts/build-rootfs.sh
+
+      - name: Validate generated filesystem
+        run: |
+          test -s cfw/out/artifacts/rootfs-r36s.ext4
+          grep '^BR2_aarch64=y$' cfw/out/artifacts/buildroot-r36s.config
+          grep '^BR2_cortex_a35=y$' cfw/out/artifacts/buildroot-r36s.config
+          grep '^BR2_PACKAGE_LIBDRM_INSTALL_TESTS=y$' cfw/out/artifacts/buildroot-r36s.config
+          grep '^BR2_TARGET_ROOTFS_EXT2_LABEL="ROOTFS"$' cfw/out/artifacts/buildroot-r36s.config
+          file cfw/out/artifacts/rootfs-r36s.ext4
+
+      - name: Upload R36S rootfs
+        uses: actions/upload-artifact@v4
+        with:
+          name: r36s-cfw-rootfs-buildroot-2026.08
+          path: |
+            cfw/out/artifacts/rootfs-r36s.ext4
+            cfw/out/artifacts/buildroot-r36s.config
+            cfw/boot/boot.ini
+            cfw/docs/FIRST_BOOT.md
+          if-no-files-found: error
