@@ -1,0 +1,91 @@
+#!/bin/sh
+
+LOG=/var/log/r36s-bringup.log
+
+collect() {
+    echo "=== R36S CFW bring-up report ==="
+    date
+    echo
+
+    echo "[kernel]"
+    uname -a
+    cat /proc/cmdline
+    echo
+
+    echo "[cpu]"
+    grep -E '^(processor|model name|CPU architecture|CPU part|Hardware)' /proc/cpuinfo 2>/dev/null || true
+    echo
+
+    echo "[memory]"
+    grep -E '^(MemTotal|MemFree|MemAvailable|CmaTotal|CmaFree):' /proc/meminfo 2>/dev/null || true
+    echo
+
+    echo "[drm]"
+    ls -l /dev/dri 2>/dev/null || true
+    for n in /sys/class/drm/*/status /sys/class/drm/*/modes; do
+        [ -r "$n" ] || continue
+        echo "--- $n"
+        cat "$n"
+    done
+    echo
+
+    if command -v modetest >/dev/null 2>&1; then
+        echo "[modetest connectors]"
+        modetest -c 2>&1 || true
+        echo
+    fi
+
+    echo "[input]"
+    for n in /sys/class/input/event*/device/name; do
+        [ -r "$n" ] || continue
+        printf '%s: ' "$n"
+        cat "$n"
+    done
+    echo
+
+    echo "[thermal]"
+    for n in /sys/class/thermal/thermal_zone*/temp; do
+        [ -r "$n" ] || continue
+        printf '%s: ' "$n"
+        cat "$n"
+    done
+    echo
+
+    echo "[cpufreq]"
+    for n in /sys/devices/system/cpu/cpufreq/policy*/scaling_cur_freq; do
+        [ -r "$n" ] || continue
+        printf '%s: ' "$n"
+        cat "$n"
+    done
+    echo
+
+    echo "[driver log]"
+    dmesg | grep -Ei 'panfrost|mali|drm|rockchip|vop|dsi|panel|rk817|mmc|saradc|adc-joystick|thermal' || true
+}
+
+case "$1" in
+    start)
+        mkdir -p /var/log /sys/kernel/debug
+        mountpoint -q /sys/kernel/debug 2>/dev/null || mount -t debugfs debugfs /sys/kernel/debug 2>/dev/null || true
+
+        i=0
+        while [ "$i" -lt 5 ] && [ ! -e /dev/dri/card0 ]; do
+            sleep 1
+            i=$((i + 1))
+        done
+
+        collect >"$LOG" 2>&1
+        cat "$LOG"
+        ;;
+    stop)
+        ;;
+    restart)
+        "$0" start
+        ;;
+    *)
+        echo "usage: $0 {start|stop|restart}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0
