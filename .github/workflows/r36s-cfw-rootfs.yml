@@ -4,9 +4,21 @@ on:
   push:
     branches: [r36s-cfw]
     paths:
-      - 'cfw/**'
+      - 'cfw/config/buildroot-r36s_defconfig'
+      - 'cfw/rootfs-overlay/**'
+      - 'cfw/scripts/build-rootfs.sh'
+      - 'cfw/scripts/post-build-rootfs.sh'
+      - 'cfw/scripts/fetch-sources.sh'
+      - 'cfw/external.desc'
+      - 'cfw/Config.in'
+      - 'cfw/external.mk'
+      - 'cfw/versions.env'
       - '.github/workflows/r36s-cfw-rootfs.yml'
   workflow_dispatch:
+
+concurrency:
+  group: r36s-cfw-rootfs
+  cancel-in-progress: true
 
 jobs:
   rootfs:
