@@ -46,7 +46,7 @@ for sym in DRM_ROCKCHIP DRM_PANFROST DRM_PANEL_GENERIC_DSI PHY_ROCKCHIP_INNO_DSI
 done
 
 # shellcheck disable=SC2086
-make -C "$KSRC" $MAKE_ARGS -j"$JOBS" Image rk3326-r36s.dtb
+make -C "$KSRC" $MAKE_ARGS -j"$JOBS" Image rockchip/rk3326-r36s.dtb
 
 ART="$CFW/out/artifacts"
 mkdir -p "$ART"
