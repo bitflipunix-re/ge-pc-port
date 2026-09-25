@@ -10,11 +10,11 @@ JOBS=${JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}
 
 [ -d "$KSRC" ] || {
     echo "kernel source not found: $KSRC" >&2
-    echo "run cfw/scripts/fetch-sources.sh first" >&2
+    echo "run: sh cfw/scripts/fetch-sources.sh" >&2
     exit 1
 }
 
-"$CFW/scripts/prepare-kernel.sh" "$KSRC"
+sh "$CFW/scripts/prepare-kernel.sh" "$KSRC"
 mkdir -p "$OUT"
 
 MAKE_ARGS="ARCH=arm64 O=$OUT"
@@ -38,13 +38,20 @@ make -C "$KSRC" $MAKE_ARGS defconfig
 # shellcheck disable=SC2086
 make -C "$KSRC" $MAKE_ARGS olddefconfig
 
+for sym in DRM_ROCKCHIP DRM_PANFROST DRM_PANEL_GENERIC_DSI PHY_ROCKCHIP_INNO_DSIDPHY; do
+    if ! grep -q "^CONFIG_${sym}=y$" "$OUT/.config"; then
+        echo "required config CONFIG_${sym}=y was not resolved" >&2
+        exit 1
+    fi
+done
+
 # shellcheck disable=SC2086
 make -C "$KSRC" $MAKE_ARGS -j"$JOBS" Image rk3326-r36s.dtb
 
 ART="$CFW/out/artifacts"
 mkdir -p "$ART"
-cp "$OUT/arch/arm64/boot/Image" "$ART/Image-6.12.111-r36s"
+cp "$OUT/arch/arm64/boot/Image" "$ART/Image-$KERNEL_VERSION-r36s"
 cp "$OUT/arch/arm64/boot/dts/rockchip/rk3326-r36s.dtb" "$ART/rk3326-r36s.dtb"
-cp "$OUT/.config" "$ART/kernel-6.12.111-r36s.config"
+cp "$OUT/.config" "$ART/kernel-$KERNEL_VERSION-r36s.config"
 
-printf 'built:\n  %s\n  %s\n'     "$ART/Image-6.12.111-r36s"     "$ART/rk3326-r36s.dtb"
+printf 'built:\n  %s\n  %s\n'     "$ART/Image-$KERNEL_VERSION-r36s"     "$ART/rk3326-r36s.dtb"
