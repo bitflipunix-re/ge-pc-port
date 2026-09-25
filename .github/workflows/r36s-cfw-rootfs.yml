@@ -10,8 +10,6 @@ on:
       - 'cfw/scripts/post-build-rootfs.sh'
       - 'cfw/scripts/fetch-sources.sh'
       - 'cfw/external.desc'
-      - 'cfw/Config.in'
-      - 'cfw/external.mk'
       - 'cfw/versions.env'
       - '.github/workflows/r36s-cfw-rootfs.yml'
   workflow_dispatch:
