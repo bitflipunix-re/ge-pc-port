@@ -1,1 +1,1 @@
-# R36S CFW package hooks will be added here as custom components appear.
+include $(sort $(wildcard $(BR2_EXTERNAL_R36S_CFW_PATH)/package/*/*.mk))
