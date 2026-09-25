@@ -1,0 +1,43 @@
+name: R36S CFW kernel
+
+on:
+  push:
+    branches: [r36s-cfw]
+    paths:
+      - 'cfw/**'
+      - '.github/workflows/r36s-cfw-kernel.yml'
+  workflow_dispatch:
+
+jobs:
+  kernel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kernel build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y             bc bison flex libssl-dev libelf-dev             clang lld llvm make gcc             device-tree-compiler
+
+      - name: Fetch Linux 6.12 LTS
+        run: sh cfw/scripts/fetch-sources.sh kernel
+
+      - name: Build R36S Image and DTB
+        env:
+          JOBS: 4
+        run: sh cfw/scripts/build-kernel.sh
+
+      - name: Show resulting config
+        run: |
+          grep -E 'CONFIG_(DRM_ROCKCHIP|DRM_PANFROST|DRM_PANEL_GENERIC_DSI|PHY_ROCKCHIP_INNO_DSIDPHY)='             cfw/out/artifacts/kernel-6.12.111-r36s.config
+
+      - name: Upload bring-up kernel
+        uses: actions/upload-artifact@v4
+        with:
+          name: r36s-cfw-kernel-6.12.111
+          path: |
+            cfw/out/artifacts/Image-6.12.111-r36s
+            cfw/out/artifacts/rk3326-r36s.dtb
+            cfw/out/artifacts/kernel-6.12.111-r36s.config
+          if-no-files-found: error
