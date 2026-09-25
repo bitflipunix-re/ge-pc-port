@@ -1,1 +1,3 @@
-# R36S CFW currently uses only standard Buildroot packages.
+menu "R36S CFW packages"
+source "$BR2_EXTERNAL_R36S_CFW_PATH/package/r36s-gpu-probe/Config.in"
+endmenu
