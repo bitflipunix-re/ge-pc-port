@@ -58,6 +58,32 @@ jobs:
       - name: Validate graphics userspace
         run: |
           test -x cfw/out/graphics/target/usr/bin/kmscube
+          test -x cfw/out/graphics/target/usr/bin/r36s-gpu-probe
+          file cfw/out/graphics/target/usr/bin/r36s-gpu-probe
+          grep '^BR2_PACKAGE_R36S_GPU_PROBE=y
+          find cfw/out/graphics/target/usr/lib/dri -maxdepth 1 -type f -o -type l | tee cfw/out/artifacts/graphics-dri-files.txt
+          grep -R "Version: 26.2.3" cfw/out/graphics/staging/usr/lib/pkgconfig cfw/out/graphics/staging/usr/share/pkgconfig
+          if find cfw/out/graphics/target/usr/lib -maxdepth 1 -name 'libLLVM*' | grep -q .; then
+            echo "target LLVM libraries found; graphics image is not lean" >&2
+            exit 1
+          fi
+          grep '^BR2_PACKAGE_MESA3D_GALLIUM_DRIVER_PANFROST=y$' cfw/out/artifacts/buildroot-r36s-mesa-26.2.3.config
+          grep '^BR2_PACKAGE_KMSCUBE=y$' cfw/out/artifacts/buildroot-r36s-mesa-26.2.3.config
+          file cfw/out/artifacts/rootfs-r36s-mesa-26.2.3.ext4
+
+      - name: Upload graphics rootfs
+        uses: actions/upload-artifact@v4
+        with:
+          name: r36s-cfw-mesa-26.2.3-panfrost
+          path: |
+            cfw/out/artifacts/rootfs-r36s-mesa-26.2.3.ext4
+            cfw/out/artifacts/buildroot-r36s-mesa-26.2.3.config
+            cfw/out/artifacts/graphics-dri-files.txt
+            cfw/boot/boot.ini
+            cfw/docs/FIRST_BOOT.md
+            cfw/docs/GRAPHICS.md
+          if-no-files-found: error
+ cfw/out/artifacts/buildroot-r36s-mesa-26.2.3.config
           test -d cfw/out/graphics/target/usr/lib/dri
           find cfw/out/graphics/target/usr/lib/dri -maxdepth 1 -type f -o -type l | tee cfw/out/artifacts/graphics-dri-files.txt
           grep -R "Version: 26.2.3" cfw/out/graphics/staging/usr/lib/pkgconfig cfw/out/graphics/staging/usr/share/pkgconfig
