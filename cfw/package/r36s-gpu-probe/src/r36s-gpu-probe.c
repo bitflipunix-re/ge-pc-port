@@ -160,13 +160,36 @@ int main(void)
         return 16;
     }
 
-    if (!eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, ctx)) {
-        egl_fail("eglMakeCurrent(surfaceless)");
+    EGLSurface surface = EGL_NO_SURFACE;
+    int has_surfaceless =
+        egl_ext && strstr(egl_ext, "EGL_KHR_surfaceless_context");
+
+    if (!has_surfaceless) {
+        const EGLint pbuffer_attr[] = {
+            EGL_WIDTH, 1,
+            EGL_HEIGHT, 1,
+            EGL_NONE
+        };
+        surface = eglCreatePbufferSurface(dpy, cfg, pbuffer_attr);
+        if (surface == EGL_NO_SURFACE) {
+            egl_fail("eglCreatePbufferSurface");
+            eglDestroyContext(dpy, ctx);
+            eglTerminate(dpy);
+            gbm_device_destroy(gbm);
+            close(fd);
+            return 17;
+        }
+    }
+
+    if (!eglMakeCurrent(dpy, surface, surface, ctx)) {
+        egl_fail("eglMakeCurrent");
+        if (surface != EGL_NO_SURFACE)
+            eglDestroySurface(dpy, surface);
         eglDestroyContext(dpy, ctx);
         eglTerminate(dpy);
         gbm_device_destroy(gbm);
         close(fd);
-        return 17;
+        return 18;
     }
 
     const char *vendor = (const char *)glGetString(GL_VENDOR);
@@ -198,6 +221,8 @@ int main(void)
     }
 
     eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    if (surface != EGL_NO_SURFACE)
+        eglDestroySurface(dpy, surface);
     eglDestroyContext(dpy, ctx);
     eglTerminate(dpy);
     gbm_device_destroy(gbm);
