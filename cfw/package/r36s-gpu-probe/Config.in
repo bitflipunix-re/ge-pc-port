@@ -1,0 +1,10 @@
+config BR2_PACKAGE_R36S_GPU_PROBE
+	bool "r36s-gpu-probe"
+	depends on BR2_PACKAGE_HAS_LIBEGL
+	depends on BR2_PACKAGE_HAS_LIBGBM
+	depends on BR2_PACKAGE_HAS_LIBGLES
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	select BR2_PACKAGE_LIBDRM
+	help
+	  Minimal direct DRM/GBM/EGL/GLES probe for R36S CFW bring-up.
+	  It reports the active renderer and fails on software renderers.
