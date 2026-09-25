@@ -4,7 +4,13 @@ on:
   push:
     branches: [r36s-cfw]
     paths:
-      - 'cfw/**'
+      - 'cfw/board/r36s/**'
+      - 'cfw/config/kernel-r36s.fragment'
+      - 'cfw/scripts/fetch-sources.sh'
+      - 'cfw/scripts/prepare-kernel.sh'
+      - 'cfw/scripts/build-kernel.sh'
+      - 'cfw/scripts/verify-kernel-tree.sh'
+      - 'cfw/versions.env'
       - '.github/workflows/r36s-cfw-kernel.yml'
   workflow_dispatch:
 
