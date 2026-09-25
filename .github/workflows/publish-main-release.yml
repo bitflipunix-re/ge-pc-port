@@ -1,0 +1,102 @@
+name: Publish verified main alpha
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-main-release.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    env:
+      RELEASE_TAG: r36s-alpha-2026-09-24
+      RELEASE_TITLE: "ARM-GE R36S ARM64 Alpha — 2026-09-24"
+      TARGET_SHA: 0ac37cb4772dc6bbdc40610bf114c6b9d941d1b5
+      SOURCE_RUN_ID: "36040595333"
+      ARTIFACT_NAME: ge007-r36s-portmaster-alpha
+    steps:
+      - name: Download verified build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: release-assets
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+
+      - name: Re-verify release payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f release-assets/ge007.zip
+          test -f release-assets/ge007.zip.sha256
+          test -f release-assets/ge007.aarch64
+          test -f release-assets/ge007.sha256
+          (cd release-assets && sha256sum -c ge007.zip.sha256)
+          (cd release-assets && sha256sum -c ge007.sha256)
+          unzip -t release-assets/ge007.zip
+          if unzip -Z1 release-assets/ge007.zip | grep -Eq '\.(z64|n64|v64)$|(^|/)(pcmodels|pccg)\.bin$'; then
+            echo "Refusing to publish ROM or generated ROM-derived data" >&2
+            exit 1
+          fi
+
+      - name: Write release notes
+        shell: bash
+        run: |
+          cat > RELEASE_NOTES.md <<'EOF'
+          # ARM-GE R36S ARM64 Alpha
+
+          Experimental native AArch64 build of the reconstructed GoldenEye 007 codebase for R36S-class Linux handhelds using SDL2 + OpenGL ES.
+
+          **Build**
+          - Source: `0ac37cb4772dc6bbdc40610bf114c6b9d941d1b5`
+          - GitHub Actions run: `36040595333`
+          - Artifact: `ge007-r36s-portmaster-alpha`
+          - Artifact bundle digest: `sha256:8931ca023669aa3df97f7e29dbc9b6519c26cac81c1bd5d93931843c1ca5a1ac`
+          - Target: R36S / dArkOSRE / PortMaster
+          - Architecture: AArch64
+          - Graphics: SDL2 + GLES
+
+          **Included release assets**
+          - `ge007.zip` — PortMaster installer
+          - `ge007.zip.sha256` — installer checksum
+          - `ge007.aarch64` — native executable
+          - `ge007.sha256` — executable checksum
+
+          **ROM requirement**
+
+          No GoldenEye ROM or generated ROM-derived sidecars are included. Installers require the user to provide their own legally obtained GoldenEye 007 NTSC-U big-endian ROM at `ge007/data/ge007.ntsc-final.z64`.
+
+          Expected ROM SHA-1: `abe01e4aeb033b6c0836819f549c791b26cfde83`.
+
+          **Alpha status**
+
+          This is an experimental real-hardware alpha. Native ARM64 execution, SDL2/GLES rendering, menus, intro, in-mission rendering/gameplay, controller integration, PortMaster installation and first-run ROM-derived sidecar generation have been demonstrated. Gameplay correctness, spawn/stage behavior, rendering defects, audio/runtime behavior and broader handheld compatibility remain active work.
+          EOF
+
+      - name: Publish prerelease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; leaving it unchanged."
+            exit 0
+          fi
+          gh release create "$RELEASE_TAG" \
+            release-assets/ge007.zip \
+            release-assets/ge007.zip.sha256 \
+            release-assets/ge007.aarch64 \
+            release-assets/ge007.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$TARGET_SHA" \
+            --title "$RELEASE_TITLE" \
+            --notes-file RELEASE_NOTES.md \
+            --prerelease
