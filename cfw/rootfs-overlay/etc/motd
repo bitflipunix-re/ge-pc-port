@@ -1,0 +1,9 @@
+R36S CFW
+Linux 6.12 / RK3326 / Mali-G31 / Panfrost
+
+Bring-up report: /var/log/r36s-bringup.log
+Useful commands:
+  dmesg
+  modetest -c
+  evtest
+  cat /sys/kernel/debug/dri/0/state
