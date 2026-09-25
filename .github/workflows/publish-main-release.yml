@@ -38,8 +38,12 @@ jobs:
           test -f release-assets/ge007.zip.sha256
           test -f release-assets/ge007.aarch64
           test -f release-assets/ge007.sha256
-          (cd release-assets && sha256sum -c ge007.zip.sha256)
-          (cd release-assets && sha256sum -c ge007.sha256)
+          expected_zip="$(awk '{print $1}' release-assets/ge007.zip.sha256)"
+          actual_zip="$(sha256sum release-assets/ge007.zip | awk '{print $1}')"
+          test "$actual_zip" = "$expected_zip"
+          expected_bin="$(awk '{print $1}' release-assets/ge007.sha256)"
+          actual_bin="$(sha256sum release-assets/ge007.aarch64 | awk '{print $1}')"
+          test "$actual_bin" = "$expected_bin"
           unzip -t release-assets/ge007.zip
           if unzip -Z1 release-assets/ge007.zip | grep -Eq '\.(z64|n64|v64)$|(^|/)(pcmodels|pccg)\.bin$'; then
             echo "Refusing to publish ROM or generated ROM-derived data" >&2
