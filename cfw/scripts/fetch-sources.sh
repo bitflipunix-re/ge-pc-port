@@ -62,6 +62,7 @@ fetch_mesa() {
 fetch_buildroot() {
     tarball="$DL/buildroot-$BUILDROOT_VERSION.tar.xz"
     fetch "$BUILDROOT_URL" "$tarball"
+    verify "$BUILDROOT_SHA256" "$tarball"
     rm -rf "$SRC/buildroot-$BUILDROOT_VERSION"
     tar -C "$SRC" -xf "$tarball"
     printf 'buildroot: %s\n' "$SRC/buildroot-$BUILDROOT_VERSION"
