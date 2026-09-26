@@ -5244,7 +5244,7 @@ void sub_GAME_7F068508(GUNHAND handnum, f32 floor_y_pos)
  
         rand = ((f32) ((u32) randomGetNext())) * 2.3283064e-10f;
         casing->vel.y = ((rand * 2.5f) * 0.0625f) + 2.5f;
-        casing->vel.z = frac * 0.0f;
+        casing->vel.z = 0.0f;
  
         mtx4RotateVecInPlace(THROWMTX, &casing->vel);
  
