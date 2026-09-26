@@ -1262,8 +1262,9 @@ static void valueText(const struct Row *r, char *out, int n)
         videoGetWindowSize(&w, &h);
         if (w > 0 && h > 0) {
             const int pct = (int)lround(v);
-            snprintf(out, n, "%dx%d  %d%%",
-                     (w * pct + 50) / 100, (h * pct + 50) / 100, pct);
+            snprintf(out, n, "%dx%d > %dx%d  %d%%",
+                     (w * pct + 50) / 100, (h * pct + 50) / 100,
+                     w, h, pct);
         } else {
             snprintf(out, n, "%d%%", (int)lround(v));
         }
