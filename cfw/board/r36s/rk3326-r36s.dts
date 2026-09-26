@@ -294,9 +294,10 @@
 		regulator-name = "vcc_host";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-
-		gpio = <&gpio0 RK_PB7 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vcc5_usb>;
 		regulator-always-on;
 		regulator-boot-on;
 		vin-supply = <&usb_midu>;
@@ -744,6 +745,12 @@
 	vcc18-lcd {
 		vcc18_lcd_n: vcc18-lcd-n {
 			rockchip,pins = <3 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	vcc5-usb {
+		vcc5_usb: vcc5-usb {
+			rockchip,pins = <3 RK_PA4 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
