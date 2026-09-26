@@ -1661,6 +1661,10 @@ void lvlViewMoveTick(void)
 
 void lvlUnloadStageTextData(void)
 {
+#ifdef PORT
+    osSyncPrintf("PORT_TRANSITION unload-stage begin stage=%d player=%p\n",
+                 (int)g_CurrentStageToLoad, (void *)g_CurrentPlayer);
+#endif
     if (g_MpSoundStateRelated != NULL)
     {
         if (sndGetPlayingState(g_MpSoundStateRelated) != AL_STOPPED)
@@ -1688,6 +1692,10 @@ void lvlUnloadStageTextData(void)
     cleanupplayersoundrelated();
     set_missionstate_zero();
     cleanup_rooms();
+#ifdef PORT
+    osSyncPrintf("PORT_TRANSITION unload-stage done stage=%d\n",
+                 (int)g_CurrentStageToLoad);
+#endif
 }
 
 
