@@ -51,8 +51,6 @@ for root in SCAN_ROOTS:
 
         for rx, why in FORBIDDEN:
             for m in rx.finditer(text):
-                if "g_sndPlayerPtr" in m.group(0) and snd_member_is_guarded(text, m.start()):
-                    continue
                 line = text.count("\n", 0, m.start()) + 1
                 failures.append(f"{rel}:{line}: {why}: {m.group(0)!r}")
 
