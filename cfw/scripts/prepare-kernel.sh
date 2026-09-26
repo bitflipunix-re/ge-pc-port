@@ -78,12 +78,12 @@ dw_mipi_dsi_phy_get_timing(void *priv_data, unsigned int lane_mbps,
 {
         /*
          * PX30/RK3326 INNO D-PHY fixed timing.
-         * Backported from the current Rockchip DSI timing correction.
+         * Match the downstream Rockchip DSI transition timing used by the\n         * known-good vendor-era path: 0x40 for all four transitions.
          */
         timing->clk_lp2hs = 0x40;
         timing->clk_hs2lp = 0x40;
-        timing->data_lp2hs = 0x10;
-        timing->data_hs2lp = 0x14;
+        timing->data_lp2hs = 0x40;
+        timing->data_hs2lp = 0x40;
 
         return 0;
 }"""
