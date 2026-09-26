@@ -1271,49 +1271,72 @@ Gfx *optionsOverlayEmit(void)
     gDPSetTexturePersp(gdl++, G_TP_NONE);
     gDPSetScissor(gdl++, G_SC_NON_INTERLACE, 0, 0, W, H);
 
-    /* Fullscreen glass shell. Dark neutral base + cyan/gold accents keeps the
-     * UI visually separate from GoldenEye's original watch/front-end art. */
-    gdl = fillRect(gdl, 0, 0, W, H, 0, 0, 0, 150);
-    gdl = fillRect(gdl, 7, 5, W - 8, H - 7, 9, 14, 20, 238);
-    gdl = fillRect(gdl, 7, 5, W - 8, 22, 15, 25, 34, 250);
-    gdl = fillRect(gdl, 7, 40, W - 8, 41, 70, 215, 190, 235);
-    gdl = fillRect(gdl, 7, H - 22, W - 8, H - 7, 12, 20, 28, 248);
+    /* Port Control "frosted glass": a restrained translucent stack rather
+     * than an opaque debug menu. Geometry derives from the live VI dimensions,
+     * so 320x240 handheld output and larger PC/Deck modes share one layout. */
+    {
+        const int mx = OV_MARGIN_X;
+        const int my = OV_MARGIN_Y;
+        const int footerTop = H - ((H >= 300) ? 28 : 22);
 
-    /* Top tab strip. */
-    const int tabLeft = 14, tabRight = W - 14, tabSpan = tabRight - tabLeft;
+        gdl = fillRect(gdl, 0, 0, W, H, 1, 5, 10, 118);                    /* dim */
+        gdl = fillRect(gdl, mx - 1, my - 1, W - mx, H - my, 62, 218, 208, 96); /* glass rim */
+        gdl = fillRect(gdl, mx, my, W - mx - 1, H - my - 1, 7, 14, 24, 218);   /* pane */
+        gdl = fillRect(gdl, mx + 2, my + 2, W - mx - 3, OV_TAB_Y - 6,
+                       28, 44, 58, 164);                                      /* top reflection */
+        gdl = fillRect(gdl, mx, OV_BODY_Y - 7, W - mx - 1, OV_BODY_Y - 6,
+                       79, 231, 213, 188);                                    /* cyan hairline */
+        gdl = fillRect(gdl, mx + 2, footerTop, W - mx - 3, H - my - 2,
+                       12, 25, 37, 205);                                      /* footer glass */
+    }
+
+    /* Top tab strip: selected page gets a luminous glass tile, inactive tabs
+     * remain translucent so the game is still perceptible behind the panel. */
+    const int tabLeft = OV_MARGIN_X + 6, tabRight = W - OV_MARGIN_X - 6;
+    const int tabSpan = tabRight - tabLeft;
     for (int i = 0; i < PAGE_COUNT; ++i) {
         int x0 = tabLeft + (tabSpan * i) / PAGE_COUNT;
         int x1 = tabLeft + (tabSpan * (i + 1)) / PAGE_COUNT - 2;
-        if (i == s_page)
-            gdl = fillRect(gdl, x0, OV_TAB_Y - 3, x1, OV_TAB_Y + 12, 28, 90, 92, 245);
-        else
-            gdl = fillRect(gdl, x0, OV_TAB_Y - 3, x1, OV_TAB_Y + 12, 17, 31, 42, 225);
+        if (i == s_page) {
+            gdl = fillRect(gdl, x0, OV_TAB_Y - 4, x1, OV_TAB_Y + 12, 39, 105, 112, 218);
+            gdl = fillRect(gdl, x0 + 1, OV_TAB_Y - 3, x1 - 1, OV_TAB_Y - 1, 116, 245, 225, 150);
+        } else {
+            gdl = fillRect(gdl, x0, OV_TAB_Y - 4, x1, OV_TAB_Y + 12, 15, 30, 43, 152);
+        }
     }
 
-    /* Rows as separated cards instead of one flat list. */
+    /* Settings are glass cards with a small selected-edge beacon. On wider
+     * logical modes cards gain a little extra inset automatically. */
     for (int p = s_scroll; p <= pLast; ++p) {
         const struct Row *r = &rows[s_visIdx[p]];
         int y = OV_ROW_Y(p - s_scroll);
         const int selected = (p == s_sel);
-        gdl = fillRect(gdl, 14, y - 3, W - 14, y + 11,
-                       selected ? 27 : 15, selected ? 51 : 27,
-                       selected ? 58 : 35, selected ? 245 : 220);
+        const int lx = OV_MARGIN_X + 6;
+        const int rx = W - OV_MARGIN_X - 6;
+        gdl = fillRect(gdl, lx, y - 4, rx, y + 11,
+                       selected ? 29 : 12, selected ? 55 : 27,
+                       selected ? 66 : 39, selected ? 224 : 152);
+        gdl = fillRect(gdl, lx + 1, y - 3, rx - 1, y - 2,
+                       selected ? 94 : 38, selected ? 214 : 73,
+                       selected ? 205 : 83, selected ? 125 : 66);
         if (selected)
-            gdl = fillRect(gdl, 14, y - 3, 17, y + 11, 91, 241, 201, 255);
+            gdl = fillRect(gdl, lx, y - 4, lx + 3, y + 11, 104, 247, 218, 255);
 
         if (r->kind == ROW_SLIDER && r->found) {
             double lo=rowLo(r), hi=rowHi(r);
             double f=(hi>lo)?(rowGet(r)-lo)/(hi-lo):0.0;
             if(f<0)f=0; if(f>1)f=1;
-            gdl=fillRect(gdl,bx0,y+3,bx1,y+6,44,55,64,255);
-            gdl=fillRect(gdl,bx0,y+3,bx0+(s32)((bx1-bx0)*f),y+6,87,231,193,255);
+            gdl=fillRect(gdl,bx0,y+3,bx1,y+6,30,48,59,210);
+            gdl=fillRect(gdl,bx0,y+3,bx0+(s32)((bx1-bx0)*f),y+6,92,235,207,240);
+            gdl=fillRect(gdl,bx0+(s32)((bx1-bx0)*f)-1,y+2,
+                         bx0+(s32)((bx1-bx0)*f)+1,y+7,184,255,241,230);
         }
     }
 
     gdl = microcode_constructor(gdl);
 
-    gdl = drawText(gdl, 14, 8, "ARM-GE // PORT CONTROL", 0x62f4c7ff);
-    gdl = drawTextR(gdl, W - 12, 8, "F10  X", 0xaebbc4ff);
+    gdl = drawText(gdl, OV_MARGIN_X + 7, OV_TOP, "ARM-GE // PORT CONTROL", 0x9ff8e4ff);
+    gdl = drawTextR(gdl, W - OV_MARGIN_X - 7, OV_TOP, "F10  CLOSE", 0x9aadb8ff);
 
     for (int i = 0; i < PAGE_COUNT; ++i) {
         int x0 = tabLeft + (tabSpan * i) / PAGE_COUNT;
@@ -1351,10 +1374,10 @@ Gfx *optionsOverlayEmit(void)
         double qf = qMax > 0 ? (double)q / (double)qMax : 0.0;
         if (qf < 0.0) qf = 0.0;
         if (qf > 1.0) qf = 1.0;
-        const int y0 = OV_BODY_Y + 5 * OV_LINE;
+        const int y0 = OV_BODY_Y + drawN * OV_LINE + 2;
         if (y0 + 30 < H - 22) {
             char qtxt[64];
-            gdl = fillRect(gdl, 14, y0, W - 14, y0 + 26, 12, 24, 31, 230);
+            gdl = fillRect(gdl, OV_MARGIN_X + 6, y0, W - OV_MARGIN_X - 6, y0 + 26, 10, 28, 38, 190);
             gdl = fillRect(gdl, 20, y0 + 15, W - 20, y0 + 19, 39, 50, 58, 255);
             gdl = fillRect(gdl, 20, y0 + 15,
                            20 + (s32)((W - 40) * qf), y0 + 19,
@@ -1369,46 +1392,46 @@ Gfx *optionsOverlayEmit(void)
     }
     else if (s_page == PAGE_SYSTEM) {
         const DamLabSnapshot *d = damLabGetSnapshot();
-        const int y0 = OV_BODY_Y + 2 * OV_LINE;
-        if (y0 + 78 < H - 22) {
-            char a[96], b[96], c[96], e[96];
+        const int y0 = OV_BODY_Y + drawN * OV_LINE + 2;
+        const int panelH = (H >= 300) ? 70 : 60;
+        if (y0 + panelH < H - 21) {
+            char a[112], b[112], c[112], e[112];
             double cpu = d ? d->cpu_percent : 0.0;
+            int swap = systemPerfSwappiness();
             if (cpu < 0.0) cpu = 0.0;
             if (cpu > 100.0) cpu = 100.0;
 
-            gdl = fillRect(gdl, 14, y0, W - 14, y0 + 74, 10, 22, 29, 235);
-            gdl = fillRect(gdl, 20, y0 + 18, W - 20, y0 + 21, 38, 49, 57, 255);
-            gdl = fillRect(gdl, 20, y0 + 18,
-                           20 + (s32)((W - 40) * cpu / 100.0), y0 + 21,
-                           cpu > 90.0 ? 217 : 91,
-                           cpu > 90.0 ? 167 : 241,
-                           cpu > 90.0 ? 88 : 201, 255);
+            gdl = fillRect(gdl, OV_MARGIN_X + 6, y0, W - OV_MARGIN_X - 6, y0 + panelH,
+                           8, 24, 34, 190);
+            gdl = fillRect(gdl, OV_MARGIN_X + 10, y0 + 16, W - OV_MARGIN_X - 10, y0 + 19,
+                           30, 51, 62, 215);
+            gdl = fillRect(gdl, OV_MARGIN_X + 10, y0 + 16,
+                           OV_MARGIN_X + 10 + (s32)((W - (OV_MARGIN_X + 10) * 2) * cpu / 100.0),
+                           y0 + 19,
+                           cpu > 90.0 ? 229 : 94,
+                           cpu > 90.0 ? 170 : 238,
+                           cpu > 90.0 ? 91 : 207, 240);
 
-            snprintf(a, sizeof(a), "CPU %3.0f%%   FPS %3.0f   AUDIO Q %d",
-                     d ? d->cpu_percent : 0.0,
-                     d ? d->fps : 0.0,
-                     audioGetSamplesBuffered());
-            snprintf(b, sizeof(b), "RAM %luM   FREE %luM",
+            snprintf(a, sizeof(a), "CPU %3.0f%%  FPS %3.0f  RAM %luM  FREE %luM",
+                     d ? d->cpu_percent : 0.0, d ? d->fps : 0.0,
                      d ? d->rss_kb / 1024ul : 0ul,
                      d ? d->mem_available_kb / 1024ul : 0ul);
-            snprintf(c, sizeof(c), "STAGE %d  ROOM %d  STAN %s",
-                     d ? d->stage : -1,
-                     d ? d->room : -1,
-                     (d && d->stan) ? "OK" : "NULL");
-            snprintf(e, sizeof(e), "POS %d %d %d   FLAGS %02X",
-                     d ? (int)d->pos_x : 0,
-                     d ? (int)d->pos_y : 0,
-                     d ? (int)d->pos_z : 0,
-                     d ? (unsigned)(d->anomaly_flags & 0xffu) : 0u);
+            snprintf(b, sizeof(b), "CPU GOV %s", systemPerfCpuGovernor());
+            snprintf(c, sizeof(c), "GPU GOV %s   SWAP %d",
+                     systemPerfGpuGovernor(), swap);
+            snprintf(e, sizeof(e), "%s  STAGE %d ROOM %d %s",
+                     systemPerfTuneStatus(),
+                     d ? d->stage : -1, d ? d->room : -1,
+                     (d && d->stan) ? "STAN OK" : "STAN NULL");
 
             gdl = microcode_constructor(gdl);
-            gdl = drawText(gdl, 20, y0 + 3, "LIVE RUNTIME", 0x62f4c7ff);
-            gdl = drawText(gdl, 20, y0 + 26, a, 0xd8e4e9ff);
-            gdl = drawText(gdl, 20, y0 + 38, b, 0xb7c8d0ff);
-            gdl = drawText(gdl, 20, y0 + 50, c,
-                           (d && d->stan) ? 0x8cebd1ff : 0xe2b768ff);
-            gdl = drawText(gdl, 20, y0 + 62, e,
-                           (d && d->anomaly_flags) ? 0xe2b768ff : 0x91f1c9ff);
+            gdl = drawText(gdl, OV_MARGIN_X + 11, y0 + 3, "LIVE HARDWARE", 0x9ff8e4ff);
+            gdl = drawText(gdl, OV_MARGIN_X + 11, y0 + 23, a, 0xe5f0f3ff);
+            gdl = drawText(gdl, OV_MARGIN_X + 11, y0 + 34, b, 0xbfd1d9ff);
+            gdl = drawText(gdl, OV_MARGIN_X + 11, y0 + 45, c, 0xbfd1d9ff);
+            if (panelH >= 70)
+                gdl = drawText(gdl, OV_MARGIN_X + 11, y0 + 56, e,
+                               (d && d->stan) ? 0x9ff0d7ff : 0xf0bc78ff);
         }
     }
 
@@ -1417,8 +1440,8 @@ Gfx *optionsOverlayEmit(void)
         snprintf(perf,sizeof(perf),"%s   Q %d   %s",
                  s_fpsText[0]?s_fpsText:"-- FPS",
                  audioGetSamplesBuffered(), kPageHints[s_page]);
-        gdl=drawText(gdl,14,H-18,perf,0x7fdcc4ff);
-        gdl=drawTextR(gdl,W-14,H-18,"LB/RB TAB   F10 CLOSE",0x7f929cff);
+        gdl=drawText(gdl,OV_MARGIN_X+7,H-18,perf,0x8cebd1ff);
+        gdl=drawTextR(gdl,W-OV_MARGIN_X-7,H-18,"LB/RB TAB   F10 CLOSE",0x81959fff);
     }
 
     gDPPipeSync(gdl++);
