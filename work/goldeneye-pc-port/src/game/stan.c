@@ -95,7 +95,11 @@ u8 list_of_tilesizes[] = {
 //D:80040F58
 struct StandTile * standTileStart = NULL;
 //D:80040F5C
+#ifdef PORT
+uintptr_t ptr_firstroom_0 = 0;
+#else
 s32 ptr_firstroom_0 = 0;
+#endif
 //D:80040F60
 struct StandTile* stanTileEnd = NULL;
 //D:80040F64
@@ -3243,20 +3247,28 @@ void sub_GAME_7F0B2F00(StandTilePoint** arg0) {
 
 void stanDetermineEOF(struct StanPrefixRecord *file /* canonically r */, s32 origBase, u8 *newBase)
 {
-    s32 delta;
     void **roomPtr;
     StandTile *tile;
     u8 *tileSizes;
-    
-    delta = ((s32) newBase) - origBase;
+
+#ifdef PORT
+    const intptr_t delta = (intptr_t)(uintptr_t)newBase - (intptr_t)(uint32_t)origBase;
+#else
+    s32 delta = ((s32) newBase) - origBase;
+#endif
     stan_prefix = file;
     
     #ifdef DEBUG
     assert(*r==0);
     #endif
-  
+
+#ifdef PORT
+    standTileStart = (StandTile *)((uintptr_t)file->ptr_firstroom + delta - (intptr_t)0x80);
+    ptr_firstroom_0 = (uintptr_t)((intptr_t)(uintptr_t)file->ptr_firstroom + delta);
+#else
     standTileStart = (StandTile *)(((s32)file->ptr_firstroom + delta) - 0x80);
     ptr_firstroom_0 = (s32)file->ptr_firstroom + delta;
+#endif
     
     newBase = list_of_tilesizes;
     roomPtr = (void **)&file->ptr_firstroom;
@@ -3265,13 +3277,17 @@ void stanDetermineEOF(struct StanPrefixRecord *file /* canonically r */, s32 ori
     {
         do
         {
+#ifdef PORT
+            *roomPtr = (void *)((intptr_t)(uintptr_t)(*roomPtr) + delta);
+#else
             *roomPtr = (void *) ((s32) (*roomPtr) + delta);
+#endif
             roomPtr++;
         }
         while (*roomPtr != NULL);
     }
     
-    tile = (StandTile *) (roomPtr + ((0, 1)));
+    tile = (StandTile *) (roomPtr + 1);
     
     if ((*(s32 *) tile) != 0)
     {
@@ -3281,9 +3297,14 @@ void stanDetermineEOF(struct StanPrefixRecord *file /* canonically r */, s32 ori
 
             // Fake but required for matching.
             if (tile->tail.half);
-            
+
+#ifdef PORT
+            tile = (StandTile *)((u8 *)tile
+                + (tileSizes = newBase)[(tile->tail.half >> 0xc) & 0xf]);
+#else
             tile = (StandTile *)((s32)tile
                 + (tileSizes = newBase)[(tile->tail.half >> 0xc) & 0xf]);
+#endif
         } 
         while (*(s32 *) tile != 0);
     }
