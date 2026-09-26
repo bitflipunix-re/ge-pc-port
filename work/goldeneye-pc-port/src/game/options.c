@@ -4033,25 +4033,25 @@ Gfx *draw_watch_mission_briefing_page(Gfx *gdl, Mtx *param_2)
         switch (mission_brief_index)
         {
             case BRIEF_INDEX_BACKGROUND:
-                sprintf(pageTitle, langGet(0xac38));
+                snprintf(pageTitle, sizeof(pageTitle), "%s", langGet(0xac38));
                 textWrap(0xd2, get_ptr_text_for_watch_breifing_page(BRIEFING_OVERVIEW), wrappedText, chars, font);
                 mission_brief_background_navigation();
                 break;
 
             case BRIEF_INDEX_M:
-                sprintf(pageTitle, langGet(0xac39));
+                snprintf(pageTitle, sizeof(pageTitle), "%s", langGet(0xac39));
                 textWrap(0xd2, get_ptr_text_for_watch_breifing_page(BRIEFING_M), wrappedText, chars, font);
                 mission_brief_m_briefing_navigation();
                 break;
 
             case BRIEF_INDEX_Q:
-                sprintf(pageTitle, langGet(0xac3a));
+                snprintf(pageTitle, sizeof(pageTitle), "%s", langGet(0xac3a));
                 textWrap(0xd2, get_ptr_text_for_watch_breifing_page(BRIEFING_Q), wrappedText, chars, font);
                 mission_brief_q_branch_navigation();
                 break;
 
             case BRIEF_INDEX_MONEYPENNY:
-                sprintf(pageTitle, langGet(0xac3b));
+                snprintf(pageTitle, sizeof(pageTitle), "%s", langGet(0xac3b));
                 textWrap(0xd2, get_ptr_text_for_watch_breifing_page(BRIEFING_MONEYPENNY), wrappedText, chars, font);
                 mission_brief_moneypenny_navigation();
                 break;
@@ -4076,7 +4076,7 @@ Gfx *draw_watch_mission_briefing_page(Gfx *gdl, Mtx *param_2)
                 visibleObjectiveIndex = 0;
 
                 setTextOverlapCorrection((j_text_trigger) ? (1) : (5));
-                sprintf(pageTitle, langGet(0xac3c));
+                snprintf(pageTitle, sizeof(pageTitle), "%s", langGet(0xac3c));
 
                 for (i = 0; i < objectiveGetCount(); i++)
                 {
