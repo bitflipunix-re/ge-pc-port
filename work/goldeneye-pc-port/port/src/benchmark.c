@@ -22,11 +22,10 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "platform.h"
 #if !defined(PLATFORM_WINDOWS)
 #include <unistd.h>
 #endif
-
-#include "platform.h"
 #include "system.h"
 #include "video.h"
 #include "systemperf.h"
