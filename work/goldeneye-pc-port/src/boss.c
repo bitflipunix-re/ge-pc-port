@@ -828,8 +828,16 @@ void bossReturnTitleStage(void) {
 #endif
     if ((bossGetStageNum() != LEVELID_CUBA) && (objectiveIsAllComplete() != 0x0)) {
         end_of_mission_briefing();
+#ifdef PORT
+        osSyncPrintf("PORT_TRANSITION mission-save done stage=%d\n",
+                     (int)bossGetStageNum());
+#endif
     }
     bossRunTitleStage();
+#ifdef PORT
+    osSyncPrintf("PORT_TRANSITION title-stage queued from=%d\n",
+                 (int)bossGetStageNum());
+#endif
 }
 
 /**
