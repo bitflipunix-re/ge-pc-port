@@ -418,8 +418,16 @@ void bheadAdjustAnimation(f32 speed)
 
                 modelSetAnimation(
                     &g_CurrentPlayer->model,
+#ifdef PORT
+                    /* anim_id is a serialized byte offset into the runtime
+                     * animation blob. Preserve the host pointer and add the
+                     * 32-bit token as an offset instead of truncating both
+                     * operands through s32. */
+                    (struct ModelAnimation *)&ptr_animation_table->data[(u32)g_BondMoveAnimationSetup[i].anim_id],
+#else
                     // match hack: addu address backwards
                     (struct ModelAnimation *) ((s32)g_BondMoveAnimationSetup[i].anim_id + (s32)&ptr_animation_table->data),
+#endif
                     (s32) g_CurrentPlayer->animFlipFlag,
                     startframe,
                     0.5f,
