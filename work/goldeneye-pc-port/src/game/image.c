@@ -206,11 +206,11 @@ s32 texInflateZlib(u8 *src, u8 *dst, s32 arg2, s32 forcenumimages, struct texpoo
     s32 imagebytesout;
     s32 numimages;
     s32 totalbytesout;
-    s32 format;
+    s32 format = 0;
     bool foundthething;
     bool writetocache;
-    s32 width;
-    s32 height;
+    s32 width = 0;
+    s32 height = 0;
     u8 *end;
     u8 *start;
     s32 numcolours;
@@ -218,7 +218,7 @@ s32 texInflateZlib(u8 *src, u8 *dst, s32 arg2, s32 forcenumimages, struct texpoo
     s32 unused;
     u8 scratch2[0x800];
     u8 scratch[0x2100];
-    u16 palette[0x100];
+    u16 palette[0x100] = {0};
 
     totalbytesout = 0;
     writetocache = FALSE;
@@ -401,8 +401,9 @@ s32 texAlignIndices(u8 *src, s32 width, s32 height, s32 format, u8 *dst)
     {
         indicesperbyte = 2;
     }
-    else if (indicesperbyte)
+    else
     {
+        return 0;
     }
 
     for (y = 0; y < height; y++)
@@ -900,13 +901,13 @@ s32 texInflateNonZlib(u8 *src, u8 *dst, s32 arg2, s32 forcenumimages, struct tex
     u32 stack;
     s32 i;
     s32 numimages;
-    s32 width;
-    s32 height;
+    s32 width = 0;
+    s32 height = 0;
     s32 compmethod;
     s32 j;
     s32 totalbytesout = 0;
     s32 imagebytesout;
-    s32 format;
+    s32 format = 0;
     s32 value;
     u8 *start;
     u8 *end;
