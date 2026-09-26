@@ -199,7 +199,7 @@ static struct Row rows[] = {
     { PAGE_GRAPHICS, "Video.RenderScale",        "Render resolution",   ROW_SLIDER, 25,   NULL,       0, 50, 200,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.VSync",              "VSync",               ROW_TOGGLE, 1,    kOnOff,     0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.FpsCap",             "Frame cap",           ROW_SLIDER, 10,   NULL,       0, 0, 360,   0,0,0,0,0 },
-    { PAGE_GRAPHICS, "Video.MSAA",               "MSAA",                ROW_MSAA,   0,    NULL,       1, 0,   0,   0,0,0,0,0 },
+    { PAGE_GRAPHICS, "Video.MSAA",               "MSAA",                ROW_MSAA,   0,    NULL,       0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.TAA",                "Temporal AA (TAA)",   ROW_ENUM,   1,    kTaaMode,   0, 0,   2,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.TextureFilter",      "Texture filter",      ROW_ENUM,   1,    kTexFilter,      0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.MipmapFilter",       "Mipmap filter",       ROW_ENUM,   1,    kMipmapFilter,   0, 0,   0,   0,0,0,0,0 },
