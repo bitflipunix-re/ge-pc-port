@@ -22,6 +22,9 @@ on:
       - 'package.py'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 concurrency:
   group: r36s-aarch64-${{ github.ref }}
   cancel-in-progress: true
