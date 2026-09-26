@@ -23,13 +23,13 @@
 
 static int cfgCpuGovernor = 0; /* 0 system, 1 schedutil, 2 performance, 3 powersave */
 static int cfgGpuGovernor = 0; /* 0 system, 1 simple_ondemand, 2 performance, 3 powersave */
-static int cfgRamProfile  = 0; /* 0 system, 1 low-swap, 2 balanced */
+static int cfgRamProfile  = 0; /* 0 system, 1 low-swap, 2 balanced, 3 game */
 
 PD_CONSTRUCTOR static void systemPerfConfigInit(void)
 {
     configRegisterInt("System.CpuGovernor", &cfgCpuGovernor, 0, 3);
     configRegisterInt("System.GpuGovernor", &cfgGpuGovernor, 0, 3);
-    configRegisterInt("System.RamProfile",  &cfgRamProfile,  0, 2);
+    configRegisterInt("System.RamProfile",  &cfgRamProfile,  0, 3);
 }
 
 static int readLine(const char *path, char *out, size_t n)
