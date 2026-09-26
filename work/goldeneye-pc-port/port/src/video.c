@@ -294,6 +294,11 @@ static void videoApplyImageOptions(void)
     gfx_set_anisotropy_level(cfgAniso);
     gfx_set_render_scale_percent(cfgRenderScale);
     gfx_set_taa_mode(cfgTAA);
+    /* Fast3D reallocates the scene FBO when the sample count changes, so
+     * MSAA can be switched live just like render scale. */
+    gfx_msaa_level = gfx_framebuffers_enabled
+        ? (cfgMSAA >= 8 ? 8 : cfgMSAA >= 4 ? 4 : cfgMSAA >= 2 ? 2 : 1)
+        : 1;
 }
 
 static void videoApplyTexFilter(void)
@@ -556,9 +561,9 @@ void videoStartFrame(void)
         videoApplyTexFilter();
         videoApplyImageOptions();
         sysLogPrintf(LOG_INFO, "video: live config applied "
-                     "(vsync=%d fpscap=%d texfilter=%d fov=%d aniso=%d render=%d%% taa=%d)",
+                     "(vsync=%d fpscap=%d texfilter=%d fov=%d aniso=%d render=%d%% msaa=%u taa=%d)",
                      cfgVSync, cfgFpsCap, cfgTexFilter, cfgFovScale, cfgAniso,
-                     cfgRenderScale, cfgTAA);
+                     cfgRenderScale, (unsigned)gfx_msaa_level, cfgTAA);
     }
 
     gfx_start_frame();
