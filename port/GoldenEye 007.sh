@@ -151,9 +151,16 @@ perf_apply() {
     *) gpu_gov="" ;;
   esac
 
+  vfs_cache_pressure=""
   case "$ram_sel" in
     1) swappiness="10" ;;
     2) swappiness="40" ;;
+    3)
+      # Game profile: reduce swap pressure and retain file/dentry cache without
+      # resizing zram, dropping caches, or making persistent kernel changes.
+      swappiness="5"
+      vfs_cache_pressure="50"
+      ;;
     *) swappiness="" ;;
   esac
 
@@ -190,6 +197,10 @@ perf_apply() {
 
   if [ -n "$swappiness" ] && [ -r /proc/sys/vm/swappiness ]; then
     perf_backup_write /proc/sys/vm/swappiness "$swappiness" "VM swappiness" || true
+  fi
+
+  if [ -n "$vfs_cache_pressure" ] && [ -r /proc/sys/vm/vfs_cache_pressure ]; then
+    perf_backup_write /proc/sys/vm/vfs_cache_pressure "$vfs_cache_pressure" "VM cache pressure" || true
   fi
 
   if [ -s "$PERF_STATE" ]; then
