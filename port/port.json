@@ -3,6 +3,7 @@
   "name": "ge007.zip",
   "items": [
     "GoldenEye 007.sh",
+    "GoldenEye Benchmark.sh",
     "ge007/"
   ],
   "items_opt": [],
@@ -12,9 +13,9 @@
       "bitflipunix",
       "Tomobobo710"
     ],
-    "desc": "Alpha native AArch64/GLES GoldenEye 007 source port for R36S with the ARM-GE Glass Control Deck. Supply your own verified US NTSC ROM; first launch generates ROM-derived sidecars locally.",
+    "desc": "Alpha native AArch64/GLES GoldenEye 007 source port for R36S with the ARM-GE Glass Control Deck and a launchable automated benchmark suite. Supply your own verified US NTSC ROM; first launch generates ROM-derived sidecars locally.",
     "desc_md": null,
-    "inst": "PortMaster install: install ge007.zip normally. Direct EmulationStation install: extract the ZIP into the active ROM volume's ports directory so 'GoldenEye 007.sh' sits beside the ge007/ folder, then refresh/restart EmulationStation. Put your own US NTSC ROM at ge007/data/ge007.ntsc-final.z64. PortMaster support files must already be installed; the PortMaster UI does not need to be opened to launch the game.",
+    "inst": "Install ge007.zip normally with PortMaster. Two Ports entries are installed: 'GoldenEye 007' for normal play and 'GoldenEye Benchmark' for the automated performance suite. Put your own US NTSC ROM at ge007/data/ge007.ntsc-final.z64.",
     "inst_md": null,
     "genres": [
       "action"

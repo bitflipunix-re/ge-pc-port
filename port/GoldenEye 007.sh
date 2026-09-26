@@ -4,6 +4,12 @@
 
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 
+BENCHMARK_SUITE=0
+if [ "${1:-}" = "--benchmark-suite" ]; then
+  BENCHMARK_SUITE=1
+  shift
+fi
+
 # EmulationStation launches this file directly from the Ports directory. Resolve
 # the installed game relative to this script first; fall back to PortMaster's
 # directory variable only for unusual/symlinked installations.
@@ -51,8 +57,13 @@ GAME="$GAMEDIR/ge007.aarch64"
 mkdir -p "$CONFDIR" "$GAMEDIR/data"
 cd "$GAMEDIR" || exit 1
 
-> "$GAMEDIR/log.txt"
-exec > >(tee "$GAMEDIR/log.txt") 2>&1
+if [ "$BENCHMARK_SUITE" -eq 1 ]; then
+  SESSION_LOG="$GAMEDIR/benchmark.log"
+else
+  SESSION_LOG="$GAMEDIR/log.txt"
+fi
+> "$SESSION_LOG"
+exec > >(tee "$SESSION_LOG") 2>&1
 
 export XDG_DATA_HOME="$CONFDIR"
 
@@ -296,10 +307,60 @@ echo "[Extract] PASS"
 perf_apply
 trap 'perf_restore' EXIT
 
-echo "[Launch] starting ge007.aarch64"
-"$GAME"
-GAME_RC=$?
-echo "[Exit] rc=$GAME_RC"
+if [ "$BENCHMARK_SUITE" -eq 1 ]; then
+  STAMP="$(date +%Y%m%d-%H%M%S)"
+  BENCH_ROOT="$GAMEDIR/benchmark-results/$STAMP"
+  SUMMARY="$BENCH_ROOT/summary.tsv"
+  mkdir -p "$BENCH_ROOT"
+
+  BENCH_WARMUP="${GE_BENCH_WARMUP:-5}"
+  BENCH_SECONDS="${GE_BENCH_SECONDS:-20}"
+  BENCH_TIMEOUT="${GE_BENCH_TIMEOUT:-60}"
+  BENCH_SCENARIOS="${GE_BENCH_SCENARIOS:-Dam:33 Facility:34 Runway:35 Silo:20 Jungle:37 Control:23}"
+
+  printf 'scenario\tstatus\tavg_fps\t1pct_low\t0.1pct_low\tp50_ms\tp95_ms\tp99_ms\tworst_ms\tcpu_pct\tpeak_rss_mib\tframes\tstutter33\tstutter50\tstutter100\n' > "$SUMMARY"
+
+  echo "=== GoldenEye PortMaster Benchmark ==="
+  echo "warmup=${BENCH_WARMUP}s measure=${BENCH_SECONDS}s timeout=${BENCH_TIMEOUT}s"
+  echo "results=$BENCH_ROOT"
+
+  BENCH_RC=0
+  for entry in $BENCH_SCENARIOS; do
+    name="${entry%%:*}"
+    num="${entry##*:}"
+    scenario_log="$BENCH_ROOT/${name}.log"
+    scenario_json="$BENCH_ROOT/${name}.json"
+
+    echo "[Benchmark] $name (-level_$num)"
+    "$GAME" --benchmark \
+      --benchmark-name "$name" \
+      --benchmark-warmup "$BENCH_WARMUP" \
+      --benchmark-seconds "$BENCH_SECONDS" \
+      --benchmark-timeout "$BENCH_TIMEOUT" \
+      --benchmark-out "$scenario_json" \
+      "-level_$num" 2>&1 | tee "$scenario_log"
+    scenario_rc=${PIPESTATUS[0]}
+
+    line="$(grep '^BENCH_TSV' "$scenario_log" | tail -1)"
+    if [ -n "$line" ]; then
+      printf '%s\n' "${line#BENCH_TSV	}" >> "$SUMMARY"
+    else
+      printf '%s\t%s\n' "$name" "runner_error_rc_$scenario_rc" >> "$SUMMARY"
+      BENCH_RC=1
+    fi
+  done
+
+  echo "=== Benchmark summary ==="
+  cat "$SUMMARY"
+  echo "[Benchmark] complete: $SUMMARY"
+  type pm_message >/dev/null 2>&1 && pm_message "GoldenEye benchmark complete. Results saved under ge007/benchmark-results/$STAMP"
+  GAME_RC=$BENCH_RC
+else
+  echo "[Launch] starting ge007.aarch64"
+  "$GAME" "$@"
+  GAME_RC=$?
+  echo "[Exit] rc=$GAME_RC"
+fi
 
 perf_restore
 trap - EXIT

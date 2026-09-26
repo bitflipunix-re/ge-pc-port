@@ -70,3 +70,32 @@ The SYSTEM page exposes live CPU/FPS/RAM telemetry plus conservative CPU/GPU gov
 The temporal AA option is ARM-GE's own temporal accumulation implementation; it is not NVIDIA TXAA.
 
 For debugging, check `ge007/log.txt`. A healthy overlay startup includes a `control map ... wired (0 missing)` line.
+
+
+## GoldenEye Benchmark PortMaster entry
+
+The package now installs a second EmulationStation/Ports entry:
+
+```text
+GoldenEye Benchmark
+```
+
+Launching it uses the same verified ROM, sidecars, controller environment and
+temporary performance profile as normal GoldenEye, then automatically runs:
+
+```text
+Dam -> Facility -> Runway -> Silo -> Jungle -> Control
+```
+
+Each scenario gets a warmup period followed by a timed measurement. Results
+include average FPS, 1%/0.1% lows, p50/p95/p99/worst frametimes, stutter counts,
+process CPU usage, peak RSS, CPU/GPU governors and swappiness.
+
+Reports are saved to:
+
+```text
+ge007/benchmark-results/YYYYMMDD-HHMMSS/
+```
+
+The suite exits back to EmulationStation when complete. The latest launcher log
+is also written to `ge007/benchmark.log`.
