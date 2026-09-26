@@ -75,6 +75,10 @@ REQUIRED = {
         ("Visibility traversal state, not a pointer.", "US visibility queue next field must remain an integer token on PORT"),
         ("u32 next;", "US s_bound_info must preserve its 32-bit next field on PORT"),
     ],
+    "src/game/title.c": [
+        ("(void *)(uintptr_t)(u32)virtualaddress", "stored title address token must zero-extend at the host pointer boundary"),
+        ("(Vtx *)(uintptr_t)(OS_K0_TO_PHYSICAL(barrelDisplayListPtr) | 0x80000000u)", "gunbarrel KSEG0 reconstruction must be an explicit low-address pointer conversion"),
+    ],
 }
 
 for root in SCAN_ROOTS:
