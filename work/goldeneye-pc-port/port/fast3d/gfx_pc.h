@@ -43,8 +43,20 @@ struct TextureCacheKey {
 
     struct Hasher {
         size_t operator()(const TextureCacheKey& key) const noexcept {
-            uintptr_t addr = (uintptr_t)key.texture_addr;
-            return (size_t)(addr ^ (addr >> 5));
+            /* The old hash used only texture_addr, so every format/size/palette
+             * variant sharing an arena address landed in one bucket. GE does
+             * exactly that for dynamic model/weapon textures. Mix the complete
+             * key so ordinary lookups stay close to O(1) on the ARM cores. */
+            size_t h = (size_t)((uintptr_t)key.texture_addr >> 4);
+            auto mix = [&h](size_t v) noexcept {
+                h ^= v + (size_t)0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+            };
+            mix((size_t)((uintptr_t)key.palette_addrs[0] >> 4));
+            mix((size_t)((uintptr_t)key.palette_addrs[1] >> 4));
+            mix((size_t)key.fmt | ((size_t)key.siz << 8) | ((size_t)key.palette_index << 16));
+            mix((size_t)key.size_bytes);
+            mix((size_t)key.palette_hash);
+            return h;
         }
     };
 };
