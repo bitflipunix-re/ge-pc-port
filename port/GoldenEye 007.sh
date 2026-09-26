@@ -125,6 +125,12 @@ perf_restore() {
 }
 
 perf_apply() {
+  # Recover from an interrupted previous launcher (power loss / shell kill)
+  # before establishing this run's baseline.
+  if [ -f "$PERF_STATE" ]; then
+    echo "[Performance] stale restore state found; restoring previous baseline"
+    perf_restore
+  fi
   rm -f "$PERF_STATE"
 
   cpu_sel="$(perf_ini_int System CpuGovernor)"
@@ -167,8 +173,11 @@ perf_apply() {
 
   if [ -n "$gpu_gov" ]; then
     found=0
+    seen=""
     for p in /sys/class/devfreq/*gpu*/governor /sys/class/devfreq/*mali*/governor; do
       [ -f "$p" ] || continue
+      case "|$seen|" in *"|$p|"*) continue ;; esac
+      seen="${seen:+$seen|}$p"
       found=1
       if perf_governor_supported "$p" "$gpu_gov"; then
         perf_backup_write "$p" "$gpu_gov" "GPU governor" || true
