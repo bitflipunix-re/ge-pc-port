@@ -346,11 +346,11 @@ void texSelect(Gfx **gdlptr, struct sImageTableEntry *tconfig, u32 arg2, s32 arg
 		u8 format;
 		u8 depth;
         s32 stack_padding;
-		s32 lutmode;
-		s32 depth2;
-		s32 lrs;
-        s32 sp138;
-		s32 line;
+		s32 lutmode = G_TT_NONE;
+		s32 depth2 = G_IM_SIZ_16b;
+		s32 lrs = 0;
+        s32 sp138 = 0;
+		s32 line = 0;
             
         u16* aa;
 
@@ -498,9 +498,9 @@ void texSelect(Gfx **gdlptr, struct sImageTableEntry *tconfig, u32 arg2, s32 arg
 			s32 lod;
 			u8 format;
 			u8 depth;
-			s32 lutmode;
-			s32 depth2;
-			s32 lrs;
+			s32 lutmode = G_TT_NONE;
+			s32 depth2 = G_IM_SIZ_16b;
+			s32 lrs = 0;
 
             tmem = 0;
             lod = (s32)tconfig->level;
