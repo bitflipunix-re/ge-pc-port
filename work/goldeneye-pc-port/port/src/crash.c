@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <string.h>
 
+extern void free(void *ptr);
+
 #include <PR/ultratypes.h>
 #include "system.h"
 #include "platform.h"
