@@ -154,13 +154,41 @@ static const char *const kMipmapFilter[] = { "OFF", "NEAREST", "TRILINEAR", "AUT
 static const char *const kScreenMode[]   = { "FULL", "WIDE", "CINEMA", NULL };
 static const char *const kScreenRatio[]  = { "NORMAL", "16:9", NULL };
 static const char *const kAimControl[]    = { "HOLD", "TOGGLE", NULL };
-static const char *const kGraphicsPreset[]= { "CUSTOM", "N64", "CRISP", "ENHANCED", "R36S", NULL };
+static const char *const kGraphicsPreset[]= { "CUSTOM", "N64", "CRISP", "ENHANCED", "R36S", "PERFORMANCE", NULL };
 static const char *const kAudioPreset[]   = { "CUSTOM", "LOW LATENCY", "BALANCED", "SAFE", NULL };
 static const char *const kTaaMode[]       = { "OFF", "TEMPORAL LOW", "TEMPORAL HIGH", NULL };
 static const char *const kCpuGovernor[]   = { "SYSTEM", "SCHEDUTIL", "PERFORMANCE", "POWERSAVE", NULL };
 static const char *const kGpuGovernor[]   = { "SYSTEM", "SIMPLE ONDEMAND", "PERFORMANCE", "POWERSAVE", NULL };
 static const char *const kRamProfile[]    = { "SYSTEM", "LOW SWAP", "BALANCED", "GAME", NULL };
 static const int         kMsaaSeq[]   = { 1, 2, 4, 8 };
+
+/* Complete graphics-preset definitions. Every preset owns the same fields so
+ * cycling between presets cannot inherit a hidden value from the previous one.
+ * In particular, AutoFOV only works when DrawDistance is back at 100. */
+static const char *const kGraphicsPresetKeys[] = {
+    "Video.MSAA",
+    "Video.RenderScale",
+    "Video.TAA",
+    "Video.TextureFilter",
+    "Video.MipmapFilter",
+    "Video.FramebufferEffects",
+    "Video.Anisotropy",
+    "Video.FixMipTextures",
+    "Video.WrapFix",
+    "Video.FovScale",
+    "Video.DrawDistanceAutoFov",
+    "Video.DrawDistance",
+    "Video.LodDistanceAutoFov",
+    "Video.LodDistance",
+};
+#define GRAPHICS_PRESET_FIELDS ((int)(sizeof(kGraphicsPresetKeys) / sizeof(kGraphicsPresetKeys[0])))
+static const int kGraphicsPresetValues[5][GRAPHICS_PRESET_FIELDS] = {
+    /* N64 */         { 1,100,0,0,1,1,1,1,0,100,0,100,0,100 },
+    /* CRISP */       { 1,125,0,0,0,1,1,1,0,100,0,150,0,150 },
+    /* ENHANCED */    { 4,125,1,2,2,1,8,1,0,115,1,100,0,200 },
+    /* R36S */        { 1,100,0,1,2,1,2,1,0,100,0,125,0,100 },
+    /* PERFORMANCE */ { 1, 75,0,1,1,1,1,1,0,100,0,100,0, 75 },
+};
 
 /* Windowed-mode resolution presets. Filtered at init to those that fit the
  * desktop; the Resolution row cycles the surviving list. */
@@ -200,7 +228,7 @@ struct Row {
 
 static struct Row rows[] = {
     /* Graphics */
-    { PAGE_GRAPHICS, "__GraphicsPreset",          "Graphics preset",     ROW_ENUM,   1,    kGraphicsPreset, 0, 0,   4,   0,0,0,0,0 },
+    { PAGE_GRAPHICS, "__GraphicsPreset",          "Graphics preset",     ROW_ENUM,   1,    kGraphicsPreset, 0, 0,   5,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.Fullscreen",         "Fullscreen",          ROW_TOGGLE, 1,    kOnOff,     0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "__Resolution",             "Output resolution",   ROW_RES,    0,    NULL,       0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.RenderScale",        "Internal resolution", ROW_SLIDER, 25,   NULL,       0, 50, 200,   0,0,0,0,0 },
@@ -564,12 +592,14 @@ static void overlayInit(void)
 }
 
 static int cheatIdForKey(const char *key);
+static struct Row *rowByKey(const char *key);
+static int graphicsPresetDetect(void);
 
 static double rowGet(const struct Row *r)
 {
     if (strcmp(r->key, "__ScreenMode") == 0) return (double)cur_player_get_screen_setting();
     if (strcmp(r->key, "__ScreenRatio") == 0) return (double)get_screen_ratio();
-    if (strcmp(r->key, "__GraphicsPreset") == 0) return (double)s_graphicsPreset;
+    if (strcmp(r->key, "__GraphicsPreset") == 0) return (double)graphicsPresetDetect();
     if (strcmp(r->key, "__AudioPreset") == 0) return (double)s_audioPreset;
     if (strcmp(r->key, "__AutoAim") == 0) return (double)cur_player_get_autoaim();
     if (strcmp(r->key, "__AimControl") == 0) return (double)cur_player_get_aim_control();
@@ -611,6 +641,38 @@ static struct Row *rowByKey(const char *key)
         }
     }
     return NULL;
+}
+
+static int rowConfigInt(const char *key, int *out)
+{
+    struct Row *r = rowByKey(key);
+    if (!r || !r->found || !r->ptr) return 0;
+    switch (r->type) {
+    case CONFIG_OPT_INT:   *out = *(int *)r->ptr; return 1;
+    case CONFIG_OPT_UINT:  *out = (int)*(unsigned int *)r->ptr; return 1;
+    case CONFIG_OPT_FLOAT: *out = (int)lround(*(float *)r->ptr); return 1;
+    default: return 0;
+    }
+}
+
+/* Preset name is derived from the live config, not a sticky UI variable.
+ * A manual tweak therefore reads CUSTOM immediately, and a preset remains
+ * selected only while every field still matches its full definition. */
+static int graphicsPresetDetect(void)
+{
+    for (int p = 0; p < 5; ++p) {
+        int match = 1;
+        for (int i = 0; i < GRAPHICS_PRESET_FIELDS; ++i) {
+            int live = 0;
+            if (!rowConfigInt(kGraphicsPresetKeys[i], &live) ||
+                live != kGraphicsPresetValues[p][i]) {
+                match = 0;
+                break;
+            }
+        }
+        if (match) return p + 1;
+    }
+    return 0;
 }
 
 static int cheatIdForKey(const char *key)
@@ -748,66 +810,25 @@ static void rowSet(struct Row *r, double v)
         }
     }
 
-    /* Presets only write normal settings through rowSet, so all existing
-     * clamping/live-apply behavior stays centralized. */
+    /* Presets only write normal settings through rowSet, so clamping,
+     * renderer reconfiguration and restart semantics stay centralized. */
     if (strcmp(r->key, "__GraphicsPreset") == 0) {
         int p = (int)lround(v);
-        if (p < 0) p = 0; if (p > 4) p = 4;
+        if (p < 0) p = 0;
+        if (p > 5) p = 5;
         s_graphicsPreset = p;
         if (p != 0) {
             struct Row *x;
             s_presetDepth++;
-#define PRESET_SET(k,val) do { x=rowByKey(k); if (x && x->found) rowSet(x,(val)); } while(0)
-            if (p == 1) {
-                PRESET_SET("Video.MSAA", 1);
-                PRESET_SET("Video.RenderScale", 100);
-                PRESET_SET("Video.TAA", 0);
-                PRESET_SET("Video.TextureFilter", 0);
-                PRESET_SET("Video.MipmapFilter", 1);
-                PRESET_SET("Video.Anisotropy", 1);
-                PRESET_SET("Video.FovScale", 100);
-                PRESET_SET("Video.DrawDistanceAutoFov", 0);
-                PRESET_SET("Video.DrawDistance", 100);
-                PRESET_SET("Video.LodDistanceAutoFov", 0);
-                PRESET_SET("Video.LodDistance", 100);
-            } else if (p == 2) {
-                PRESET_SET("Video.MSAA", 1);
-                PRESET_SET("Video.RenderScale", 125);
-                PRESET_SET("Video.TAA", 0);
-                PRESET_SET("Video.TextureFilter", 0);
-                PRESET_SET("Video.MipmapFilter", 0);
-                PRESET_SET("Video.Anisotropy", 1);
-                PRESET_SET("Video.FovScale", 100);
-                PRESET_SET("Video.DrawDistanceAutoFov", 0);
-                PRESET_SET("Video.DrawDistance", 150);
-                PRESET_SET("Video.LodDistanceAutoFov", 0);
-                PRESET_SET("Video.LodDistance", 150);
-            } else if (p == 3) {
-                PRESET_SET("Video.MSAA", 4);
-                PRESET_SET("Video.RenderScale", 125);
-                PRESET_SET("Video.TAA", 1);
-                PRESET_SET("Video.TextureFilter", 2);
-                PRESET_SET("Video.MipmapFilter", 2);
-                PRESET_SET("Video.Anisotropy", 8);
-                PRESET_SET("Video.FovScale", 115);
-                PRESET_SET("Video.DrawDistanceAutoFov", 1);
-                PRESET_SET("Video.LodDistanceAutoFov", 0);
-                PRESET_SET("Video.LodDistance", 200);
-            } else if (p == 4) {
-                PRESET_SET("Video.MSAA", 1);
-                PRESET_SET("Video.RenderScale", 100);
-                PRESET_SET("Video.TAA", 0);
-                PRESET_SET("Video.TextureFilter", 1);
-                PRESET_SET("Video.MipmapFilter", 2);
-                PRESET_SET("Video.Anisotropy", 2);
-                PRESET_SET("Video.FovScale", 100);
-                PRESET_SET("Video.DrawDistanceAutoFov", 0);
-                PRESET_SET("Video.DrawDistance", 125);
-                PRESET_SET("Video.LodDistanceAutoFov", 0);
-                PRESET_SET("Video.LodDistance", 100);
+            for (int i = 0; i < GRAPHICS_PRESET_FIELDS; ++i) {
+                x = rowByKey(kGraphicsPresetKeys[i]);
+                if (x && x->found) {
+                    rowSet(x, (double)kGraphicsPresetValues[p - 1][i]);
+                }
             }
-#undef PRESET_SET
             s_presetDepth--;
+            sysLogPrintf(LOG_INFO, "optionsoverlay: graphics preset %s applied",
+                         kGraphicsPreset[p]);
         }
         return;
     }
