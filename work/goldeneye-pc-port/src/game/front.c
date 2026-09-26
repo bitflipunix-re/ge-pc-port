@@ -7397,7 +7397,7 @@ Gfx *constructor_menu0D_missioncomplete(Gfx *DL)
                     sprintf(stagename, "     (%s  %02d:%02d)", langGet(getStringID(LTITLE, TITLE_STR_273_BESTTIME)), besttime / 60, besttime % 60); //Best Time:
                 }
                 else {
-                    sprintf(stagename, "");
+                    stagename[0] = '\0';
                 }
                 DL = frontPrintText(DL, &x, &y, stagename, ptrFontZurichBoldChars, ptrFontZurichBold, 0xFF, viGetX(), viGetY(), 0, 0);
             }
