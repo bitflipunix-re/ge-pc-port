@@ -30,6 +30,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y             bc bison flex libssl-dev libelf-dev             clang lld llvm make gcc             device-tree-compiler
 
+      - name: Verify exact G80CA board definition
+        run: python3 cfw/scripts/verify-g80ca-board.py
+
       - name: Fetch Linux 6.12 LTS
         run: sh cfw/scripts/fetch-sources.sh kernel
 
