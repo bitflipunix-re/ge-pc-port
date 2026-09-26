@@ -6,6 +6,20 @@ ARM-GE is an open-source engineering effort to make the reconstructed GoldenEye 
 
 The current reference target is **R36S / dArkOSRE / PortMaster** using **AArch64 + SDL2 + OpenGL ES 3**.
 
+## Download the current beta
+
+**Most R36S / PortMaster users should download:**
+
+[**Download `ge007-r36s-portmaster-beta.zip`**](https://github.com/bitflipunix-re/ge-pc-port/releases/download/r36s-beta-2026-09-26/ge007-r36s-portmaster-beta.zip)
+
+Other useful release links:
+
+- [Standalone AArch64 executable — `ge007.aarch64`](https://github.com/bitflipunix-re/ge-pc-port/releases/download/r36s-beta-2026-09-26/ge007.aarch64)
+- [Current beta release page, checksums and notes](https://github.com/bitflipunix-re/ge-pc-port/releases/tag/r36s-beta-2026-09-26)
+- [Jump to R36S / PortMaster installation instructions](#install-on-r36s--darkosre--portmaster)
+- [Jump to source-build instructions](#build-from-source)
+
+No GoldenEye ROM or generated ROM-derived assets are included. You must provide your own legally obtained GoldenEye 007 NTSC-U big-endian ROM.
 ## Current release
 
 ARM-GE has now moved from **alpha** to **beta** for the R36S / PortMaster target.
@@ -15,7 +29,7 @@ The first player-focused beta prerelease was published on **26 September 2026** 
 - Release publication revision: `88e15245756e82074bf63b9312e7197122b1cd03`
 - Build run: `36271139262`
 - Release tag: `r36s-beta-2026-09-26`
-- Release: https://github.com/bitflipunix-re/ge-pc-port/releases/tag/r36s-beta-2026-09-26
+- Release: [r36s-beta-2026-09-26](https://github.com/bitflipunix-re/ge-pc-port/releases/tag/r36s-beta-2026-09-26)
 - Standalone executable: `ge007.aarch64` — 1,798,512 bytes
 - Executable asset SHA-256: `0ae0578d9260c9d3ff4930fb933a96dad53692e5b9b417a5bd51e3c31f07a458`
 - PortMaster installer: `ge007-r36s-portmaster-beta.zip` — 1,102,377 bytes
@@ -32,6 +46,20 @@ The beta keeps the features needed for normal use: the ARM-GE Glass Control Deck
 
 The release workflow verifies the AArch64 executable and installer, checks that the player package contains no benchmark launcher or development probe markers, refuses to publish ROM images or generated ROM-derived sidecars, and publishes both the standalone `.aarch64` executable and an explicitly named PortMaster installer package (while retaining `ge007.zip` for compatibility).
 
+## Repository map
+
+The repository is intentionally split between the reconstructed game source, the handheld integration layer and release tooling:
+
+- `work/goldeneye-pc-port/` — GoldenEye game/engine source and ARM64/GLES port work.
+- `port/` — PortMaster launcher and runtime integration files.
+- `bundle/` — files bundled into the distributable package.
+- `package.py` — builds the PortMaster installer ZIP around a compiled `ge007.aarch64`.
+- `build-arm.sh` — local ARM64 build helper.
+- `.github/workflows/build-r36s.yml` — canonical R36S AArch64 build, validation and beta-release workflow.
+- `docs/` — deeper technical and development documentation.
+- `watch/` — development support/watch tooling; it is not the player-facing entry point.
+
+If you only want to play the port, you do **not** need to understand the source tree: download the PortMaster beta above, provide the required ROM, and follow the install section.
 ## September 26 completion pass
 
 The current mainline includes the verified ARM64 work from the active development branches:
@@ -159,7 +187,7 @@ You need:
 
 1. an **AArch64 R36S-class handheld** running dArkOSRE/ArkOS-compatible PortMaster;
 2. a working **PortMaster** installation;
-3. the release file **`ge007.zip`**;
+3. the release file **`ge007-r36s-portmaster-beta.zip`** (the identical `ge007.zip` compatibility asset is also published);
 4. **Python 3 available on the handheld** for the one-time ROM-to-sidecar conversion;
 5. your own legally obtained **GoldenEye 007 US NTSC big-endian ROM**.
 
@@ -187,7 +215,7 @@ The launcher checks the SHA-1 when `sha1sum` is available and refuses a known-wr
 
 If PortMaster support is already installed on the firmware, **the PortMaster application does not need to be opened to launch or install this build manually**.
 
-Extract `ge007.zip` directly into the active ROM volume's `ports/` directory. The resulting layout must include:
+Extract `ge007-r36s-portmaster-beta.zip` directly into the active ROM volume's `ports/` directory. The release also publishes the same installer payload as `ge007.zip` for compatibility. The resulting layout must include:
 
 ```text
 /roms/ports/GoldenEye 007.sh
@@ -200,7 +228,7 @@ The root launcher is executable in the package and self-locates the adjacent `ge
 
 ### PortMaster autoinstall
 
-For ArkOS/dArkOSRE, copy `ge007.zip` into the PortMaster autoinstall directory:
+For ArkOS/dArkOSRE, copy `ge007-r36s-portmaster-beta.zip` into the PortMaster autoinstall directory (or use the compatibility filename `ge007.zip`):
 
 ```text
 /roms/tools/PortMaster/autoinstall/
