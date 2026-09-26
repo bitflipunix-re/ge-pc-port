@@ -68,7 +68,7 @@ export XDG_DATA_HOME="$CONFDIR"
 # binary itself never runs as root and never writes privileged sysfs/procfs.
 # ---------------------------------------------------------------------------
 PERF_INI="$GAMEDIR/data/ge007.ini"
-PERF_STATE="$GAMEDIR/.perf-state.$"
+PERF_STATE="$GAMEDIR/.perf-state.$$"
 
 perf_ini_int() {
   section="$1"
