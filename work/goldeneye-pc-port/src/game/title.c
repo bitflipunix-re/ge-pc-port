@@ -36,7 +36,11 @@ extern signed short sins(unsigned short x);
 
 // bss
 //CODE.bss:80069550
+#ifdef PORT
+u8 *barrelDisplayListPtr;
+#else
 s32 barrelDisplayListPtr;
+#endif
 //CODE.bss:80069554
 Gfx *gunbarrelgfxListPointer;
 //CODE.bss:80069558
@@ -64,9 +68,15 @@ f32 titleTransitionY;
 //CODE.bss:80069584
 s16 word_CODE_bss_80069584;
 //CODE.bss:80069588
+#ifdef PORT
+u8 *dword_CODE_bss_80069588;
+//CODE.bss:8006958C
+u8 *dword_CODE_bss_8006958C;
+#else
 s32 dword_CODE_bss_80069588;
 //CODE.bss:8006958C
 s32 dword_CODE_bss_8006958C;
+#endif
 //CODE.bss:80069590
 s32 virtualaddress;
 
@@ -487,7 +497,7 @@ void initializeGunBarrelIntro(u8 *gfxBuffer, s32 bufferSize)
     bufferSize -= 0x200;
     gfxBuffer += 0x200;
     
-    createGunbarrelRenderHole(barrelDisplayListPtr, 0x1E);
+    createGunbarrelRenderHole((struct s_display_list_something *)barrelDisplayListPtr, 0x1E);
     
     gunbarrelgfxListPointer = (Gfx*)gfxBuffer;
 #ifdef PORT
@@ -559,7 +569,7 @@ void initializeGunBarrelIntro(u8 *gfxBuffer, s32 bufferSize)
     modelSetAnimPlaySpeed(chrModelInstance, S_7F008E80_ANIM_SPEED, 0.0f);
 #undef S_7F008E80_ANIM_SPEED
     
-    animation = (struct ModelAnimation*)((s32)ptr_animation_table + (s32)&ANIM_DATA_bond_eye_walk);
+    animation = (struct ModelAnimation *)GE_ANIMDATA_PTR(bond_eye_walk);
     startframe = animation->unk04 - 0x44;
     while (startframe < 0)
     {

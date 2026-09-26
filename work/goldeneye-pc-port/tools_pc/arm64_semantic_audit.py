@@ -62,6 +62,11 @@ REQUIRED = {
         ("void *g_LangBanks[45];", "PORT language banks must retain native runtime pointers"),
         ("((u8 *)textbank_ptr + textslot_offset)", "language text offsets must rebase onto a native pointer"),
     ],
+    "src/game/title.c": [
+        ("u8 *barrelDisplayListPtr;", "gunbarrel vertex buffer must retain its native host pointer"),
+        ("u8 *dword_CODE_bss_80069588;", "title RLE source buffer must retain its native host pointer"),
+        ("GE_ANIMDATA_PTR(bond_eye_walk)", "gunbarrel walk animation must use the host-width animation boundary"),
+    ],
 }
 
 for root in SCAN_ROOTS:
