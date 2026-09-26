@@ -1227,7 +1227,7 @@ Gfx *frontDrawCursor(Gfx *DL)
 {
     f32 xypos[2];
     f32 halfedxy[2];
-    sImageTableEntry *image;
+    sImageTableEntry *image = crosshairimage;
     s32 unused;
     s32 option;
 
