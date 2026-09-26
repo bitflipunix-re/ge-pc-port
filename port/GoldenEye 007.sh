@@ -30,6 +30,14 @@ source "$controlfolder/control.txt"
 [ -f "${controlfolder}/mod_${CFW_NAME}.txt" ] && source "${controlfolder}/mod_${CFW_NAME}.txt"
 get_controls
 
+# PortMaster's mapper normalizes each handheld into SDL's GameController
+# layout. Export the generated mapping string explicitly so R36S/OGS Select
+# is seen as SDL BACK and Start+Select works identically from PortMaster or a
+# direct EmulationStation launch.
+if [ -n "${sdl_controllerconfig:-}" ]; then
+  export SDL_GAMECONTROLLERCONFIG="$sdl_controllerconfig"
+fi
+
 if [ -n "$SCRIPT_DIR" ] && [ -d "$SCRIPT_DIR/ge007" ]; then
   GAMEDIR="$SCRIPT_DIR/ge007"
 else
