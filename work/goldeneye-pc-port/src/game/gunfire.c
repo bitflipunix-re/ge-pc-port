@@ -2559,17 +2559,15 @@ void recall_joy2_hits_edit_flag(enum ITEM_IDS item, coord3d* arg1, s32 texture_i
     if ((sound_slot != NULL) && (texture_index >= 0))
     {
         img_sound = g_HitTypeSounds[g_Textures[texture_index].hitSound];
-        if (img_sound->sfx_len > 0)
+        if (img_sound != NULL && img_sound->sfx_len > 0)
         {
-            if (img_sound != NULL)
-            {
-                sfx_index = rnd2 % img_sound->sfx_len;
-                sound_state = sndPlaySfx((struct ALBankAlt_s* ) g_musicSfxBufferPtr, img_sound->sfx[sfx_index], (ALSoundState *)sound_slot);
-            }
+            sfx_index = rnd2 % img_sound->sfx_len;
+            sound_state = sndPlaySfx((struct ALBankAlt_s* ) g_musicSfxBufferPtr, img_sound->sfx[sfx_index], (ALSoundState *)sound_slot);
 
-            if (sound_state != NULL) {
-            chrobjSndCreatePostEventDefault(sound_state, arg1);
-        }
+            if (sound_state != NULL)
+            {
+                chrobjSndCreatePostEventDefault(sound_state, arg1);
+            }
         }
     }
 }
