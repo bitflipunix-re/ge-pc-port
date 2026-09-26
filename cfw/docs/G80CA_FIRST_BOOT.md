@@ -31,11 +31,9 @@ The boot script tries the common R36S U-Boot BOOT partition enumeration and fall
 
 Write `rootfs.ext4` into an ext4 partition.
 
-Its filesystem label must remain:
+The source rootfs is labeled `ROOTFS`, but the bundle packager reads the filesystem UUID and pins that exact UUID into the bundled `boot.ini` when `blkid` is available.
 
-`ROOTFS`
-
-The kernel uses `root=LABEL=ROOTFS rootwait`; it does not rely on a fixed Linux `mmcblkXpY` number.
+This avoids both a fixed Linux `mmcblkXpY` number and ambiguity if an older card happens to contain another partition with the same filesystem label.
 
 ## Expected first successful boot
 
