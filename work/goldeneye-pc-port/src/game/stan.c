@@ -530,7 +530,14 @@ void stanLoadFile(struct StanPrefixRecord *file)
     if (prefix);
     if (prefix);
 
+#ifdef PORT
+    /* This is an address rebasing operation inside the loaded stan blob, not C
+     * pointer arithmetic within the ptr_firstroom object itself. Integer-space
+     * arithmetic avoids fabricating an out-of-bounds intermediate pointer. */
+    standTileStart = (StandTile *)((uintptr_t)file->ptr_firstroom - (uintptr_t)0x80u);
+#else
     standTileStart = (StandTile *)(((u8 *)file->ptr_firstroom) - 0x80);
+#endif
 
     if (tokenFind(tokenIndexMask, aStanlinelog))
     {
