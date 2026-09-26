@@ -343,7 +343,7 @@ void mpCalculateAwards(bool gameoverdelay)
     s32 prev_player_num;
     s32 duration;
 
-    struct AwardMetrics metrics[4];
+    struct AwardMetrics metrics[4] = {0};
 
     player_count = getPlayerCount();
     duration = getMissiontimer();
@@ -1082,7 +1082,7 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
     char rankbuffer[4];
 #endif
     s32 two_player_x_offset;
-    char *text;
+    char *text = (char *)ascii_MP_watch_menu_BLANK;
     s32 scores[4];
     s32 i;
     TEXTCOLORS current_colour;
