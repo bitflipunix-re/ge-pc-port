@@ -801,6 +801,13 @@ LEVELID bossGetStageNum() {
  *     return to title screen from stage
  */
 void bossReturnTitleStage(void) {
+#ifdef PORT
+    /* Always-on alpha breadcrumb: one line per mission/death handoff. Avoid
+     * dereferencing player/stage-owned pointers here so the diagnostic itself
+     * remains safe during teardown. */
+    osSyncPrintf("PORT_TRANSITION return-title stage=%d complete=%d\n",
+                 (int)bossGetStageNum(), (int)objectiveIsAllComplete());
+#endif
 #ifdef BUGFIX_R1
     display_objective_status_text_on_status_change();
     objectivestatusDisableStatusDisplay();
