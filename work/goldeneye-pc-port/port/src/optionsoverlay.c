@@ -184,7 +184,7 @@ static const char *const kGraphicsPresetKeys[] = {
 };
 #define GRAPHICS_PRESET_FIELDS ((int)(sizeof(kGraphicsPresetKeys) / sizeof(kGraphicsPresetKeys[0])))
 static const int kGraphicsPresetValues[5][GRAPHICS_PRESET_FIELDS] = {
-    /* N64 */         { 1,100,0,0,1,1,1,0,100,0,100,0,100 },
+    /* N64 */         { 1,100,0,2,2,1,1,0,100,0,100,0,100 },
     /* CRISP */       { 1,125,0,0,0,1,1,0,100,0,150,0,150 },
     /* ENHANCED */    { 4,125,1,2,2,8,1,0,115,1,100,0,200 },
     /* R36S */        { 1,100,0,1,2,2,1,0,100,0,125,0,100 },
