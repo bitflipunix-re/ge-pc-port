@@ -1441,8 +1441,8 @@ void texInflateHuffman(u8 *dst, s32 numiterations, s32 chansize)
 	s32 sum;
 	u16 minfreq1;
 	u16 minfreq2;
-	s32 minindex1; // 5c
-	s32 minindex2; // 58
+	s32 minindex1 = 0; // 5c
+	s32 minindex2 = 0; // 58
 	s32  done = 0;
 
 	// Read the frequencies list
