@@ -1,0 +1,53 @@
+name: Discord main build updates
+
+on:
+  workflow_run:
+    workflows:
+      - GoldenEye AArch64 R36S GLES Build
+    branches:
+      - main
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  notify:
+    if: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-24.04
+    env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_MAIN_BUILDS }}
+      RUN_URL: ${{ github.event.workflow_run.html_url }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      TITLE: ${{ github.event.workflow_run.display_title }}
+      REPOSITORY: ${{ github.repository }}
+    steps:
+      - name: Post main build result to Discord
+        if: ${{ env.DISCORD_WEBHOOK != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          short_sha="${SHA:0:7}"
+          case "$CONCLUSION" in
+            success) icon="✅"; label="BUILD PASSED" ;;
+            failure) icon="❌"; label="BUILD FAILED" ;;
+            cancelled) icon="⚪"; label="BUILD CANCELLED" ;;
+            *) icon="ℹ️"; label="BUILD ${CONCLUSION^^}" ;;
+          esac
+
+          export CONTENT="$icon **$label — main**\n\`$short_sha\` — $TITLE\n$RUN_URL"
+
+          python3 - <<'PY' > /tmp/discord-payload.json
+          import json, os
+          print(json.dumps({
+              "username": "ARM-GE Build Bot",
+              "content": os.environ["CONTENT"],
+              "allowed_mentions": {"parse": []},
+          }))
+          PY
+
+          curl --fail-with-body             --retry 3             --retry-delay 2             -H 'Content-Type: application/json'             -d @/tmp/discord-payload.json             "$DISCORD_WEBHOOK"
