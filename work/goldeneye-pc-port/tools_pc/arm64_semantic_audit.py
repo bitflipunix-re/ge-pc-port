@@ -54,6 +54,10 @@ REQUIRED = {
         ("obLoadBGFileBytesAtOffset(levelinfotable[levelentry_index].bg_seg_filename, (u8 *)header, 0, 0x40);", "BG header probe must use the native stack pointer directly"),
         ("bg_room_data *probe_rooms =", "BG header probe must remain local/full-width on PORT"),
     ],
+    "src/game/model.c": [
+        ("MODEL_U32_PTR(ModelAnimBitField, anim->bitDescriptors)", "animation bit-descriptor token must zero-extend at the pointer boundary"),
+        ("MODEL_U32_PTR(u8, model->unk34)", "cached animation frame addresses must zero-extend at the pointer boundary"),
+    ],
 }
 
 for root in SCAN_ROOTS:
