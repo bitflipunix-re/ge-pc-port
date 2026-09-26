@@ -765,7 +765,7 @@ static void gfx_opengl_select_texture(int tile, GLuint texture_id, bool linear_f
 }
 
 static void gfx_opengl_upload_texture(const uint8_t* rgba32_buf, uint32_t width, uint32_t height, bool gen_mipmaps) {
-#ifdef PORT
+#if defined(PORT) && defined(GE_DEV_PROBES)
     /* GE_TEXDUMP: PPM-dump every uploaded texture (first N) for B2/D161 triage.
      * D250: this runs on every texture upload -- cache the getenv() like the
      * gfx_pc.cpp import_texture() sites (uncached getenv() measured at ~50%
