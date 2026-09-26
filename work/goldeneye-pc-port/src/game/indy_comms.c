@@ -8,6 +8,7 @@ s32 indycommInit(void) {
         indy_ready = 1;
         indycommHostinit();
     }
+    return indy_ready;
 }
 
 void indycomm_removed(void) {
