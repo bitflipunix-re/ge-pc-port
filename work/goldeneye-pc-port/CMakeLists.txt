@@ -431,7 +431,6 @@ file(GLOB_RECURSE SRC_PORT      "${CMAKE_SOURCE_DIR}/port/src/*.c")
 file(GLOB_RECURSE SRC_PORT_CXX  "${CMAKE_SOURCE_DIR}/port/src/*.cpp")
 if(GE_BETA_RELEASE)
   list(FILTER SRC_PORT EXCLUDE REGEX ".*/benchmark\\.c$")
-  list(FILTER SRC_PORT EXCLUDE REGEX ".*/damlab\\.c$")
 endif()
 file(GLOB_RECURSE SRC_FAST3D    "${CMAKE_SOURCE_DIR}/port/fast3d/*.cpp"
                                "${CMAKE_SOURCE_DIR}/port/fast3d/glad/*.c")
