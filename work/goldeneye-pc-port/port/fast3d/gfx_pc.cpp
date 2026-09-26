@@ -56,7 +56,10 @@ uintptr_t gfxFramebuffer;
 #define RATIO_X (gfx_current_dimensions.width / (float)SCREEN_WIDTH)
 #define RATIO_Y (gfx_current_dimensions.height / (float)SCREEN_HEIGHT)
 
-#define MAX_BUFFERED 256
+/* Batch substantially more same-state triangles before handing them to GL.
+ * State changes still call gfx_flush() at exactly the same semantic points;
+ * this only reduces VBO uploads/draw calls on the host/GLES side. */
+#define MAX_BUFFERED 1024
 #define MAX_LIGHTS 4
 #define MAX_VERTICES 128
 #define MAX_VERTEX_COLORS 64
@@ -3878,8 +3881,14 @@ extern "C" void gfx_run(Gfx* commands) {
                                   gfx_current_dimensions.height != gfx_current_game_window_viewport.height;
 
             if (different_size) {
+                /* Resolve MSAA at the internal render resolution first, then
+                 * PRESENT that resolved image across the full physical output.
+                 * Previously this branch stopped after the first resolve, so
+                 * render scale could look like a smaller 75%-sized viewport
+                 * instead of a lower-resolution full-screen image. */
                 gfx_rapi->resolve_msaa_color_buffer(game_framebuffer_msaa_resolved, game_framebuffer);
                 gfxFramebuffer = (uintptr_t)gfx_rapi->get_framebuffer_texture_id(game_framebuffer_msaa_resolved);
+                gfx_rapi->resolve_msaa_color_buffer(0, game_framebuffer_msaa_resolved);
             } else {
                 gfx_rapi->resolve_msaa_color_buffer(0, game_framebuffer);
             }
