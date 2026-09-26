@@ -1546,8 +1546,17 @@ void gfx_opengl_resolve_msaa_color_buffer(int fb_id_target, int fb_id_source) {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, resolveFbo);
     }
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst_fbo);
-    glBlitFramebuffer(0, 0, fb_src.width, fb_src.height, 0, 0, fb_dst.width, fb_dst.height, GL_COLOR_BUFFER_BIT,
-                      GL_NEAREST);
+    {
+        /* An MSAA resolve itself must use NEAREST. Once the source is
+         * single-sample, however, a size-changing blit is the presentation
+         * scaler: use LINEAR so 75%/50% internal resolution fills the entire
+         * panel cleanly instead of behaving like a raw pixel-sized viewport. */
+        const bool scales = fb_src.width != fb_dst.width || fb_src.height != fb_dst.height;
+        const GLenum filter = (fb_src.msaa_level <= 1 && scales) ? GL_LINEAR : GL_NEAREST;
+        glBlitFramebuffer(0, 0, fb_src.width, fb_src.height,
+                          0, 0, fb_dst.width, fb_dst.height,
+                          GL_COLOR_BUFFER_BIT, filter);
+    }
     /* current_framebuffer is an fb_id, not a GL name. */
     glBindFramebuffer(GL_FRAMEBUFFER, current_framebuffer == 0 ? 0 : framebuffers[current_framebuffer].fbo);
     glEnable(GL_SCISSOR_TEST);
