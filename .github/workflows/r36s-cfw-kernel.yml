@@ -10,6 +10,7 @@ on:
       - 'cfw/scripts/prepare-kernel.sh'
       - 'cfw/scripts/build-kernel.sh'
       - 'cfw/scripts/verify-kernel-tree.sh'
+      - 'cfw/scripts/verify-g80ca-board.py'
       - 'cfw/versions.env'
       - '.github/workflows/r36s-cfw-kernel.yml'
   workflow_dispatch:
