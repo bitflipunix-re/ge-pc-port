@@ -29,6 +29,10 @@ FORBIDDEN = [
         ),
         "audio queue pointer formed before NULL guard",
     ),
+    (
+        re.compile(r"ptr_bg_data\s*=\s*\(\s*s32\s*\)\s*header"),
+        "native stack BG probe routed through 32-bit address carrier",
+    ),
 ]
 
 SUSPICIOUS = [
@@ -46,6 +50,9 @@ files = 0
 REQUIRED = {
     "src/game/bondview2.c": [
         ("f32 pointbuf[12];", "host intro swirl spline buffer must hold four coord3d points"),
+    ],
+    "src/game/bg.h": [
+        ("(u8 *)(base) + (u32)((u32)(off) + 0xF1000000u)", "BG segment rebasing must retain the full host base pointer"),
     ],
 }
 
