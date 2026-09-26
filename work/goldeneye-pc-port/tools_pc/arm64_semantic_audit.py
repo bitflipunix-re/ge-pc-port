@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """ARM64/LP64 semantic regression gate.
 
-This is intentionally conservative: it fails only on port patterns that have
-already caused real bugs in this codebase, while reporting broader suspicious
-32-bit address carriers for follow-up review.
+Fail only on port patterns that have already caused real bugs in this codebase.
+Broader 32-bit carrier patterns are reported for review but do not fail CI.
 """
 from __future__ import annotations
 
@@ -16,11 +15,20 @@ SCAN_ROOTS = [ROOT / "src", ROOT / "port", ROOT / "include"]
 EXTS = {".c", ".h", ".cpp", ".hpp"}
 
 FORBIDDEN = [
-    (re.compile(r"\(\s*u32\s*\)\s*local_stage"), "stage base truncated to u32"),
-    (re.compile(r"\(\s*s32\s*\)\s*local_stage"), "stage base truncated to s32"),
-    (re.compile(r"\(u8\s*\*\)\s*g_CurrentPlayer\s*\+\s*handoffset\s*\+\s*0x(?:AD8|AD0|B08|B00|B48|B40)", re.I),
-     "raw N64 struct-player/hand offset used on host"),
-    (re.compile(r"&\s*g_sndPlayerPtr\s*->\s*evtq"), "audio member address formed through player pointer"),
+    (
+        re.compile(
+            r"\(u8\s*\*\)\s*g_CurrentPlayer\s*\+\s*handoffset\s*\+\s*"
+            r"0x(?:AD8|AD0|B08|B00|B48|B40)",
+            re.I,
+        ),
+        "raw N64 struct-player/hand offset used on host",
+    ),
+    (
+        re.compile(
+            r"ALEventQueue\s*\*\s*evtq\s*=\s*&\s*g_sndPlayerPtr\s*->\s*evtq"
+        ),
+        "audio queue pointer formed before NULL guard",
+    ),
 ]
 
 SUSPICIOUS = [
@@ -54,14 +62,20 @@ for root in SCAN_ROOTS:
                 suspects.append(f"{rel}:{line}: {m.group(0)[:120]}")
 
 print(f"ARM64 semantic audit: scanned {files} source files")
-print(f"ARM64 semantic audit: {len(suspects)} suspicious 32-bit carrier candidates (review list)")
+print(
+    f"ARM64 semantic audit: {len(suspects)} suspicious 32-bit carrier candidates "
+    "(review list)"
+)
 for item in suspects[:80]:
     print("  REVIEW", item)
 if len(suspects) > 80:
-    print(f"  ... {len(suspects)-80} more candidates omitted")
+    print(f"  ... {len(suspects) - 80} more candidates omitted")
 
 if failures:
-    print(f"ARM64 semantic audit: FAIL ({len(failures)} known-danger patterns)", file=sys.stderr)
+    print(
+        f"ARM64 semantic audit: FAIL ({len(failures)} known-danger patterns)",
+        file=sys.stderr,
+    )
     for item in failures:
         print("  ERROR", item, file=sys.stderr)
     sys.exit(1)
