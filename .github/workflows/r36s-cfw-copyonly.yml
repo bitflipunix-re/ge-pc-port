@@ -1,0 +1,108 @@
+name: R36S CFW copy-only bundle
+
+on:
+  push:
+    branches: [r36s-cfw]
+    paths:
+      - '.github/workflows/r36s-cfw-copyonly.yml'
+      - 'cfw/boot/boot-copy-only.ini'
+  workflow_dispatch:
+
+concurrency:
+  group: r36s-cfw-copyonly
+  cancel-in-progress: true
+
+jobs:
+  bundle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install conversion tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cpio e2fsprogs zip
+
+      - name: Download proven kernel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: r36s-cfw-kernel-6.12.111
+          path: input/kernel
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 36204659613
+
+      - name: Download proven rootfs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: r36s-cfw-rootfs-buildroot-2026.08
+          path: input/rootfs
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 36202844336
+
+      - name: Convert ext4 rootfs to compressed initramfs
+        run: |
+          set -eux
+          ROOTFS=$(find input/rootfs -type f -name 'rootfs-r36s.ext4' -print -quit)
+          test -n "$ROOTFS"
+          sudo mkdir -p /mnt/r36s-root
+          sudo mount -o loop,ro "$ROOTFS" /mnt/r36s-root
+          sudo sh -c 'cd /mnt/r36s-root && find . -xdev -print0 | cpio --null -o --format=newc --owner=0:0' | gzip -9 > rootfs.cpio.gz
+          sudo umount /mnt/r36s-root
+          gzip -t rootfs.cpio.gz
+          zcat rootfs.cpio.gz | cpio -it | grep -E '^\./sbin/init$|^sbin/init$'
+
+      - name: Assemble Chromebook copy-only package
+        run: |
+          set -eux
+          mkdir -p bundle/COPY_TO_BOOT
+          IMAGE=$(find input/kernel -type f -name 'Image-*r36s' -print -quit)
+          DTB=$(find input/kernel -type f -name 'rk3326-r36s.dtb' -print -quit)
+          test -n "$IMAGE"
+          test -n "$DTB"
+          cp "$IMAGE" bundle/COPY_TO_BOOT/Image
+          cp "$DTB" bundle/COPY_TO_BOOT/rk3326-r36s.dtb
+          cp rootfs.cpio.gz bundle/COPY_TO_BOOT/rootfs.cpio.gz
+          cp cfw/boot/boot-copy-only.ini bundle/COPY_TO_BOOT/boot.ini
+          cat > bundle/README.txt <<'EOF'
+          R36S CFW — G80CA PANEL-8 — CHROMEBOOK COPY-ONLY FIRST BOOT
+
+          Target: G80CA-MB V1.2-20250422 Panel 8
+          Kernel: Linux 6.12.111 LTS
+          Rootfs: Buildroot 2026.08 initramfs
+
+          This test does NOT flash or repartition the SD card.
+          It leaves the existing SPL/U-Boot and partition table untouched.
+
+          BEFORE TESTING
+          1. Open the R36S FAT BOOT partition in the Chromebook Files app.
+          2. Back up every existing file from that BOOT partition.
+          3. Do not format the card and do not use Chromebook Recovery Utility.
+
+          INSTALL
+          Copy all four files from COPY_TO_BOOT to the root of the FAT BOOT partition:
+            Image
+            rk3326-r36s.dtb
+            rootfs.cpio.gz
+            boot.ini
+
+          Safely eject the card, insert it into the R36S, and power on.
+
+          ROLLBACK
+          Restore the complete BOOT backup. Raw bootloader sectors and the partition
+          table are untouched by this test.
+          EOF
+          (
+            cd bundle
+            sha256sum COPY_TO_BOOT/Image COPY_TO_BOOT/rk3326-r36s.dtb COPY_TO_BOOT/rootfs.cpio.gz COPY_TO_BOOT/boot.ini > SHA256SUMS
+            zip -r ../r36s-cfw-g80ca-chromebook-copy-only.zip .
+          )
+
+      - name: Upload copy-only bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: r36s-cfw-g80ca-chromebook-copy-only
+          path: r36s-cfw-g80ca-chromebook-copy-only.zip
+          if-no-files-found: error
