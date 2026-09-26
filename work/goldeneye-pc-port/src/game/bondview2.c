@@ -10357,7 +10357,7 @@ Gfx *sub_GAME_7F08AAE8(Gfx *gdl)
     f32 theta_x;
     s32 debug_boxbottom;
     s32 pad;
-    s32 *roomid;
+    char *roomid;
     s32 debug_angle;
     DirectionLabels directions;
 
