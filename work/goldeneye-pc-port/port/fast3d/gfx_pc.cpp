@@ -3365,6 +3365,10 @@ static void gfx_dp_set_color_image(uint32_t format, uint32_t size, uint32_t widt
 }
 
 static void gfx_sp_set_other_mode(uint32_t shift, uint32_t num_bits, uint64_t mode) {
+    const uint32_t old_palette_fmt = rdp.palette_fmt;
+    const bool old_tex_lod = rdp.tex_lod;
+    const bool old_tex_detail = rdp.tex_detail;
+
     uint64_t mask = (((uint64_t)1 << num_bits) - 1) << shift;
     uint64_t om = rdp.other_mode_l | ((uint64_t)rdp.other_mode_h << 32);
     om = (om & ~mask) | mode;
@@ -3373,6 +3377,18 @@ static void gfx_sp_set_other_mode(uint32_t shift, uint32_t num_bits, uint64_t mo
     rdp.palette_fmt = rdp.other_mode_h & (3U << G_MDSFT_TEXTLUT);
     rdp.tex_lod = (rdp.other_mode_h & G_TL_LOD) != 0;
     rdp.tex_detail = (rdp.other_mode_h & (2U << G_MDSFT_TEXTDETAIL)) == G_TD_DETAIL;
+
+    /* These modes change which texture data is sampled or how CI texture
+     * bytes are decoded. The tile metadata itself can stay unchanged, so the
+     * normal G_SETTILE/G_SETTILESIZE invalidation path does not fire. Force
+     * both texture units to re-resolve on the next draw instead of retaining
+     * a stale mip/detail/TLUT binding across the mode transition. */
+    if (rdp.palette_fmt != old_palette_fmt ||
+        rdp.tex_lod != old_tex_lod ||
+        rdp.tex_detail != old_tex_detail) {
+        rdp.textures_changed[0] = true;
+        rdp.textures_changed[1] = true;
+    }
 }
 
 static void gfx_sp_set_vertex_colors(uint32_t count, const struct NormalColor *vcn) {
