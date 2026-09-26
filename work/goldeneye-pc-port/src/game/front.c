@@ -6871,7 +6871,7 @@ const struct MatchHack_front_rodata_3000 asc_D_80050C54 = { "\n" };
 
 Gfx *constructor_menu0A_briefing(Gfx *DL)
 {
-    u8 *spC0C;
+    u8 *spC0C = (u8 *)"";
     s32 spC08;
     s32 spC04;
     struct MatchHack_front_rodata_3000 sp4C;
