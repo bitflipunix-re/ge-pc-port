@@ -293,8 +293,9 @@ static int inputExitComboCheck(SDL_GameController *pad)
             ev.type = SDL_QUIT;
             requested = 1;
             sysLogPrintf(LOG_INFO, "input: Start+Select exit chord -> SDL quit request");
-            if (SDL_PushEvent(&ev) < 0) {
-                sysLogPrintf(LOG_WARNING, "input: failed to queue SDL quit: %s", SDL_GetError());
+            if (SDL_PushEvent(&ev) <= 0) {
+                sysLogPrintf(LOG_WARNING, "input: SDL quit request was not queued: %s",
+                             SDL_GetError());
                 requested = 0;
                 return 0;
             }
