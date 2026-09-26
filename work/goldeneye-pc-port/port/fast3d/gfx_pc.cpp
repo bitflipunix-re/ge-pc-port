@@ -3956,13 +3956,22 @@ extern "C" void reset_texture_state() {
 }
 
 extern "C" void gfx_set_texture_filter(enum FilteringMode mode) {
+    /* Live config applies the whole image-option set together. Do not throw
+     * away every cached texture/shader when this particular value did not
+     * actually change. */
+    if (gfx_rapi->get_texture_filter && gfx_rapi->get_texture_filter() == mode)
+        return;
     reset_texture_state();
     gfx_rapi->set_texture_filter(mode);
 }
 
 extern "C" void gfx_set_mipmap_filter(enum MipmapFilteringMode mode) {
+    static int last_mode = -1;
+    if (last_mode == (int)mode)
+        return;
     reset_texture_state();
     gfx_rapi->set_mipmap_filter(mode);
+    last_mode = (int)mode;
 }
 
 extern "C" void gfx_set_fix_mip_textures(int on) {
@@ -3980,14 +3989,18 @@ extern "C" void gfx_set_fix_mip_textures(int on) {
  * port layer. Clamp to [1, GL max] so a stale ini value can't feed an invalid
  * GL_TEXTURE_MAX_ANISOTROPY. 1 = isotropic (driver default). */
 extern "C" void gfx_set_anisotropy_level(int level) {
-    reset_texture_state();
+    static int last_level = -1;
     int max = gfx_rapi->get_max_anisotropy_level ? gfx_rapi->get_max_anisotropy_level() : 1;
     if (max < 1) max = 1;
     if (level < 1) level = 1;
     if (level > max) level = max;
+    if (level == last_level)
+        return;
+    reset_texture_state();
     if (gfx_rapi->set_anisotropy_level) {
         gfx_rapi->set_anisotropy_level(level);
     }
+    last_level = level;
 }
 extern "C" void gfx_set_wrap_fix(int on) {
     const char* e = getenv("GE_WRAPFIX"); /* RC3 test override */
