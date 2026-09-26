@@ -20,6 +20,7 @@ Other useful release links:
 - [Jump to source-build instructions](#build-from-source)
 
 No GoldenEye ROM or generated ROM-derived assets are included. You must provide your own legally obtained GoldenEye 007 NTSC-U big-endian ROM.
+
 ## Current release
 
 ARM-GE has now moved from **alpha** to **beta** for the R36S / PortMaster target.
@@ -60,6 +61,7 @@ The repository is intentionally split between the reconstructed game source, the
 - `watch/` — development support/watch tooling; it is not the player-facing entry point.
 
 If you only want to play the port, you do **not** need to understand the source tree: download the PortMaster beta above, provide the required ROM, and follow the install section.
+
 ## September 26 completion pass
 
 The current mainline includes the verified ARM64 work from the active development branches:
