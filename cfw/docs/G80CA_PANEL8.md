@@ -21,7 +21,12 @@ We decode hardware facts from that DTB and re-express them with Linux 6.12 inter
 
 - controller-compatible identity in vendor DTB: `elida,kd35t133`
 - active area: 640 x 480
-- pixel clock: 30,000,000 Hz
+- pixel clock: 30,000,000 Hz (vendor/default ~60 Hz)
+- experimental refresh ladder with unchanged porch geometry:
+  - 75 Hz: 37.490 MHz
+  - 90 Hz: 44.988 MHz
+  - 100 Hz: 49.987 MHz
+- 60 Hz remains preferred until 100 Hz is proven stable on real Panel-8 hardware
 - horizontal: active 640, front porch 150, sync 40, back porch 135
 - vertical: active 480, front porch 20, sync 6, back porch 12
 - DSI lanes: 4
