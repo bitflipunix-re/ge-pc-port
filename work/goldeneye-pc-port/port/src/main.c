@@ -32,7 +32,9 @@
 #include "input.h"
 #include "mixer.h"
 #include "crash.h"
+#if !defined(GE_BETA_RELEASE)
 #include "benchmark.h"
+#endif
 #include "thread_config.h"
 #include "game/language.h" /* D295/M-148: JPN glyph-cache types + j_text_trigger */
 
@@ -73,6 +75,7 @@ static void portPrintHelp(const char *argv0)
            "                    ini is re-written with defaults on exit)\n"
            "  -level_XX         boot straight into a solo level (per-level\n"
            "                    memory pools are auto-injected)\n"
+#if !defined(GE_BETA_RELEASE)
            "  --benchmark       record frame pacing/CPU/RAM telemetry and\n"
            "                    exit automatically after the measured run\n"
            "  --benchmark-seconds N   measured duration (default 20)\n"
@@ -80,6 +83,7 @@ static void portPrintHelp(const char *argv0)
            "  --benchmark-timeout N   no-frame timeout (default 60)\n"
            "  --benchmark-name NAME   scenario label written to the report\n"
            "  --benchmark-out PATH    JSON result path (default ge007-benchmark.json)\n\n"
+#endif
            "config: ge007.ini in the data dir (written on first run).\n\n"
            "solo levels (-level_XX):\n", argv0 ? argv0 : "ge007");
     for (size_t i = 0; i < sizeof(kSoloLevels) / sizeof(kSoloLevels[0]); ++i) {
@@ -207,7 +211,9 @@ int main(int argc, char **argv)
     audioInit();
     mixerInit();
     inputInit();
+#if !defined(GE_BETA_RELEASE)
     benchmarkInit();
+#endif
 
     /* 4. Run the game. mainproc() runs as the N64 mainThread (a real OS
      *    thread with its own stack); it creates the rmon/idle/scheduler/
@@ -251,22 +257,23 @@ int main(int argc, char **argv)
      *    videoPumpEvents() exits the process on quit. */
     for (;;) {
         videoPumpEvents();
+#if !defined(GE_BETA_RELEASE)
         benchmarkHostTick();
         if (benchmarkDone()) {
             benchmarkFinish();
             break;
         }
+#endif
         sysSleep(8000);
     }
 
-    /* Benchmark mode reaches here after its requested measurement window;
-     * normal play still exits directly from videoPumpEvents(). */
+#if !defined(GE_BETA_RELEASE)
     inputDestroy();
     mixerDestroy();
     audioDestroy();
     videoDestroy();
     romdataDestroy();
     configSave();
-
+#endif
     return 0;
 }

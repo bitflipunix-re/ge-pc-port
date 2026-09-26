@@ -29,10 +29,14 @@ extern void exit(int status);
 #include "system.h"
 #include "config.h"
 #include "video.h"
+#if !defined(GE_BETA_RELEASE)
 #include "damlab.h"
+#endif
 #include "input.h"
 #include "optionsoverlay.h"
+#if !defined(GE_BETA_RELEASE)
 #include "benchmark.h"
+#endif
 #include "../include/crash.h"
 
 #if defined(__aarch64__)
@@ -415,7 +419,9 @@ static void videoDrainWindowRequests(void)
 static u32 frames = 0;
 /* Set by the host event pump (F12), consumed on the render thread in
  * videoEndFrame where a GL context is current. */
+#if !defined(GE_BETA_RELEASE)
 static volatile int screenshotReq = 0;
+#endif
 
 /* Pre-swap capture hook (defined below, registered in videoInit). */
 static void videoPreSwapCapture(void);
@@ -779,7 +785,9 @@ void videoPumpEvents(void)
                     gfx_sdl_update_cached_size();
                 }
             } else if (ev.key.keysym.sym == SDLK_F12 && !ev.key.repeat) {
+#if !defined(GE_BETA_RELEASE)
                 screenshotReq = 1;
+#endif
             } else if (ev.key.keysym.sym == SDLK_F10 && !ev.key.repeat) {
                 optionsOverlayToggle();   /* F10: port-layer options overlay */
             } else if (ev.key.keysym.sym == SDLK_ESCAPE && !ev.key.repeat) {
@@ -855,6 +863,7 @@ void videoSubmitCommands(Gfx *cmds)
  * the swap is undefined on buffer-exchange drivers (Mesa/WSLg) -> black. */
 static void videoPreSwapCapture(void)
 {
+#if !defined(GE_BETA_RELEASE)
 #if defined(__aarch64__)
     /* R36S presentation instrumentation is opt-in. It deliberately modifies
      * framebuffer 0 and performs synchronous readback, so it must never run
@@ -1004,6 +1013,7 @@ static void videoPreSwapCapture(void)
             sysLogPrintf(LOG_WARNING, "video: screenshot failed");
         }
     }
+#endif /* !GE_BETA_RELEASE */
 }
 
 void videoEndFrame(void)
@@ -1013,10 +1023,9 @@ void videoEndFrame(void)
     }
     gfx_end_frame();
 
-    /* Native benchmark hook: record the actual delivered frame cadence at
-     * the renderer boundary. The module is a no-op unless --benchmark was
-     * requested, so ordinary gameplay pays only one predictable branch. */
+#if !defined(GE_BETA_RELEASE)
     benchmarkFrame();
+#endif
 
     ++frames;
     ++fpsNumFrames;

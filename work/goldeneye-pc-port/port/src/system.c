@@ -94,6 +94,9 @@ void sysLogPrintf(enum LogLevel level, const char *fmt, ...)
     static const char *tags[] = { "ERROR", "WARN ", "NOTE ", "INFO ", "DEBUG" };
     va_list ap;
     if ((int)level >= 5) level = LOG_DEBUG;
+#if defined(GE_BETA_RELEASE)
+    if (level == LOG_DEBUG) return;
+#endif
     fprintf(stderr, "[%s] ", tags[level]);
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);

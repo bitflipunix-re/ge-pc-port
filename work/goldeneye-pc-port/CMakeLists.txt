@@ -48,9 +48,15 @@ endif()
 # (port/src/romassets_<region>.s, see scripts/gen_romassets.py).
 project(ge007 C CXX ASM)
 
-# ARM-GE Port Control telemetry profile. This enables the reusable HUD and
-# runtime instrumentation only; stage selection remains untouched on tom.
-add_compile_definitions(DAM_ONLY_LAB=1)
+# Production/player build switch. Development builds keep optional benchmark
+# and DAM-lab instrumentation; beta/release builds compile them out completely.
+option(GE_BETA_RELEASE "Build player-only binary without benchmark/probe/debug instrumentation" OFF)
+if(GE_BETA_RELEASE)
+  add_compile_definitions(GE_BETA_RELEASE=1 NDEBUG=1)
+  message(STATUS "ARM-GE beta/player build: diagnostics stripped")
+else()
+  add_compile_definitions(DAM_ONLY_LAB=1)
+endif()
 
 include(TargetArch)
 include(FindPkgConfig)
@@ -423,6 +429,10 @@ list(APPEND LIBS "${EXTRA_LIBRARIES}")
 # Port layer (shims + software RSP).
 file(GLOB_RECURSE SRC_PORT      "${CMAKE_SOURCE_DIR}/port/src/*.c")
 file(GLOB_RECURSE SRC_PORT_CXX  "${CMAKE_SOURCE_DIR}/port/src/*.cpp")
+if(GE_BETA_RELEASE)
+  list(FILTER SRC_PORT EXCLUDE REGEX ".*/benchmark\\.c$")
+  list(FILTER SRC_PORT EXCLUDE REGEX ".*/damlab\\.c$")
+endif()
 file(GLOB_RECURSE SRC_FAST3D    "${CMAKE_SOURCE_DIR}/port/fast3d/*.cpp"
                                "${CMAKE_SOURCE_DIR}/port/fast3d/glad/*.c")
 
