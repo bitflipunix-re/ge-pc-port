@@ -6,125 +6,523 @@ ARM-GE is an open-source engineering effort to make the reconstructed GoldenEye 
 
 The current reference target is **R36S / dArkOSRE / PortMaster** using **AArch64 + SDL2 + OpenGL ES 3**.
 
+## Current release
+
+The latest verified public R36S PortMaster prerelease was produced on **26 September 2026** after consolidating the active ARM64 completion branches into `main`.
+
+- Source revision: `09ce89bfa07fc2e9de37e14e1726a7739e813477`
+- Build run: `36231558781`
+- Release tag: `r36s-alpha-2026-09-26-completion-pass`
+- Release: https://github.com/bitflipunix-re/ge-pc-port/releases/tag/r36s-alpha-2026-09-26-completion-pass
+- Build artifact digest: `sha256:9e4f7f2ff290937871c69e3b752339d177f2b7bb4e32fa402a3a7bd020faf4dd`
+- Installer: `ge007.zip` — 4,611,208 bytes
+- Native executable: `ge007.aarch64` — 9,740,864 bytes
+- Architecture: AArch64
+- Graphics: SDL2 + OpenGL ES
+- ROM target: GoldenEye 007 NTSC-U, big-endian
+
+The release workflow independently re-verifies the executable and package checksums, validates the ZIP, and refuses to publish ROM images or generated ROM-derived sidecars.
+
+## September 26 completion pass
+
+The current mainline includes the verified ARM64 work from the active development branches:
+
+- host-width stage/setup rebasing for campaign and multiplayer data;
+- animation/model/title/language/background pointer-width fixes;
+- cached animation pointer zero-extension and host-width comparison fixes;
+- character-action pointer truth/width fixes;
+- player-body teardown hardening for stale or missing props;
+- fresh-save NULL-pointer safety;
+- stage-boundary SFX cleanup for long-session audio stability;
+- displacement-stable absolute/direct mouse look;
+- batched-tick crosshair damping stabilization;
+- scripted/death/pause camera ownership protection;
+- watch-menu toggle and slider persistence;
+- CPU/FPS/RAM diagnostics retained while the intrusive HUD defaults off;
+- mission-save/title-handoff/stage-unload breadcrumbs for remaining transition failures;
+- an ARM64 semantic regression gate that runs before every reference build.
+
+Older Dam, PortMaster integration and Tom experiment branches are behind the consolidated game-port mainline. The `r36s-cfw` branch is a separate firmware project and is intentionally not merged into the GoldenEye game port.
+
 ## Current showcase
 
 [![Watch the current ARM64/R36S showcase](https://img.youtube.com/vi/lcN9C9waB6I/hqdefault.jpg)](https://www.youtube.com/shorts/lcN9C9waB6I)
 
-**Latest video state:** https://www.youtube.com/shorts/lcN9C9waB6I
-
-This is the single current showcase clip for the project. It represents the latest public video state and supersedes older showcase footage.
+Latest public video: https://www.youtube.com/shorts/lcN9C9waB6I
 
 [Full showcase notes →](SHOWCASE.md)
-
-## See it running
-
-- **Alpha testing / real-device reports:**  
-  https://www.reddit.com/r/R36S/comments/1wos5ea/goldeneye_007_n64_arm64_call_for_alpha_testers/
-- **Current alpha release links:**  
-  https://www.reddit.com/r/u_Appropriate_Comb1486/comments/1woso74/goldeneye_007_n64_arm64_port_alpha_release_links/
-
-The interesting part is not simply that GoldenEye runs on another device. The engineering problem is moving reconstructed software that still carries a 1990s console's ABI, address model, graphics assumptions and runtime invariants onto a modern 64-bit ARM Linux host.
-
-## Current alpha
-
-The latest verified public R36S PortMaster prerelease was produced on **26 September 2026** after consolidating the active ARM64 completion branches into `main`:
-
-- source revision: `09ce89bfa07fc2e9de37e14e1726a7739e813477`
-- build run: `36231558781`
-- release tag: `r36s-alpha-2026-09-26-completion-pass`
-- release: https://github.com/bitflipunix-re/ge-pc-port/releases/tag/r36s-alpha-2026-09-26-completion-pass
-- build artifact digest: `sha256:9e4f7f2ff290937871c69e3b752339d177f2b7bb4e32fa402a3a7bd020faf4dd`
-- installer: `ge007.zip` (4,611,208 bytes)
-- native executable: `ge007.aarch64` (9,740,864 bytes)
-- architecture: AArch64
-- graphics: SDL2 + OpenGL ES
-- ROM target: GoldenEye 007 NTSC-U, big-endian
-
-This completion-pass build folds the currently verified ARM64 work into the mainline: host-width stage/setup rebasing, animation/model/title/language/background pointer fixes, teardown hardening, stage-boundary SFX cleanup, fresh-save safety, displacement-stable mouse aim, batched-tick crosshair stabilization, scripted-camera ownership, watch-menu setting persistence, and the ARM64 semantic regression gate.
-
-The CI build passed the semantic audit, AArch64 cross-configuration and compile, ELF architecture verification, PortMaster package construction, `unzip -t`, package metadata checks, and the release workflow's second checksum/content verification. ROM files and generated ROM-derived sidecars are explicitly rejected from the published archive.
-
-This is still an alpha: the completion pass is source/CI verified, while full-campaign, long-session audio, level-state, rendering and broader handheld behavior still require continued real-device testing.
 
 ## What works on real hardware
 
 The port has demonstrated:
 
 - native AArch64 execution on R36S-class hardware;
-- SDL2/GLES rendering;
+- SDL2/OpenGL ES rendering;
 - boot, menus and intro;
 - in-mission rendering and gameplay;
 - controller integration;
-- PortMaster install and launch;
+- PortMaster installation and launch;
 - first-run generation of required ROM-derived sidecars from the user's own ROM;
-- runtime logging and on-device diagnostics.
+- runtime logging and on-device diagnostics;
+- Select + Start exit back to EmulationStation.
 
-Active work is now concentrated on real-device correctness and polish rather than broad 32→64 conversion: full-campaign stage behavior, spawn/state transitions, AI/objectives/props, collision/navigation edge cases, GLES rendering defects, long-session audio behavior and broader handheld compatibility. Older Dam/PortMaster/Tom experiment branches are behind the consolidated mainline; the R36S CFW branch remains a separate firmware effort and is intentionally not merged into the game port.
+This remains an alpha. Active work is now concentrated on real-device correctness and polish rather than broad 32→64 conversion: full-campaign behavior, spawn/state transitions, AI/objectives/props, collision/navigation edge cases, GLES rendering defects, long-session audio behavior and broader handheld compatibility.
 
-## The portability work
+---
+
+# Install on R36S / dArkOSRE / PortMaster
+
+## Requirements
+
+You need:
+
+1. an **AArch64 R36S-class handheld** running dArkOSRE/ArkOS-compatible PortMaster;
+2. a working **PortMaster** installation;
+3. the release file **`ge007.zip`**;
+4. **Python 3 available on the handheld** for the one-time ROM-to-sidecar conversion;
+5. your own legally obtained **GoldenEye 007 US NTSC big-endian ROM**.
+
+No GoldenEye ROM, extracted game assets, `pcmodels.bin` or `pccg.bin` are distributed by this project.
+
+### Required ROM
+
+Filename:
+
+```text
+ge007.ntsc-final.z64
+```
+
+Expected SHA-1:
+
+```text
+abe01e4aeb033b6c0836819f549c791b26cfde83
+```
+
+The launcher checks the SHA-1 when `sha1sum` is available and refuses a known-wrong ROM.
+
+## Recommended installation
+
+For ArkOS/dArkOSRE, copy `ge007.zip` into the PortMaster autoinstall directory:
+
+```text
+/roms/tools/PortMaster/autoinstall/
+```
+
+If your setup uses the second ROM volume, use the corresponding `roms2` PortMaster tree instead.
+
+Then:
+
+1. Start the **PortMaster** application.
+2. Allow PortMaster to process the autoinstall ZIP.
+3. After installation, the game directory on the current R36S target is normally:
+
+   ```text
+   /roms/ports/ge007/
+   ```
+
+4. Copy your ROM to:
+
+   ```text
+   /roms/ports/ge007/data/ge007.ntsc-final.z64
+   ```
+
+   If PortMaster is using a different ROM root, place it under the installed `ge007/data/` directory for that root.
+
+5. Launch **GoldenEye 007** from EmulationStation.
+
+PortMaster's current documentation also supports installing offline ports by placing their ZIP in the appropriate autoinstall directory and starting PortMaster.
+
+## First launch
+
+On first launch the wrapper:
+
+1. loads PortMaster's device/CFW control environment;
+2. verifies that `ge007.aarch64` exists;
+3. checks for the required ROM;
+4. verifies the ROM SHA-1 when possible;
+5. checks whether the generated sidecars already exist;
+6. runs the bundled Python converter if they do not;
+7. verifies that these files were generated:
+
+   ```text
+   ge007/data/pcmodels-ntsc-final/pcmodels.bin
+   ge007/data/pccg-ntsc-final/pccg.bin
+   ```
+
+8. launches `ge007.aarch64`.
+
+The ROM and generated sidecars remain local to the user's device.
+
+## Runtime files
+
+Important installed paths:
+
+```text
+ge007/
+├── ge007.aarch64
+├── data/
+│   ├── ge007.ntsc-final.z64        # user supplied
+│   ├── ge007.ini
+│   ├── pcmodels-ntsc-final/        # generated locally
+│   └── pccg-ntsc-final/            # generated locally
+├── prepare-assets/
+├── conf/
+├── build-info.txt
+└── log.txt
+```
+
+`log.txt` is recreated on launch and is the first file to collect when reporting a crash or startup failure.
+
+## Common installation failures
+
+### ROM missing
+
+The log will contain:
+
+```text
+[ROM] MISSING
+```
+
+Confirm the ROM is named exactly:
+
+```text
+ge007.ntsc-final.z64
+```
+
+and is inside the installed `ge007/data/` directory.
+
+### Wrong ROM
+
+If the SHA-1 does not match:
+
+```text
+abe01e4aeb033b6c0836819f549c791b26cfde83
+```
+
+the launcher exits instead of generating sidecars.
+
+### Python 3 missing
+
+First-run conversion requires `python3`. If it is unavailable the launcher reports:
+
+```text
+[Extract] python3 not available on this firmware
+```
+
+A PortMaster installation with the required runtime support or a firmware providing Python 3 is required for first-run conversion.
+
+### Sidecar conversion failure
+
+Check:
+
+```text
+ge007/log.txt
+```
+
+The launcher prints the converter return code and refuses to start the game if the required sidecars are still missing.
+
+---
+
+# Build from source
+
+## Reference build environment
+
+The reproducible reference build currently uses **Ubuntu 24.04 x86_64** and cross-compiles to **AArch64 Linux**.
+
+The canonical build definition is:
+
+```text
+.github/workflows/build-r36s.yml
+```
+
+If local setup and CI ever disagree, the workflow is the source of truth.
+
+The build uses **GCC**, not Clang, because the reconstructed codebase relies on structure/inheritance behavior supported by GCC extensions.
+
+## Clone
+
+```bash
+git clone https://github.com/bitflipunix-re/ge-pc-port.git
+cd ge-pc-port
+```
+
+## Build dependencies
+
+Host/build tools:
+
+```text
+cmake
+make
+ccache
+pkg-config
+unzip
+file
+python3
+git
+gcc-aarch64-linux-gnu
+g++-aarch64-linux-gnu
+binutils-aarch64-linux-gnu
+libc6-dev-arm64-cross
+```
+
+Graphics/runtime development dependencies:
+
+```text
+libsdl2-dev
+libgles2-mesa-dev
+libegl1-mesa-dev
+zlib1g-dev
+libsdl2-2.0-0:arm64
+libgles2:arm64
+libegl1:arm64
+zlib1g:arm64
+```
+
+## Ubuntu 24.04 dependency setup
+
+Enable the ARM64 package architecture:
+
+```bash
+sudo dpkg --add-architecture arm64
+```
+
+The GitHub Actions runner explicitly configures the Ubuntu amd64 archive and the Ubuntu Ports ARM64 archive before installation. On a normal Ubuntu 24.04 machine, make sure apt has valid sources for both architectures, then run:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  cmake make ccache pkg-config unzip file python3 git \
+  gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+  binutils-aarch64-linux-gnu libc6-dev-arm64-cross \
+  libsdl2-dev libgles2-mesa-dev libegl1-mesa-dev zlib1g-dev \
+  libsdl2-2.0-0:arm64 libgles2:arm64 libegl1:arm64 zlib1g:arm64
+```
+
+The CI build also extracts the ARM64 SDL2 development package so its target-specific headers are available:
+
+```bash
+mkdir -p /tmp/sdl2-arm64-dev
+cd /tmp
+apt-get download libsdl2-dev:arm64
+dpkg-deb -x libsdl2-dev_*_arm64.deb /tmp/sdl2-arm64-dev
+cd -
+```
+
+Ensure the target linker names exist:
+
+```bash
+sudo ln -sf libSDL2-2.0.so.0 /usr/lib/aarch64-linux-gnu/libSDL2.so
+sudo ln -sf libGLESv2.so.2 /usr/lib/aarch64-linux-gnu/libGLESv2.so
+sudo ln -sf libEGL.so.1 /usr/lib/aarch64-linux-gnu/libEGL.so
+sudo ln -sf libz.so.1 /usr/lib/aarch64-linux-gnu/libz.so
+```
+
+## Run the ARM64 semantic regression gate
+
+Before compiling:
+
+```bash
+python3 work/goldeneye-pc-port/tools_pc/arm64_semantic_audit.py
+```
+
+This catches known classes of accidental host-pointer truncation and token/pointer confusion before a build is published.
+
+## Configure the R36S AArch64/GLES build
+
+From the repository root:
+
+```bash
+export PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+export PKG_CONFIG_SYSROOT_DIR=/
+
+cmake -S work/goldeneye-pc-port -B build/arm64 \
+  -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
+  -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
+  -DCMAKE_ASM_COMPILER=aarch64-linux-gnu-gcc \
+  -DCMAKE_C_COMPILER_TARGET=aarch64 \
+  -DCMAKE_CXX_COMPILER_TARGET=aarch64 \
+  -DCMAKE_SYSTEM_NAME=Linux \
+  -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+  -DROMID=ntsc-final \
+  -DSDL2_INCLUDE_DIR=/usr/include/SDL2 \
+  -DSDL2_LIBRARY=/usr/lib/aarch64-linux-gnu/libSDL2.so \
+  -DZLIB_INCLUDE_DIR=/usr/include \
+  -DZLIB_LIBRARY=/usr/lib/aarch64-linux-gnu/libz.so \
+  -DGL_LIBRARY=/usr/lib/aarch64-linux-gnu/libGLESv2.so \
+  -DCMAKE_C_FLAGS="-DUSE_GLES=1 -I/tmp/sdl2-arm64-dev/usr/include/aarch64-linux-gnu" \
+  -DCMAKE_CXX_FLAGS="-DUSE_GLES=1 -I/tmp/sdl2-arm64-dev/usr/include/aarch64-linux-gnu"
+```
+
+A correct configure must report an AArch64 target and the output binary `ge007.aarch64`.
+
+## Compile
+
+```bash
+cmake --build build/arm64 -j"$(nproc)"
+```
+
+Expected output:
+
+```text
+build/arm64/ge007.aarch64
+```
+
+## Verify the binary
+
+```bash
+file build/arm64/ge007.aarch64
+aarch64-linux-gnu-readelf -h build/arm64/ge007.aarch64
+sha256sum build/arm64/ge007.aarch64
+```
+
+The ELF header must report:
+
+```text
+Machine: AArch64
+```
+
+## Build the PortMaster package
+
+From the repository root:
+
+```bash
+python3 package.py \
+  --game-bin build/arm64/ge007.aarch64 \
+  --out dist
+```
+
+Expected output:
+
+```text
+dist/ge007.zip
+```
+
+The packager confirms the input executable is AArch64 and deliberately refuses to package:
+
+- `*.z64`
+- `*.n64`
+- `*.v64`
+- `pcmodels.bin`
+- `pccg.bin`
+
+## Verify the PortMaster package
+
+```bash
+unzip -t dist/ge007.zip
+unzip -l dist/ge007.zip
+unzip -p dist/ge007.zip port.json | python3 -m json.tool
+sha256sum dist/ge007.zip
+```
+
+The archive must contain at least:
+
+```text
+port.json
+gameinfo.xml
+README.md
+GoldenEye 007.sh
+ge007/ge007.aarch64
+ge007/prepare-assets/
+```
+
+and must not contain any ROM or generated ROM-derived sidecar binary.
+
+## Build products
+
+The CI artifact contains:
+
+```text
+dist/ge007.zip
+dist/ge007.zip.sha256
+dist/ge007.zip.list
+build/arm64/ge007.aarch64
+build/arm64/ge007.elf-header.txt
+build/arm64/ge007.sha256
+```
+
+---
+
+# Architecture and portability work
 
 Porting reconstructed N64 software to a modern host is not a mechanical 32-bit-to-64-bit conversion.
 
-A recurring rule in this project is to classify values before changing them:
+A recurring rule in this project is to classify every address-like value as one of:
 
 1. **native host pointer**
 2. **N64 / ROM / segmented-address token**
 3. **ordinary integer or game state**
 
-That distinction drives whole-class fixes for LP64 correctness rather than one-crash-at-a-time patches.
+That distinction drives whole-class LP64 fixes instead of one-crash-at-a-time patches.
 
-Other recurring problem areas include:
+Recurring problem areas include:
 
 - MIPS-era signedness and pointer-width assumptions;
 - binary structure layout and ABI dependencies;
 - segmented and ROM address translation;
-- desktop OpenGL behavior that is unavailable in OpenGL ES;
+- desktop OpenGL behavior unavailable in OpenGL ES;
 - gameplay/runtime behavior that depended on N64-era invariants;
 - generated sidecar and asset formats crossing host architectures.
 
-The longer-term goal is to turn those lessons into reusable N64-to-modern-host portability tooling and documentation.
-
-## Install model
-
-This repository and its release package do **not** include a GoldenEye ROM or generated ROM-derived sidecars.
-
-After installing the PortMaster package, provide your own legally obtained US NTSC big-endian ROM at:
-
-`ge007/data/ge007.ntsc-final.z64`
-
-Expected SHA-1:
-
-`abe01e4aeb033b6c0836819f549c791b26cfde83`
-
-The first launch generates the required host-format data locally and then starts the game.
+The longer-term goal is to turn these lessons into reusable N64-to-modern-host portability tooling and documentation.
 
 ## Repository layout
 
-- `work/goldeneye-pc-port/` — source-port tree used for the ARM64 build
-- `port/` — PortMaster launcher and package metadata
-- `bundle/prepare-assets/` — local ROM-to-sidecar conversion tooling
-- `package.py` — builds and validates the distributable PortMaster ZIP
-- `watch/` — PortMaster exit-hotkey helper
-- `.github/workflows/build-r36s.yml` — reference AArch64/GLES build and packaging proof
-- `PRESS.md` — concise media / creator briefing and verified public links
+```text
+.github/workflows/
+    build-r36s.yml              reference AArch64/GLES build + packaging proof
+    discord-main-builds.yml     green-main build/changelog notification flow
+    publish-main-release.yml    verified release publisher
 
-## Building
+work/goldeneye-pc-port/         source-port tree used for the ARM64 build
+    tools_pc/
+        arm64_semantic_audit.py semantic regression gate
 
-The reference build is the GitHub Actions workflow in `.github/workflows/build-r36s.yml`. Every ARM64 build first runs `work/goldeneye-pc-port/tools_pc/arm64_semantic_audit.py` to catch known pointer-width and token/pointer regression classes before compilation.
+port/
+    GoldenEye 007.sh            PortMaster launcher
+    port.json                   PortMaster metadata
+    gameinfo.xml
+    README.md                   installed-port notes
 
-For local package assembly after producing `ge007.aarch64`:
-
-```sh
-python3 package.py --game-bin path/to/ge007.aarch64 --out dist
+bundle/prepare-assets/          ROM-to-sidecar converter and required tables
+package.py                      verified PortMaster ZIP assembler
+watch/                          PortMaster exit-hotkey helper
+docs/                           project/development documentation
+PRESS.md                        media / creator briefing
+SHOWCASE.md                     public showcase notes
 ```
 
-The packager refuses to include `.z64`, `.n64`, `.v64`, `pcmodels.bin` or `pccg.bin` files.
+## CI and release policy
+
+A release-worthy main build must:
+
+1. pass `arm64_semantic_audit.py`;
+2. configure as AArch64;
+3. compile `ge007.aarch64`;
+4. verify the ELF machine type;
+5. package `ge007.zip`;
+6. pass ZIP integrity and PortMaster metadata checks;
+7. prove no ROM or generated sidecars are present;
+8. upload the verified build artifact;
+9. have release publication re-check the payload before publishing.
+
+This keeps the public release tied to a known green source revision.
 
 ## Contributing
 
-Help is welcome, particularly with real-device testing, GLES rendering, ARM64/LP64 semantics, gameplay correctness, PortMaster compatibility and documentation.
+Help is welcome, particularly with:
+
+- real-device R36S testing;
+- GLES rendering;
+- ARM64/LP64 semantics;
+- stage/setup/model correctness;
+- AI, objectives, props and collision/navigation;
+- long-session audio;
+- PortMaster compatibility;
+- documentation and reproducible bug reports.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+When reporting a device problem, include `ge007/log.txt`, the release/source revision, device/CFW, and the exact stage/action that triggered the problem.
 
 For journalists, video creators and technical writers, see [PRESS.md](PRESS.md).
 
