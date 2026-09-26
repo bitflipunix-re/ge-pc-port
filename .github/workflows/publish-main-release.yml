@@ -15,10 +15,10 @@ jobs:
   publish:
     runs-on: ubuntu-24.04
     env:
-      RELEASE_TAG: r36s-alpha-2026-09-24
-      RELEASE_TITLE: "ARM-GE R36S ARM64 Alpha — 2026-09-24"
-      TARGET_SHA: 0ac37cb4772dc6bbdc40610bf114c6b9d941d1b5
-      SOURCE_RUN_ID: "36040595333"
+      RELEASE_TAG: r36s-alpha-2026-09-26
+      RELEASE_TITLE: "ARM-GE R36S ARM64 Alpha — 2026-09-26"
+      TARGET_SHA: b99176f0573f3a41fdc7c05f1bfca263d44931ba
+      SOURCE_RUN_ID: "36214485653"
       ARTIFACT_NAME: ge007-r36s-portmaster-alpha
     steps:
       - name: Download verified build artifact
@@ -59,10 +59,10 @@ jobs:
           Experimental native AArch64 build of the reconstructed GoldenEye 007 codebase for R36S-class Linux handhelds using SDL2 + OpenGL ES.
 
           **Build**
-          - Source: `0ac37cb4772dc6bbdc40610bf114c6b9d941d1b5`
-          - GitHub Actions run: `36040595333`
+          - Source: `b99176f0573f3a41fdc7c05f1bfca263d44931ba`
+          - GitHub Actions run: `36214485653`
           - Artifact: `ge007-r36s-portmaster-alpha`
-          - Artifact bundle digest: `sha256:8931ca023669aa3df97f7e29dbc9b6519c26cac81c1bd5d93931843c1ca5a1ac`
+          - Artifact bundle digest: `sha256:e55d86dd071e84bae67ff9fc69d836ed43f49c854051b5d3a3eb4898ad2357a1`
           - Target: R36S / dArkOSRE / PortMaster
           - Architecture: AArch64
           - Graphics: SDL2 + GLES
@@ -81,7 +81,18 @@ jobs:
 
           **Alpha status**
 
-          This is an experimental real-hardware alpha. Native ARM64 execution, SDL2/GLES rendering, menus, intro, in-mission rendering/gameplay, controller integration, PortMaster installation and first-run ROM-derived sidecar generation have been demonstrated. Gameplay correctness, spawn/stage behavior, rendering defects, audio/runtime behavior and broader handheld compatibility remain active work.
+          This is an experimental real-hardware alpha. Native ARM64 execution, SDL2/GLES rendering, menus, intro, in-mission rendering/gameplay, controller integration, PortMaster installation and first-run ROM-derived sidecar generation have been demonstrated.
+
+          **September 26 stabilization**
+          - Includes the ARM64 stale-player render-pointer fix for death and level-exit teardown.
+          - Makes direct mouse aim displacement-stable instead of coupling it to host input-poll timing.
+          - Stabilizes the crosshair when simulation ticks are batched, targeting the reported zoom/scope jitter on ARM handhelds.
+          - Prevents absolute mouse aim from fighting scripted/death/pause cameras, including the Dam end-of-level cutscene.
+          - Defaults the CPU/FPS/RAM diagnostic HUD off while keeping it available from the options overlay.
+          - Hardens first mission-completion save creation against NULL old-save pointers.
+          - Adds safe mission-save/title-handoff/stage-unload breadcrumbs to log.txt for any remaining transition failure.
+
+          The Dam-completion path has been source-hardened and ARM64 CI-validated, but still needs fresh real-device confirmation from alpha testers. Long-session audio degradation and remaining cosmetic/rendering defects remain active work.
           EOF
 
       - name: Publish prerelease
