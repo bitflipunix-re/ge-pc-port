@@ -745,12 +745,28 @@ void solo_char_load(void)
 void bondviewRemovePlayerBody(void)
 {
 #ifdef PORT
+    /* Stage/death/cutscene teardown can outlive the player body's prop.
+     * Never let diagnostic logging or cleanup itself become a stale-pointer
+     * crash. Clear host-only body state if the prop has already gone away. */
+    if (g_CurrentPlayer == NULL)
+    {
+        return;
+    }
+
     if (d243mEnabled()) {
-        osSyncPrintf("D243M: REMOVE frame=%d had_model=%d chr=%p cam=%d subcam=%d\n",
+        osSyncPrintf("D243M: REMOVE frame=%d had_model=%d prop=%p chr=%p cam=%d subcam=%d\n",
                      g_d243mFrameCounter,
                      (int)(g_CurrentPlayer->bodyModel != 0),
-                     (void *) g_CurrentPlayer->prop->chr,
+                     (void *)g_CurrentPlayer->prop,
+                     g_CurrentPlayer->prop ? (void *)g_CurrentPlayer->prop->chr : NULL,
                      (int) g_CameraMode, (int) dword_CODE_bss_80079A18);
+    }
+
+    if (g_CurrentPlayer->prop == NULL)
+    {
+        g_CurrentPlayer->bodyModel = 0;
+        g_bondviewForceDisarm = 1;
+        return;
     }
 #endif
     if ((g_CurrentPlayer->prop->chr) && (getPlayerCount() == 1))
