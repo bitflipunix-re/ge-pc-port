@@ -928,9 +928,9 @@ void chraiDefaultWeaponFireHandler(s32 hand)
     s32 gotbghit;
     coord3d visiblehitpos;
     s32 bestroom;
-    s32 besttexture;
+    s32 besttexture = -1;
     HitThing bghit;
-    f32 negz;
+    f32 negz = 0.0f;
     coord3d besthitpos;
     s32 pad;
     StandTile *fromtile;
@@ -2325,7 +2325,7 @@ f32 chrpropScoreAutoAimTarget(PropRecord *targetprop, coord3d *aimpos, f32 *worl
     f32 autoaim_right;
     f32 score;
     bool passes_horizontal_check;
-    f32 horizontal_tolerance;
+    f32 horizontal_tolerance = 1.0f;
     PropRecord *playerprop;
     StandTile* line_stan;
     f32 player_los_height;
@@ -2366,12 +2366,16 @@ f32 chrpropScoreAutoAimTarget(PropRecord *targetprop, coord3d *aimpos, f32 *worl
         screen_left_edge[0] = floorFloat(screen_left_edge[0]);
         screen_right_edge[0] = ceilFloat(screen_right_edge[0]);
 
+        /* Used by both the X-autoaim and crosshair-only scoring paths. */
+        horizontal_tolerance = (screen_right_edge[0] - screen_left_edge[0]) * 1.5f;
+        if (horizontal_tolerance < 1.0f) {
+            horizontal_tolerance = 1.0f;
+        }
+
         if (currentPlayerGetXAutoAimEnabledRedirect())
         {
             if (screen_left_edge[0] <= autoaim_right && autoaim_left <= screen_right_edge[0])
             {
-                horizontal_tolerance = (screen_right_edge[0] - screen_left_edge[0]) * 1.5f;
-
                 if (getPlayerCount() == 1)
                 {
                     horizontal_tolerance = horizontal_tolerance * difficulty;
