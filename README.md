@@ -68,6 +68,33 @@ The port has demonstrated:
 
 This remains an alpha. Active work is now concentrated on real-device correctness and polish rather than broad 32→64 conversion: full-campaign behavior, spawn/state transitions, AI/objectives/props, collision/navigation edge cases, GLES rendering defects, long-session audio behavior and broader handheld compatibility.
 
+## Port Control overlay
+
+**Port Control** is intended to be a major part of ARM-GE rather than a thin debug menu. Press **F10** on keyboard or **Select/Back** on a controller to open it. While open, gameplay input is captured by the overlay and mouse capture is released.
+
+The interface uses a resolution-scalable translucent glass layout and currently exposes:
+
+- output/window resolution and fullscreen state;
+- **50–200% render resolution scaling**;
+- VSync and frame cap;
+- **real Fast3D/GLES MSAA** at 1x/2x/4x/8x, clamped to the GPU's supported sample count;
+- experimental **Temporal AA / TAA-lite** LOW/HIGH modes;
+- texture, mipmap and anisotropic filtering;
+- framebuffer effects, FOV, draw distance and LOD distance;
+- mouse, controller, aim and key-bind controls;
+- audio latency/buffer/mixer controls;
+- gameplay accessibility and original GoldenEye cheat controls;
+- live CPU/FPS/RAM/audio/stage telemetry;
+- live CPU and GPU governor reporting;
+- optional per-game CPU governor, GPU governor and RAM/swappiness profiles;
+- a safe in-process allocator trim action.
+
+The R36S package intentionally ships conservative defaults: **1x MSAA, 100% render scale, TAA off and system-default governors**. More expensive graphics features are opt-in.
+
+CPU/GPU/RAM profiles do not run the game as root. Port Control stores small numeric profile selections in `ge007.ini`; on the next launch the PortMaster wrapper translates them into fixed known values, uses PortMaster's existing privileged helper only for the required sysfs/procfs writes, records the previous values, and restores them when the game exits.
+
+The temporal option is deliberately described as **TAA/TAA-lite**, not NVIDIA TXAA. It is a lightweight experimental temporal accumulation pass suitable for testing on the GLES target and is disabled while Port Control is open so the overlay itself remains stable.
+
 ---
 
 # Install on R36S / dArkOSRE / PortMaster

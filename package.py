@@ -54,9 +54,19 @@ exec /usr/bin/env python3 "$(dirname "$0")/prepare-assets.py" "$@"
 """
 
 INI = """# GoldenEye 007 R36S defaults (shipped in zip; edit freely).
+# Conservative handheld baseline; Port Control can change these in-game.
 [Video]
 MSAA = 1
+RenderScale = 100
+TAA = 0
 Anisotropy = 1
+
+# Optional per-game tuning. Non-zero values are applied by the PortMaster
+# launcher and the original kernel settings are restored when the game exits.
+[System]
+CpuGovernor = 0
+GpuGovernor = 0
+RamProfile = 0
 """
 
 ROM_SUFFIXES = (".z64", ".n64", ".v64")

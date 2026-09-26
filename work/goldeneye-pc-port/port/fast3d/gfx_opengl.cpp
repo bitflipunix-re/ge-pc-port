@@ -65,6 +65,22 @@ static GLenum gl_mirror_clamp = GL_MIRROR_CLAMP_TO_EDGE;
 static bool gl_es = false;
 static bool gl_core_profile = false;
 
+/* TAA-lite: a deliberately conservative temporal accumulation pass. It runs
+ * on the final window image, uses a very small history weight to suppress
+ * sub-pixel shimmer without pretending we have motion vectors, and resets
+ * while Port Control is open so overlay text never ghosts. This is not
+ * NVIDIA TXAA; the user-facing name is Temporal AA (experimental). */
+static GLuint taa_program = 0;
+static GLuint taa_vao = 0;
+static GLuint taa_current_tex = 0;
+static GLuint taa_history_tex = 0;
+static uint32_t taa_width = 0;
+static uint32_t taa_height = 0;
+static bool taa_history_valid = false;
+static int taa_last_mode = 0;
+
+extern "C" int optionsOverlayIsOpen(void);
+
 static int gfx_opengl_get_max_texture_size() {
     GLint max_texture_size;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
@@ -1100,7 +1116,217 @@ static void gfx_opengl_start_frame(void) {
     frame_count++;
 }
 
+static GLuint taa_compile_shader(GLenum type, const char *src) {
+    GLuint shader = glCreateShader(type);
+    GLint ok = 0;
+    if (!shader) return 0;
+    glShaderSource(shader, 1, &src, NULL);
+    glCompileShader(shader);
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
+    if (!ok) {
+        char log[768] = {0};
+        glGetShaderInfoLog(shader, sizeof(log) - 1, NULL, log);
+        sysLogPrintf(LOG_WARNING, "TAA-lite shader compile failed: %s", log);
+        glDeleteShader(shader);
+        return 0;
+    }
+    return shader;
+}
+
+static bool taa_init_program(void) {
+    if (taa_program) return true;
+    /* gl_VertexID + VAOs are core in GLES3 / desktop GL3. The R36S target
+     * is GLES3; older desktop compatibility contexts simply leave TAA off. */
+    if (!gl_es && GLVersion.major < 3) return false;
+
+    const char *vs_es =
+        "#version 300 es\n"
+        "precision highp float;\n"
+        "out vec2 vUV;\n"
+        "void main(){\n"
+        " vec2 p=vec2((gl_VertexID==1)?3.0:-1.0,(gl_VertexID==2)?3.0:-1.0);\n"
+        " vUV=p*0.5+0.5; gl_Position=vec4(p,0.0,1.0);\n"
+        "}\n";
+    const char *fs_es =
+        "#version 300 es\n"
+        "precision mediump float;\n"
+        "in vec2 vUV; uniform sampler2D uCurrent; uniform sampler2D uHistory;\n"
+        "uniform float uHistoryWeight; out vec4 fragColor;\n"
+        "void main(){ vec4 c=texture(uCurrent,vUV); vec4 h=texture(uHistory,vUV);"
+        " fragColor=mix(c,h,uHistoryWeight); }\n";
+    const char *vs_gl =
+        "#version 130\n"
+        "out vec2 vUV;\n"
+        "void main(){ vec2 p=vec2((gl_VertexID==1)?3.0:-1.0,(gl_VertexID==2)?3.0:-1.0);"
+        " vUV=p*0.5+0.5; gl_Position=vec4(p,0.0,1.0); }\n";
+    const char *fs_gl =
+        "#version 130\n"
+        "in vec2 vUV; uniform sampler2D uCurrent; uniform sampler2D uHistory;"
+        " uniform float uHistoryWeight; out vec4 fragColor;\n"
+        "void main(){ vec4 c=texture(uCurrent,vUV); vec4 h=texture(uHistory,vUV);"
+        " fragColor=mix(c,h,uHistoryWeight); }\n";
+
+    GLuint vs = taa_compile_shader(GL_VERTEX_SHADER, gl_es ? vs_es : vs_gl);
+    GLuint fs = taa_compile_shader(GL_FRAGMENT_SHADER, gl_es ? fs_es : fs_gl);
+    if (!vs || !fs) {
+        if (vs) glDeleteShader(vs);
+        if (fs) glDeleteShader(fs);
+        return false;
+    }
+    taa_program = glCreateProgram();
+    glAttachShader(taa_program, vs);
+    glAttachShader(taa_program, fs);
+    glLinkProgram(taa_program);
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+    {
+        GLint ok = 0;
+        glGetProgramiv(taa_program, GL_LINK_STATUS, &ok);
+        if (!ok) {
+            char log[768] = {0};
+            glGetProgramInfoLog(taa_program, sizeof(log) - 1, NULL, log);
+            sysLogPrintf(LOG_WARNING, "TAA-lite program link failed: %s", log);
+            glDeleteProgram(taa_program);
+            taa_program = 0;
+            return false;
+        }
+    }
+    glGenVertexArrays(1, &taa_vao);
+    glUseProgram(taa_program);
+    glUniform1i(glGetUniformLocation(taa_program, "uCurrent"), 0);
+    glUniform1i(glGetUniformLocation(taa_program, "uHistory"), 1);
+    glUseProgram(0);
+    sysLogPrintf(LOG_NOTE, "GL: TAA-lite temporal resolve available");
+    return true;
+}
+
+static void taa_alloc(uint32_t w, uint32_t h) {
+    if (w == taa_width && h == taa_height && taa_current_tex && taa_history_tex) return;
+    if (!taa_current_tex) glGenTextures(1, &taa_current_tex);
+    if (!taa_history_tex) glGenTextures(1, &taa_history_tex);
+    GLuint tex[2] = { taa_current_tex, taa_history_tex };
+    for (int i = 0; i < 2; ++i) {
+        glBindTexture(GL_TEXTURE_2D, tex[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)w, (GLsizei)h,
+                     0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    }
+    taa_width = w;
+    taa_height = h;
+    taa_history_valid = false;
+}
+
+static void taa_apply(void) {
+    int mode = gfx_get_taa_mode();
+    if (mode <= 0 || optionsOverlayIsOpen()) {
+        taa_history_valid = false;
+        taa_last_mode = mode;
+        return;
+    }
+    if (mode != taa_last_mode) {
+        taa_history_valid = false;
+        taa_last_mode = mode;
+    }
+
+    GLint vp[4] = {0,0,0,0};
+    GLint oldProgram = 0, oldVao = 0, oldArray = 0, oldActive = 0;
+    GLint oldFbo = 0, oldReadFbo = 0, oldDrawFbo = 0;
+    GLint oldTex0 = 0, oldTex1 = 0;
+    GLboolean blendWas = glIsEnabled(GL_BLEND);
+    GLboolean depthWas = glIsEnabled(GL_DEPTH_TEST);
+    GLboolean scissorWas = glIsEnabled(GL_SCISSOR_TEST);
+
+    glGetIntegerv(GL_VIEWPORT, vp);
+    {
+        /* The last game viewport can be the scaled scene target. Temporal AA
+         * operates on the already-presented window image, so use framebuffer
+         * zero's physical dimensions rather than inheriting scene scale. */
+        uint32_t outW = !framebuffers.empty() ? framebuffers[0].width : (uint32_t)vp[2];
+        uint32_t outH = !framebuffers.empty() ? framebuffers[0].height : (uint32_t)vp[3];
+        if (outW < 1 || outH < 1) return;
+        vp[0] = 0;
+        vp[1] = 0;
+        vp[2] = (GLint)outW;
+        vp[3] = (GLint)outH;
+    }
+    if (!taa_init_program()) return;
+
+    glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &oldVao);
+    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &oldArray);
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &oldActive);
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFbo);
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &oldReadFbo);
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &oldDrawFbo);
+
+    glActiveTexture(GL_TEXTURE0);
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldTex0);
+    glActiveTexture(GL_TEXTURE1);
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &oldTex1);
+
+    taa_alloc((uint32_t)vp[2], (uint32_t)vp[3]);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glReadBuffer(GL_BACK);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, taa_current_tex);
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, vp[0], vp[1], vp[2], vp[3]);
+
+    if (!taa_history_valid) {
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, taa_history_tex);
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, vp[0], vp[1], vp[2], vp[3]);
+        taa_history_valid = true;
+    } else {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glViewport(vp[0], vp[1], vp[2], vp[3]);
+        glDisable(GL_BLEND);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_SCISSOR_TEST);
+        glUseProgram(taa_program);
+        glBindVertexArray(taa_vao);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, taa_current_tex);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, taa_history_tex);
+        {
+            const float weight = mode >= 2 ? 0.16f : 0.08f;
+            GLint loc = glGetUniformLocation(taa_program, "uHistoryWeight");
+            if (loc >= 0) glUniform1f(loc, weight);
+        }
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        /* The accumulated output becomes next frame's history. */
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+        glReadBuffer(GL_BACK);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, taa_history_tex);
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, vp[0], vp[1], vp[2], vp[3]);
+    }
+
+    /* Restore the exact GL bindings expected by fast3d's state cache. */
+    glUseProgram((GLuint)oldProgram);
+    glBindVertexArray((GLuint)oldVao);
+    glBindBuffer(GL_ARRAY_BUFFER, (GLuint)oldArray);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, (GLuint)oldTex0);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, (GLuint)oldTex1);
+    glActiveTexture((GLenum)oldActive);
+    if (blendWas) glEnable(GL_BLEND); else glDisable(GL_BLEND);
+    if (depthWas) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+    if (scissorWas) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
+    glViewport(vp[0], vp[1], vp[2], vp[3]);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, (GLuint)oldReadFbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (GLuint)oldDrawFbo);
+    (void)oldFbo;
+}
+
 static void gfx_opengl_end_frame(void) {
+    taa_apply();
     glFlush();
 }
 

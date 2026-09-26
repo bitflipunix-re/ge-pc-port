@@ -49,6 +49,15 @@ void gfx_set_mipmap_filter(enum MipmapFilteringMode mode);
 void gfx_set_fix_mip_textures(int on);
 void gfx_set_wrap_fix(int on);
 void gfx_set_anisotropy_level(int level);  /* 1 = off; clamped to GL max */
+/* Main-scene resolution scaling. 100 = window/native drawable resolution.
+ * Uses fast3d's existing offscreen framebuffer + final blit path. */
+void gfx_set_render_scale_percent(int percent);
+int  gfx_get_render_scale_percent(void);
+
+/* Experimental temporal accumulation AA. 0=off, 1=low, 2=high.
+ * This is deliberately called TAA/TAA-lite, not NVIDIA TXAA. */
+void gfx_set_taa_mode(int mode);
+int  gfx_get_taa_mode(void);
 void gfx_set_safe_area_crop(int on);       /* crop the N64 TV-overscan safe-area margin instead of showing it as black bars */
 /* On-window pixel rect (top-left origin) the full VI logical canvas (0,0)-
  * (SCREEN_WIDTH, SCREEN_HEIGHT) currently maps to, honoring the safe-area
