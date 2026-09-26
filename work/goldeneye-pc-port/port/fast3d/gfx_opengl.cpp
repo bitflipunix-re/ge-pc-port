@@ -1135,6 +1135,9 @@ static GLuint taa_compile_shader(GLenum type, const char *src) {
 
 static bool taa_init_program(void) {
     if (taa_program) return true;
+    /* gl_VertexID + VAOs are core in GLES3 / desktop GL3. The R36S target
+     * is GLES3; older desktop compatibility contexts simply leave TAA off. */
+    if (!gl_es && GLVersion.major < 3) return false;
 
     const char *vs_es =
         "#version 300 es\n"
@@ -1237,7 +1240,18 @@ static void taa_apply(void) {
     GLboolean scissorWas = glIsEnabled(GL_SCISSOR_TEST);
 
     glGetIntegerv(GL_VIEWPORT, vp);
-    if (vp[2] <= 0 || vp[3] <= 0) return;
+    {
+        /* The last game viewport can be the scaled scene target. Temporal AA
+         * operates on the already-presented window image, so use framebuffer
+         * zero's physical dimensions rather than inheriting scene scale. */
+        uint32_t outW = !framebuffers.empty() ? framebuffers[0].width : (uint32_t)vp[2];
+        uint32_t outH = !framebuffers.empty() ? framebuffers[0].height : (uint32_t)vp[3];
+        if (outW < 1 || outH < 1) return;
+        vp[0] = 0;
+        vp[1] = 0;
+        vp[2] = (GLint)outW;
+        vp[3] = (GLint)outH;
+    }
     if (!taa_init_program()) return;
 
     glGetIntegerv(GL_CURRENT_PROGRAM, &oldProgram);
@@ -1308,7 +1322,7 @@ static void taa_apply(void) {
     glViewport(vp[0], vp[1], vp[2], vp[3]);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, (GLuint)oldReadFbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (GLuint)oldDrawFbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)oldFbo);
+    (void)oldFbo;
 }
 
 static void gfx_opengl_end_frame(void) {
