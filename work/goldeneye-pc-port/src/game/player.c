@@ -432,6 +432,14 @@ void initBONDdataforPlayer(s32 player_num)
     g_playerPointers[player_num]->projmatrixf = NULL;
     g_playerPointers[player_num]->field_10E0 = 0;
     g_playerPointers[player_num]->field_10E4 = 0;
+#ifdef PORT
+    g_playerPointers[player_num]->port_field_5C = NULL;
+    g_playerPointers[player_num]->port_field_60 = NULL;
+    g_playerPointers[player_num]->port_field_64 = NULL;
+    g_playerPointers[player_num]->port_field_68 = NULL;
+    g_playerPointers[player_num]->port_field_10E0 = NULL;
+    g_playerPointers[player_num]->port_field_10E4 = NULL;
+#endif
     g_playerPointers[player_num]->field_10E8 = NULL;
     g_playerPointers[player_num]->field_10EC = NULL;
     g_playerPointers[player_num]->c_scalelod60 = 1.0f;
