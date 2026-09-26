@@ -3691,9 +3691,7 @@ filterloop:
         PORT_COLLISION_POINT(i).x += m->m[3][0];
         PORT_COLLISION_POINT(i).y += m->m[3][2];
     }
-#ifdef PORT
 #undef PORT_COLLISION_POINT
-#endif
 
 }
 
