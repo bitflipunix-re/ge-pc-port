@@ -1,4 +1,4 @@
-name: Discord main build updates
+name: Discord main green builds
 
 on:
   workflow_run:
@@ -15,31 +15,82 @@ permissions:
 
 jobs:
   notify:
-    if: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' }}
+    # #main-builds is intentionally an authoritative green-build feed:
+    # main pushes only, successful CI only. PRs/feature branches/failures stay out.
+    if: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-24.04
     env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_MAIN_BUILDS }}
       RUN_URL: ${{ github.event.workflow_run.html_url }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
       SHA: ${{ github.event.workflow_run.head_sha }}
-      CONCLUSION: ${{ github.event.workflow_run.conclusion }}
       TITLE: ${{ github.event.workflow_run.display_title }}
       REPOSITORY: ${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Post main build result to Discord
-        if: ${{ env.DISCORD_WEBHOOK != '' }}
+      - name: Require Discord webhook
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${DISCORD_WEBHOOK:-}" ]; then
+            echo "DISCORD_WEBHOOK_MAIN_BUILDS is not configured; refusing to silently drop a green build." >&2
+            exit 1
+          fi
+
+      - name: Checkout verified main revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Build changelog since previous green main build
+        id: changelog
         shell: bash
         run: |
           set -euo pipefail
 
           short_sha="${SHA:0:7}"
-          case "$CONCLUSION" in
-            success) icon="✅"; label="BUILD PASSED" ;;
-            failure) icon="❌"; label="BUILD FAILED" ;;
-            cancelled) icon="⚪"; label="BUILD CANCELLED" ;;
-            *) icon="ℹ️"; label="BUILD ${CONCLUSION^^}" ;;
-          esac
+          previous_sha="$(
+            gh run list               --repo "$REPOSITORY"               --workflow "GoldenEye AArch64 R36S GLES Build"               --branch main               --event push               --status success               --limit 20               --json databaseId,headSha               --jq ".[] | select(.databaseId != (${RUN_ID}|tonumber)) | .headSha"               | head -n1
+          )"
 
-          export CONTENT="$icon **$label — main**\n\`$short_sha\` — $TITLE\n$RUN_URL"
+          if [ -n "$previous_sha" ] && git cat-file -e "${previous_sha}^{commit}" 2>/dev/null && git merge-base --is-ancestor "$previous_sha" "$SHA"; then
+            range="${previous_sha}..${SHA}"
+            changelog="$(git log --no-merges --format='• `%h` %s' "$range")"
+          else
+            changelog="$(git log -1 --format='• `%h` %s' "$SHA")"
+          fi
+
+          if [ -z "$changelog" ]; then
+            changelog="• `$short_sha` $TITLE"
+          fi
+
+          # Discord messages are capped at 2000 characters. Leave room for
+          # heading/build metadata/link and trim only the changelog tail.
+          CHANGELOG="$changelog" python3 - <<'PY' > /tmp/changelog.txt
+          import os
+          text = os.environ["CHANGELOG"]
+          limit = 1350
+          if len(text) > limit:
+              text = text[:limit].rsplit("\n", 1)[0] + "\n• …additional commits in GitHub"
+          print(text)
+          PY
+
+          {
+            echo 'text<<EOF'
+            cat /tmp/changelog.txt
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post verified green build and changelog to Discord
+        shell: bash
+        env:
+          CHANGELOG: ${{ steps.changelog.outputs.text }}
+        run: |
+          set -euo pipefail
+
+          short_sha="${SHA:0:7}"
+          export CONTENT="✅ **GREEN BUILD — main**\n`$short_sha` — AArch64/GLES + PortMaster package verified\n\n**Changes since previous green build**\n$CHANGELOG\n\n$RUN_URL"
 
           python3 - <<'PY' > /tmp/discord-payload.json
           import json, os
@@ -50,4 +101,9 @@ jobs:
           }))
           PY
 
-          curl --fail-with-body             --retry 3             --retry-delay 2             -H 'Content-Type: application/json'             -d @/tmp/discord-payload.json             "$DISCORD_WEBHOOK"
+          curl --fail-with-body \
+            --retry 3 \
+            --retry-delay 2 \
+            -H 'Content-Type: application/json' \
+            -d @/tmp/discord-payload.json \
+            "$DISCORD_WEBHOOK"
