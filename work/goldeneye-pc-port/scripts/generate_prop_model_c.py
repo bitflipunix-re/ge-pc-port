@@ -572,10 +572,13 @@ class BinaryModelParser:
         vertices_offset = self.to_file_offset(vertices_ptr) if vertices_ptr != 0 else 0
         primary_offset = self.to_file_offset(primary_ptr) if primary_ptr != 0 else 0
 
-        # Parse vertex array if present
+        # Opcode 22's historical numVertices name is misleading: the
+        # runtime dorottex() path treats it as a QUAD count and consumes four
+        # consecutive vertices per iteration. Keep this source inspector in
+        # sync with the runtime and d43 sidecar converter (D303).
         vertices = []
         if vertices_offset > 0 and num_vertices > 0:
-            for i in range(num_vertices):
+            for i in range(num_vertices * 4):
                 v_offset = vertices_offset + i * 16
                 vertices.append(Vertex(
                     x=read_s16(self.data, v_offset + 0),
