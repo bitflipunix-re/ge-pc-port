@@ -29,6 +29,10 @@ FORBIDDEN = [
         ),
         "audio queue pointer formed before NULL guard",
     ),
+    (
+        re.compile(r"f32\s+pointbuf\s*\[\s*10\s*\]"),
+        "intro swirl spline host buffer is undersized",
+    ),
 ]
 
 SUSPICIOUS = [
