@@ -1316,15 +1316,19 @@ ALSoundState *sndPlaySfx(struct ALBankAlt_s *soundBank, s16 soundIndex, ALSoundS
  */
 void sndPortFlushStageSfx(void)
 {
-    ALEventQueue *evtq = &g_sndPlayerPtr->evtq;
+    ALEventQueue *evtq;
     ALLink *node;
     OSIntMask mask;
     ALSndpEvent flushEvt;
     s32 removed = 0;
 
+    /* Do not even form a member address through a NULL player pointer.
+     * C treats &null->member as undefined behavior; optimized ARM64 builds
+     * are allowed to assume the base was non-NULL before the later guard. */
     if (g_sndPlayerPtr == NULL)
         return;
 
+    evtq = &g_sndPlayerPtr->evtq;
     mask = osSetIntMask(OS_IM_NONE);
 
     node = evtq->allocList.next;
