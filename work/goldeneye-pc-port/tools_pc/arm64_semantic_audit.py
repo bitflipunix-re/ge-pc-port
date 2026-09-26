@@ -83,6 +83,10 @@ REQUIRED = {
         ("GE_ANIMTABLE_ENTRY_PTR(animation_table_ptrs1, animID)", "dense animation table entries must zero-extend at the host pointer boundary"),
         ("GE_ANIMDATA_MATCH(objecthandlerGetModelAnim(self->model), fire_kneel_forward_one_handed_weapon_slow)", "animation comparisons must retain host pointer width"),
     ],
+    "src/game/model.c": [
+        ("MODEL_U32_PTR(u8, model->unk34)", "cached animation frame data must zero-extend through the model pointer boundary"),
+        ("MODEL_U32_PTR(u8, model->unk68)", "secondary cached animation frame data must zero-extend through the model pointer boundary"),
+    ],
 }
 
 for root in SCAN_ROOTS:
