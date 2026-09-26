@@ -143,7 +143,7 @@ void sndHandleEvent(ALSndPlayer *sndp, ALSndpEvent *event);
 void sndDisposeSound(ALSoundState *state);
 void sndCreatePitchEvent(ALSoundState *state);
 void sndRemoveEvents(ALEventQueue *evtq, ALSoundState *state, u16 eventType);
-s32 sndCountAllocList(s16 *allocListCount, s16 *freeListCount);
+s32 sndCountAllocList(s16 *freeCount, s16 *allocCount);
 ALSoundState *sndSetupSound(struct ALBankAlt_s *soundBank, ALSound* sound);
 void sndUnlinkClearSound(ALSoundState *state);
 void sndSetPriority(ALSoundState *state, u8 priority);
@@ -811,37 +811,49 @@ void sndRemoveEvents(ALEventQueue *evtq, ALSoundState *state, u16 eventType)
  * @param freeListCount Out param. Will contain the number of (next) nodes in the D_800243E4 freeList.
  * @return Number of (prev) nodes in the D_800243E4 freeList.
  */
-s32 sndCountAllocList(s16 *allocListCount, s16 *freeListCount)
+s32 sndCountAllocList(s16 *freeCount, s16 *allocCount)
 {
-    u16 counter1;
-    u16 counter2;
-    u16 returnCounter;
+    u16 allocatedForward = 0;
+    u16 freeForward = 0;
+    u16 allocatedBackward = 0;
+    ALLink *node;
+    ALSoundState *state;
 
-    ALEventQueue *evtq = (ALEventQueue *)&D_800243E4;
-
-    ALLink *freeListNodeForward = evtq->freeList.next;
-    ALLink *allocListNodeForward = evtq->allocList.next;
-    ALLink *freeListNodeBackward = evtq->freeList.prev;
-
-    for (counter1 = 0; freeListNodeForward != NULL; freeListNodeForward = freeListNodeForward->next)
+    /*
+     * D_800243E4 is the sound-state list header, not an ALEventQueue.
+     * The original decomp cast relied on N64 field adjacency:
+     *   freeList.next  -> D_800243E4.node.next          (allocated states)
+     *   allocList.next -> g_sndPlayerSoundStatePtr     (free states)
+     * That becomes an out-of-bounds object reinterpretation on LP64.
+     */
+    for (node = D_800243E4.node.next; node != NULL; node = node->next)
     {
-         counter1++;
+        allocatedForward++;
     }
 
-    for (counter2 = 0; allocListNodeForward != NULL; allocListNodeForward = allocListNodeForward->next)
+    for (state = D_800243E4.g_sndPlayerSoundStatePtr;
+         state != NULL;
+         state = (ALSoundState *)state->link.next)
     {
-         counter2++;
+        freeForward++;
     }
 
-    for (returnCounter = 0; freeListNodeBackward != NULL; freeListNodeBackward = freeListNodeBackward->prev)
+    for (node = D_800243E4.node.prev; node != NULL; node = node->prev)
     {
-         returnCounter++;
+        allocatedBackward++;
     }
 
-    *allocListCount = (s16) counter2;
-    *freeListCount = (s16) counter1;
+    if (freeCount != NULL)
+    {
+        *freeCount = (s16)freeForward;
+    }
 
-    return returnCounter;
+    if (allocCount != NULL)
+    {
+        *allocCount = (s16)allocatedForward;
+    }
+
+    return allocatedBackward;
 }
 
 /**
