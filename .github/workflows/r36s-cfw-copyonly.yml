@@ -57,7 +57,8 @@ jobs:
       - name: Assemble Chromebook copy-only package
         run: |
           set -eux
-          rm -rf cfw-copyonly-bundle\n          mkdir -p cfw-copyonly-bundle/COPY_TO_BOOT
+          rm -rf cfw-copyonly-bundle
+          mkdir -p cfw-copyonly-bundle/COPY_TO_BOOT
           IMAGE=$(find input/kernel -type f -name 'Image-*r36s' -print -quit)
           DTB=$(find input/kernel -type f -name 'rk3326-r36s.dtb' -print -quit)
           test -n "$IMAGE"
