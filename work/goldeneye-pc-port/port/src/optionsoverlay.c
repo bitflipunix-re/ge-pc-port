@@ -740,6 +740,9 @@ static void rowSet(struct Row *r, double v)
             s_presetDepth++;
 #define PRESET_SET(k,val) do { x=rowByKey(k); if (x && x->found) rowSet(x,(val)); } while(0)
             if (p == 1) {
+                PRESET_SET("Video.MSAA", 1);
+                PRESET_SET("Video.RenderScale", 100);
+                PRESET_SET("Video.TAA", 0);
                 PRESET_SET("Video.TextureFilter", 0);
                 PRESET_SET("Video.MipmapFilter", 1);
                 PRESET_SET("Video.Anisotropy", 1);
@@ -749,6 +752,9 @@ static void rowSet(struct Row *r, double v)
                 PRESET_SET("Video.LodDistanceAutoFov", 0);
                 PRESET_SET("Video.LodDistance", 100);
             } else if (p == 2) {
+                PRESET_SET("Video.MSAA", 1);
+                PRESET_SET("Video.RenderScale", 125);
+                PRESET_SET("Video.TAA", 0);
                 PRESET_SET("Video.TextureFilter", 0);
                 PRESET_SET("Video.MipmapFilter", 0);
                 PRESET_SET("Video.Anisotropy", 1);
@@ -758,6 +764,9 @@ static void rowSet(struct Row *r, double v)
                 PRESET_SET("Video.LodDistanceAutoFov", 0);
                 PRESET_SET("Video.LodDistance", 150);
             } else if (p == 3) {
+                PRESET_SET("Video.MSAA", 4);
+                PRESET_SET("Video.RenderScale", 125);
+                PRESET_SET("Video.TAA", 1);
                 PRESET_SET("Video.TextureFilter", 2);
                 PRESET_SET("Video.MipmapFilter", 2);
                 PRESET_SET("Video.Anisotropy", 8);
@@ -766,6 +775,9 @@ static void rowSet(struct Row *r, double v)
                 PRESET_SET("Video.LodDistanceAutoFov", 0);
                 PRESET_SET("Video.LodDistance", 200);
             } else if (p == 4) {
+                PRESET_SET("Video.MSAA", 1);
+                PRESET_SET("Video.RenderScale", 100);
+                PRESET_SET("Video.TAA", 0);
                 PRESET_SET("Video.TextureFilter", 1);
                 PRESET_SET("Video.MipmapFilter", 2);
                 PRESET_SET("Video.Anisotropy", 2);
