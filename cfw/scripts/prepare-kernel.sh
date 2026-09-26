@@ -7,6 +7,9 @@ CFW=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 KSRC=${1:-"$CFW/.cache/src/linux-$KERNEL_VERSION"}
 DTS_DIR="$KSRC/arch/arm64/boot/dts/rockchip"
 PANEL_DIR="$KSRC/drivers/gpu/drm/panel"
+LOGO_DIR="$KSRC/drivers/video/logo"
+LOGO_B64="$CFW/board/r36s/bitflipunix-logo-384.png.b64"
+LOGO_PNG="$LOGO_DIR/bitflipunix-r36s.png"
 
 [ -d "$KSRC" ] || {
     echo "kernel source not found: $KSRC" >&2
@@ -16,6 +19,18 @@ PANEL_DIR="$KSRC/drivers/gpu/drm/panel"
 
 install -m 0644 "$CFW/board/r36s/rk3326-r36s.dts" "$DTS_DIR/rk3326-r36s.dts"
 install -m 0644 "$CFW/board/r36s/panel-generic-dsi.c" "$PANEL_DIR/panel-generic-dsi.c"
+
+# Decode the generated BitflipUnix artwork and replace Linux's default
+# CLUT224 logo. fbcon centers this at runtime via bootargs.
+base64 -d "$LOGO_B64" > "$LOGO_PNG"
+if command -v magick >/dev/null 2>&1; then
+    magick "$LOGO_PNG" -alpha off -colors 224 -compress none         "$LOGO_DIR/logo_linux_clut224.ppm"
+elif command -v convert >/dev/null 2>&1; then
+    convert "$LOGO_PNG" -alpha off -colors 224 -compress none         "$LOGO_DIR/logo_linux_clut224.ppm"
+else
+    echo "ImageMagick is required to prepare the BitflipUnix boot logo" >&2
+    exit 1
+fi
 
 DTS_MAKEFILE="$DTS_DIR/Makefile"
 if ! grep -q 'rk3326-r36s.dtb' "$DTS_MAKEFILE"; then
@@ -44,4 +59,4 @@ config DRM_PANEL_GENERIC_DSI
 EOF
 fi
 
-echo "R36S board support installed into $KSRC"
+echo "R36S board support and BitflipUnix boot logo installed into $KSRC"
