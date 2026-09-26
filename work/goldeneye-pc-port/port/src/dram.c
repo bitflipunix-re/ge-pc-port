@@ -46,13 +46,16 @@
  *   +0x800000  end of region (8 MB, like an 8-MB-RAM N64)
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include "platform.h"
 #include "system.h"
 
 #if defined(PLATFORM_WINDOWS)
 #include <windows.h>
 #else
-#define _GNU_SOURCE /* memfd_create — must precede all system headers */
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
