@@ -832,6 +832,7 @@ s32 get_BONDdata_field_10E0(void) {
 void *currentPlayerSetMatrix10CC(Mtxf *matrix) {
     g_CurrentPlayer->field_10E8 = g_CurrentPlayer->field_10CC;
     g_CurrentPlayer->field_10CC = matrix;
+    return matrix;
 }
 
 Mtxf *camGetWorldToScreenMtxf(void) {
