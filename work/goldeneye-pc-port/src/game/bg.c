@@ -1,3 +1,4 @@
+#include <float.h>
 #include <ultra64.h>
 #include <PR/os.h>
 #include <PR/gbi.h>
@@ -1658,7 +1659,7 @@ s32 sub_GAME_7F0B5864(s32 portalnum, bbox2d *bbox)
     s32 j;
     coord3d points[19];
     coord2d screenpos;
-    bbox2d bounds;
+    bbox2d bounds = {0};
     s32 pointcount;
     s32 onscreencount;
     s32 i;
@@ -5964,8 +5965,12 @@ void sub_GAME_7F0BA2D4(coord3d *bbmin, coord3d *bbmax, s32 *room_list, s32 *coun
                         goto next_portal;
                     }
                     
-                    portal_min = *(coord3d *) &D_80044904;
-                    portal_max = *(coord3d *) &D_80044910;
+                    portal_min.x = FLT_MAX;
+                    portal_min.y = FLT_MAX;
+                    portal_min.z = FLT_MAX;
+                    portal_max.x = -FLT_MAX;
+                    portal_max.y = -FLT_MAX;
+                    portal_max.z = -FLT_MAX;
                     portal_pts = g_BgPortals[portal_idx].offset_portal;
                     
                     for (j = 0; j < portal_pts->numPoints; j++)
