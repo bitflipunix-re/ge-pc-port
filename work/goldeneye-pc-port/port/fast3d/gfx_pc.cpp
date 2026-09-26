@@ -2214,11 +2214,6 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
             }
             tex_u_bias[i] = -(float)rdp.texture_tile[tile].uls / 4.0f;
             tex_v_bias[i] = -(float)rdp.texture_tile[tile].ult / 4.0f;
-            /* Clamp coordinates are identical for all three vertices, so keep
-             * the original divide semantics but perform each one once. */
-            clamp_s_norm[i] = ((float)tex_width2[i] - 0.5f) / (float)tex_width[i];
-            clamp_t_norm[i] = ((float)tex_height2[i] - 0.5f) / (float)tex_height[i];
-
             uint32_t tex_width1 = tex_width[i] << (cms & G_TX_MIRROR);
             uint32_t tex_height1 = tex_height[i] << (cmt & G_TX_MIRROR);
 
@@ -2267,10 +2262,14 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
 
             if ((cms & G_TX_CLAMP) && ((cms & G_TX_MIRROR) || tex_width1 != tex_width2[i])) {
                 tm |= 1 << 2 * i;
+                /* Same value is appended for every vertex. Preserve the
+                 * original division result while doing it once per triangle. */
+                clamp_s_norm[i] = ((float)tex_width2[i] - 0.5f) / (float)tex_width[i];
                 cms &= ~G_TX_CLAMP;
             }
             if ((cmt & G_TX_CLAMP) && ((cmt & G_TX_MIRROR) || tex_height1 != tex_height2[i])) {
                 tm |= 1 << (2 * i + 1);
+                clamp_t_norm[i] = ((float)tex_height2[i] - 0.5f) / (float)tex_height[i];
                 cmt &= ~G_TX_CLAMP;
             }
 
