@@ -2496,6 +2496,27 @@ s32 chrTick(PropRecord *prop)
     {
         if (D_8002C904)
         {
+#ifdef PORT
+            {
+                /* animation_table_ptrs1 deliberately remains a dense s32
+                 * table matching the N64 data layout. expand_ani_table_entries
+                 * rebases each live entry into the s32-safe 0x70000000 DRAM
+                 * view; zero-extend explicitly when crossing back to a host
+                 * pointer so C never performs implementation-defined
+                 * int-to-pointer/sign-extension conversion. */
+                ModelAnimation *overrideAnim =
+                    (ModelAnimation *)(uintptr_t)(u32)
+                    animation_table_ptrs1[g_AnimationTablePointerCountRelated];
+
+                if (overrideAnim != (ModelAnimation *)1)
+                {
+                    if (objecthandlerGetModelAnim(model) != overrideAnim)
+                    {
+                        modelSetAnimation(model, overrideAnim, 0, 0.0f, 0.5f, 0.0f);
+                    }
+                }
+            }
+#else
             if (((ModelAnimation *)animation_table_ptrs1[g_AnimationTablePointerCountRelated]) != ((ModelAnimation *)1))
             {
                 if (objecthandlerGetModelAnim(model) != ((ModelAnimation *)animation_table_ptrs1[g_AnimationTablePointerCountRelated]))
@@ -2503,6 +2524,7 @@ s32 chrTick(PropRecord *prop)
                     modelSetAnimation(model, (ModelAnimation *)animation_table_ptrs1[g_AnimationTablePointerCountRelated], 0, 0.0f, 0.5f, 0.0f);
                 }
             }
+#endif
         }
         else
         {

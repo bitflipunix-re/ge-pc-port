@@ -745,12 +745,28 @@ void solo_char_load(void)
 void bondviewRemovePlayerBody(void)
 {
 #ifdef PORT
+    /* Stage/death/cutscene teardown can outlive the player body's prop.
+     * Never let diagnostic logging or cleanup itself become a stale-pointer
+     * crash. Clear host-only body state if the prop has already gone away. */
+    if (g_CurrentPlayer == NULL)
+    {
+        return;
+    }
+
     if (d243mEnabled()) {
-        osSyncPrintf("D243M: REMOVE frame=%d had_model=%d chr=%p cam=%d subcam=%d\n",
+        osSyncPrintf("D243M: REMOVE frame=%d had_model=%d prop=%p chr=%p cam=%d subcam=%d\n",
                      g_d243mFrameCounter,
                      (int)(g_CurrentPlayer->bodyModel != 0),
-                     (void *) g_CurrentPlayer->prop->chr,
+                     (void *)g_CurrentPlayer->prop,
+                     g_CurrentPlayer->prop ? (void *)g_CurrentPlayer->prop->chr : NULL,
                      (int) g_CameraMode, (int) dword_CODE_bss_80079A18);
+    }
+
+    if (g_CurrentPlayer->prop == NULL)
+    {
+        g_CurrentPlayer->bodyModel = 0;
+        g_bondviewForceDisarm = 1;
+        return;
     }
 #endif
     if ((g_CurrentPlayer->prop->chr) && (getPlayerCount() == 1))
@@ -1220,7 +1236,15 @@ void bondviewCalcIntroSwirlCamera(s32 index, f32 time, coord3d *pos, coord3d *lo
 {
     struct SetupIntroSwirl *base;
     struct SetupIntroSwirl *loopbase;
+#ifdef PORT
+    /* Four coord3d spline control points are written at offsets 0,3,6,9.
+     * The original 10-float N64 stack layout lets the final point spill two
+     * floats into adjacent scratch; that is undefined behavior on a host and
+     * trips hardened stacks. Give the host path the actual 4*3 capacity. */
+    f32 pointbuf[12];
+#else
     f32 pointbuf[10];
+#endif
     struct SetupIntroSwirl *swirl;
     f32 frac;
     f32 *dst;

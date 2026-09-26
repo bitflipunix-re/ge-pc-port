@@ -20,7 +20,14 @@ struct levelentry
 // cannonical name
 #define PORTMAX 200
 
+#ifdef PORT
+/* The segment token is intentionally 32-bit, but the host base is not.
+ * Fold the 0x0fxxxxxx token in u32 space, then add that byte offset to the
+ * full-width host pointer. This also makes stack/local probe buffers safe. */
+#define BG_SEG_TO_PTR(base, off) ((void *)((u8 *)(base) + (u32)((u32)(off) + 0xF1000000u)))
+#else
 #define BG_SEG_TO_PTR(base, off) ((void *) (((u32) (base)) + (((u32) (off)) + 0xF1000000)))
+#endif
 
 typedef struct RoomVtxBatchBounds {
     s16 gdlindex;    // 0x00
@@ -113,7 +120,14 @@ typedef struct s_bound_info
     // could be draw order?
     s32 unk1;
     struct bbox2d bbox;
+#ifdef PORT
+    /* Visibility traversal state, not a pointer. Every live use reads/writes
+     * this as integer flags. Keeping it u32 also preserves the N64 0x1C
+     * s_bound_info stride on LP64 hosts. */
+    u32 next;
+#else
     void* next;
+#endif
     #endif
 
 

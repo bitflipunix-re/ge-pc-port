@@ -36,6 +36,9 @@ jobs:
       - name: Show commit
         run: git log -1 --oneline
 
+      - name: ARM64 semantic regression gate
+        run: python3 work/goldeneye-pc-port/tools_pc/arm64_semantic_audit.py
+
       - name: Install AArch64 cross-build dependencies
         run: |
           sudo dpkg --add-architecture arm64

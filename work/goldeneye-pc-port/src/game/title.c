@@ -28,6 +28,7 @@
 
 #ifdef PORT
 #include <stdlib.h>
+#include <stdint.h>
 #endif
 
 
@@ -36,7 +37,11 @@ extern signed short sins(unsigned short x);
 
 // bss
 //CODE.bss:80069550
+#ifdef PORT
+u8 *barrelDisplayListPtr;
+#else
 s32 barrelDisplayListPtr;
+#endif
 //CODE.bss:80069554
 Gfx *gunbarrelgfxListPointer;
 //CODE.bss:80069558
@@ -64,9 +69,15 @@ f32 titleTransitionY;
 //CODE.bss:80069584
 s16 word_CODE_bss_80069584;
 //CODE.bss:80069588
+#ifdef PORT
+u8 *dword_CODE_bss_80069588;
+//CODE.bss:8006958C
+u8 *dword_CODE_bss_8006958C;
+#else
 s32 dword_CODE_bss_80069588;
 //CODE.bss:8006958C
 s32 dword_CODE_bss_8006958C;
+#endif
 //CODE.bss:80069590
 s32 virtualaddress;
 
@@ -221,7 +232,7 @@ Gfx *sub_GAME_7F007F30(Gfx *gdl, s32 count, Mtxf *matrix)
 
             if (gunbarrelTimer == BOND_EYE_ANIM_START)
             {
-                modelSetAnimation(chrModelInstance, (struct ModelAnimation *) ((s32) &ANIM_DATA_bond_eye_fire + (s32) &ptr_animation_table->data), 0, 2.0f, 0.910000026f, 16.0f);
+                modelSetAnimation(chrModelInstance, (struct ModelAnimation *)GE_ANIMDATA_PTR(bond_eye_fire), 0, 2.0f, 0.910000026f, 16.0f);
             }
 
             if (gunbarrelTimer == BOND_EYE_ANIM_SPEEDUP)
@@ -397,7 +408,12 @@ void setupRarewareLogoData(s32 address, s32 size) {
     D_8002A89C = -40.0f;
     intro_eye_counter = 0;
     virtualaddress = address;
+#ifdef PORT
+    romCopy((void *)(uintptr_t)(u32)virtualaddress, &_rarewarelogoSegmentRomStart,
+            ALIGN64_V2((u32)&_rarewarelogoSegmentEnd - (u32)&_rarewarelogoSegmentStart));
+#else
     romCopy(virtualaddress, &_rarewarelogoSegmentRomStart, ALIGN64_V2((u32)&_rarewarelogoSegmentEnd - (u32)&_rarewarelogoSegmentStart));
+#endif
 }
 
 
@@ -416,7 +432,11 @@ Gfx *retrieve_display_rareware_logo(Gfx *gdl)
 #endif
 
     D_8002A7D0 = (1 - D_8002A7D0);
+#ifdef PORT
+    gSPSegment(gdl++, SPSEGMENT_GETITLE, osVirtualToPhysical((void *)(uintptr_t)(u32)virtualaddress));
+#else
     gSPSegment(gdl++, SPSEGMENT_GETITLE, osVirtualToPhysical(virtualaddress));
+#endif
     if ((gunbarrel_mode == 0) || (gunbarrel_mode == 1)) {
         s32 var1;
         s32 var2;
@@ -487,7 +507,7 @@ void initializeGunBarrelIntro(u8 *gfxBuffer, s32 bufferSize)
     bufferSize -= 0x200;
     gfxBuffer += 0x200;
     
-    createGunbarrelRenderHole(barrelDisplayListPtr, 0x1E);
+    createGunbarrelRenderHole((struct s_display_list_something *)barrelDisplayListPtr, 0x1E);
     
     gunbarrelgfxListPointer = (Gfx*)gfxBuffer;
 #ifdef PORT
@@ -517,7 +537,9 @@ void initializeGunBarrelIntro(u8 *gfxBuffer, s32 bufferSize)
      * N64 K0 value from the physical offset; seg_addr() passes it through to
      * the KSEG0 mirror at 0x80000000 (segments 7/8 are never registered, so
      * the unmarked-segment path is skipped). */
-    sub_GAME_7F01BFF8(gunbarrelgfxListPointer, (Vtx *)(OS_K0_TO_PHYSICAL((void *)barrelDisplayListPtr) | 0x80000000u), 0x1E);
+    sub_GAME_7F01BFF8(gunbarrelgfxListPointer,
+                         (Vtx *)(uintptr_t)(OS_K0_TO_PHYSICAL(barrelDisplayListPtr) | 0x80000000u),
+                         0x1E);
 #else
     sub_GAME_7F01BFF8(gunbarrelgfxListPointer, barrelDisplayListPtr + 0x80000000, 0x1E);
 #endif
@@ -559,7 +581,7 @@ void initializeGunBarrelIntro(u8 *gfxBuffer, s32 bufferSize)
     modelSetAnimPlaySpeed(chrModelInstance, S_7F008E80_ANIM_SPEED, 0.0f);
 #undef S_7F008E80_ANIM_SPEED
     
-    animation = (struct ModelAnimation*)((s32)ptr_animation_table + (s32)&ANIM_DATA_bond_eye_walk);
+    animation = (struct ModelAnimation *)GE_ANIMDATA_PTR(bond_eye_walk);
     startframe = animation->unk04 - 0x44;
     while (startframe < 0)
     {

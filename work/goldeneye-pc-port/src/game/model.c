@@ -2,6 +2,7 @@
 #ifdef PORT /* TEMP D51 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #endif
 #include <memp.h>
 #include "model.h"
@@ -19,6 +20,13 @@
 #include "quaternion.h"
 #include "random.h"
 
+#ifdef PORT
+/* N64-format records deliberately keep 32-bit address carriers. Convert them
+ * back to native pointers only at explicit boundaries, with zero-extension. */
+#define MODEL_U32_PTR(type, value) ((type *)(uintptr_t)(u32)(value))
+#else
+#define MODEL_U32_PTR(type, value) ((type *)(value))
+#endif
 
 typedef struct ModelGroupMtxBuildArg {
     u16 flags;
@@ -1025,7 +1033,7 @@ u16 modelAnimReadRootMotionValue(ModelAnimation *anim, s32 fieldIndex, s32 extra
     u8 bitsThisRead;
 
     result = 0;
-    desc = (ModelAnimBitField *)anim->bitDescriptors + fieldIndex; // D32: u32 -> ptr
+    desc = MODEL_U32_PTR(ModelAnimBitField, anim->bitDescriptors) + fieldIndex;
     bitsRemaining = desc->bitCount;
 
     if (bitsRemaining > 0)
@@ -1033,7 +1041,7 @@ u16 modelAnimReadRootMotionValue(ModelAnimation *anim, s32 fieldIndex, s32 extra
         totalBitOffset = extraBitOffset + desc->bitOffset;
         byteIndex = totalBitOffset >> 3;
         totalBitOffset &= 7;
-        byteptr = (u8 *)anim->bitStream + byteIndex; // D32: u32 -> ptr
+        byteptr = MODEL_U32_PTR(u8, anim->bitStream) + byteIndex;
         bitsThisRead = 8 - totalBitOffset;
 
         if (bitsRemaining >= bitsThisRead)
@@ -1490,9 +1498,7 @@ void sub_GAME_7F06DB5C(ModelRenderData *arg0, Model *arg1, ModelNode *arg2, quat
     sp54 = spA0->MatrixID0;
     sp50 = spA0->MatrixID1;
     sp4C = spA0->MatrixID2;
-    new_var = &sp1C;
     sp48 = arg1->render_pos;
-    sp1C = (s32)arg2->Parent;
 
 #ifdef PORT
     /* D101: this function stashes `arg2->Parent` (a ModelNode*) and
@@ -1523,6 +1529,9 @@ void sub_GAME_7F06DB5C(ModelRenderData *arg0, Model *arg1, ModelNode *arg2, quat
         }
     }
 #else
+    new_var = &sp1C;
+    sp1C = (s32)arg2->Parent;
+
     if (*new_var != 0) {
         sp9C = arg0->basemtx;
         sp9C = modelFindNodeMtx(arg1, (ModelNode *)sp1C, 0);
@@ -1710,24 +1719,24 @@ void process_02_position(ModelRenderData *arg0, Model *model, ModelNode *node)
 
     rot1 = D_80036094;
     
-    sub_GAME_7F06DEC0(jointnum.v, model->gunhand, skeleton, model->anim, model->unk34, &rot1);
+    sub_GAME_7F06DEC0(jointnum.v, model->gunhand, skeleton, model->anim, MODEL_U32_PTR(u8, model->unk34), &rot1);
 
     if (model->unk2c != 0.0f)
     {
         rot2 = D_800360A0;
-        sub_GAME_7F06DEC0(jointnum.v, model->gunhand, skeleton, model->anim, model->unk38, &rot2);
+        sub_GAME_7F06DEC0(jointnum.v, model->gunhand, skeleton, model->anim, MODEL_U32_PTR(u8, model->unk38), &rot2);
         sub_GAME_7F06D160(&rot1, &rot2, model->unk2c);
     }
 
     if (model->unk84 != 0.0f)
     {
         rot3 = D_800360AC;
-        sub_GAME_7F06DEC0(jointnum.v, model->unk25, skeleton, model->anim2, model->unk64, &rot3);
+        sub_GAME_7F06DEC0(jointnum.v, model->unk25, skeleton, model->anim2, MODEL_U32_PTR(u8, model->unk64), &rot3);
 
         if (model->unk5c != 0.0f)
         {
             rot4 = D_800360B8;
-            sub_GAME_7F06DEC0(jointnum.v, model->unk25, skeleton, model->anim2, model->unk68, &rot4);
+            sub_GAME_7F06DEC0(jointnum.v, model->unk25, skeleton, model->anim2, MODEL_U32_PTR(u8, model->unk68), &rot4);
             sub_GAME_7F06D160(&rot3, &rot4, model->unk5c);
         }
 
@@ -1906,18 +1915,18 @@ void process_03_unknown(ModelRenderData *renderData, Model *model, ModelNode *no
     jointIndex = rodata->JointID;
     skeleton = model->obj->Skeleton;
 
-    angle = sub_GAME_7F06E540(jointIndex, model->gunhand, skeleton, model->anim, (u8 *)model->unk34);
+    angle = sub_GAME_7F06E540(jointIndex, model->gunhand, skeleton, model->anim, MODEL_U32_PTR(u8, model->unk34));
 
     if (model->unk2c != 0.0f) {
-        tmp = sub_GAME_7F06E540(jointIndex, model->gunhand, skeleton, model->anim, (u8 *)model->unk38);
+        tmp = sub_GAME_7F06E540(jointIndex, model->gunhand, skeleton, model->anim, MODEL_U32_PTR(u8, model->unk38));
         angle = sub_GAME_7F06D0CC(angle, tmp, model->unk2c);
     }
 
     if (model->unk84 != 0.0f) {
-        tmp = sub_GAME_7F06E540(jointIndex, model->unk25, skeleton, model->anim2, (u8 *)model->unk64);
+        tmp = sub_GAME_7F06E540(jointIndex, model->unk25, skeleton, model->anim2, MODEL_U32_PTR(u8, model->unk64));
 
         if (model->unk5c != 0.0f) {
-            tmp2 = sub_GAME_7F06E540(jointIndex, model->unk25, skeleton, model->anim2, (u8 *)model->unk68);
+            tmp2 = sub_GAME_7F06E540(jointIndex, model->unk25, skeleton, model->anim2, MODEL_U32_PTR(u8, model->unk68));
             tmp = sub_GAME_7F06D0CC(tmp, tmp2, model->unk5c);
         }
 
@@ -4918,10 +4927,17 @@ void sub_GAME_7F073038(ModelRenderData *renderdata, struct sImageTableEntry *tco
 }
 
 
+#ifdef PORT
+void sub_GAME_7F07306C(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3)
+{
+    return;
+}
+#else
 void sub_GAME_7F07306C(s32 param_1,struct Model *param_2,struct ModelNode *param_3)
 {
     return;
 }
+#endif
 
 
 void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
@@ -5184,16 +5200,30 @@ void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
 }
 
 
+#ifdef PORT
+void sub_GAME_7F0737EC(ModelRenderData *param_1,struct Model *param_2, struct ModelNode *param_3)
+{
+    return;
+}
+#else
 void sub_GAME_7F0737EC(s32 param_1,struct Model *param_2, struct ModelNode *param_3)
 {
     return;
 }
+#endif
 
 
+#ifdef PORT
+void sub_GAME_7F0737FC(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3)
+{
+    return;
+}
+#else
 void sub_GAME_7F0737FC(s32 param_1,struct Model *param_2,struct ModelNode *param_3)
 {
     return;
 }
+#endif
 
 
 // PD: modelRenderNodeChrGunfire
@@ -5502,16 +5532,30 @@ void doshadow(ModelRenderData *renderdata, Model *model, ModelNode *node)
 }
 
 
+#ifdef PORT
+void sub_GAME_7F074514(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3)
+{
+    return;
+}
+#else
 void sub_GAME_7F074514(s32 param_1,struct Model *param_2,struct ModelNode *param_3)
 {
     return;
 }
+#endif
 
 
+#ifdef PORT
+void sub_GAME_7F074524(ModelRenderData *param_1,struct Model *param_2, struct ModelNode *param_3)
+{
+    return;
+}
+#else
 void sub_GAME_7F074524(Gfx *param_1,struct Model *param_2, struct ModelNode *param_3)
 {
     return;
 }
+#endif
 
 
 void sub_GAME_7F074534(ModelRenderData* data, Model* model, ModelNode* node) {
@@ -5628,7 +5672,11 @@ void sub_GAME_7F074790(ModelRenderData* arg0, Model* arg1)
 {
     subcalcpos(arg1);
     subcalcmatrices(arg0, arg1);
+#ifdef PORT
+    subdraw(arg0, arg1);
+#else
     subdraw((s32) arg0, arg1);
+#endif
 }
 
 
@@ -6145,7 +6193,7 @@ s32 loadAnimationFrame(ModelAnimation* anim, s32 frame, ModelSkeleton* unused)
         size = ((u32) (frameSize + 15) >> 4) * 16;
 
         // This copies one animation frame from ROM to the destination in RAM
-        romCopy((void* ) dest, (void* ) source, size);
+        romCopy(MODEL_U32_PTR(void, dest), MODEL_U32_PTR(void, source), size);
 
         // Increment this which serves nothing
         D_80036414->uselessPointer += 1;

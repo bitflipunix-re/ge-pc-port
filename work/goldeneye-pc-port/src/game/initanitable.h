@@ -23,6 +23,30 @@ struct animation_table_data {
  */
 extern struct animation_table_data* ptr_animation_table;
 
+/*
+ * Animation records are addressed by 32-bit byte offsets inside the runtime
+ * animation blob. Keep that token 32-bit, but never truncate the host base.
+ * The non-PORT definitions preprocess to the original N64 expressions.
+ */
+#ifdef PORT
+#include <stdint.h>
+#define GE_ANIMDATA_OFFSET(name) ((u32)PTR_ANIM_##name)
+#define GE_ANIMDATA_BASE ((uintptr_t)&ptr_animation_table->data)
+#define GE_ANIMDATA_RUNTIME_ADDR(ptr) ((uintptr_t)(ptr))
+#else
+#define GE_ANIMDATA_OFFSET(name) ((s32)&ANIM_DATA_##name)
+#define GE_ANIMDATA_BASE ((s32)&ptr_animation_table->data)
+#define GE_ANIMDATA_RUNTIME_ADDR(ptr) ((s32)(ptr))
+#endif
+#define GE_ANIMDATA_ADDR(name) (GE_ANIMDATA_BASE + GE_ANIMDATA_OFFSET(name))
+#define GE_ANIMDATA_PTR(name) ((void *)GE_ANIMDATA_ADDR(name))
+#define GE_ANIMDATA_MATCH(ptr, name) (GE_ANIMDATA_RUNTIME_ADDR(ptr) == GE_ANIMDATA_ADDR(name))
+#ifdef PORT
+#define GE_ANIMTABLE_ENTRY_PTR(table, index) ((void *)(uintptr_t)(u32)(table)[(index)])
+#else
+#define GE_ANIMTABLE_ENTRY_PTR(table, index) ((void *)(table)[(index)])
+#endif
+
 /**
  * Contains offsets into ptr_animation_table for player and guard animations.
  * The index of each value corresponds to `enum ANIMATION`.
