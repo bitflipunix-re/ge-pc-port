@@ -444,6 +444,8 @@ cmake -S work/goldeneye-pc-port -B build/arm64 \
 
 A correct configure must report an AArch64 target and the output binary `ge007.aarch64`.
 
+Normal builds compile the Fast3D render path without the historical D-series diagnostic probes. To reproduce a render investigation that relies on environment variables such as `GE_D172`, `GE_D229`, `GE_D236*`, `GE_D288` or texture dumps, add `-DGE_DEV_PROBES=ON` to the CMake configure command. Keep it off for performance testing and release builds so per-vertex/per-triangle probe branches do not contaminate measurements.
+
 ## Compile
 
 ```bash
