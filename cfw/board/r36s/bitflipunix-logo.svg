@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="288" viewBox="0 0 384 288">
+  <rect width="384" height="288" fill="#000000"/>
+  <g font-family="DejaVu Sans Mono, monospace" font-weight="700" text-rendering="geometricPrecision">
+    <text x="54" y="132" font-size="46" fill="#ffffff">Bitflip</text>
+    <text x="218" y="132" font-size="46" fill="#00f47a">Unix</text>
+    <text x="120" y="218" font-size="31" letter-spacing="2" fill="#ffffff">R36S CFW</text>
+  </g>
+  <g stroke="#00f47a" stroke-width="4" fill="none" stroke-linecap="square">
+    <line x1="58" y1="174" x2="158" y2="174"/>
+    <line x1="226" y1="174" x2="326" y2="174"/>
+    <path d="M192 154 L211 165 L192 176 L173 165 Z"/>
+    <path d="M173 165 L173 187 L192 198 L192 176 Z"/>
+    <path d="M211 165 L211 187 L192 198 L192 176 Z"/>
+  </g>
+</svg>
