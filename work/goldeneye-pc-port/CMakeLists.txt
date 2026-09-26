@@ -566,6 +566,10 @@ list(PREPEND SRC_ENGINE "${CMAKE_SOURCE_DIR}")
 # but let this isolated port layer use -O3. Deliberately no -ffast-math:
 # matrix/clip/fog semantics remain IEEE-compatible.
 if(TARGET_ARCH MATCHES "aarch64" AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+  # RK3326 in the R36S is Cortex-A35. Tune scheduling for that core while
+  # keeping the executable on the normal AArch64 ISA baseline, so the same
+  # artifact remains usable on compatible ARM64 handhelds.
+  add_compile_options(-mtune=cortex-a35)
   set_source_files_properties(${SRC_FAST3D} PROPERTIES COMPILE_OPTIONS "-O3")
 endif()
 
