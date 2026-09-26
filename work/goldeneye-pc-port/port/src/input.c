@@ -277,17 +277,31 @@ static SDL_GameController *pads[MAX_PADS];
 static int padShoulderPrev[MAX_PADS];   /* LB/RB edge state for weapon cycling */
 static int padSelectPrev = 0;           /* Select (BACK) edge: overlay toggle */
 
-/* Start+Select is the handheld escape chord. Keep it in the native input path
- * rather than an external SIGKILL watcher so normal atexit handlers persist
- * config/window state and the PortMaster launcher gets a clean return code. */
-static void inputExitComboCheck(SDL_GameController *pad)
+/* Start+Select is the handheld escape chord. Request SDL_QUIT instead of
+ * calling exit() from this scheduler/input thread: videoPumpEvents owns the
+ * SDL window on the host thread and its normal quit path runs atexit/config
+ * persistence safely before the PortMaster launcher returns to ES. */
+static int inputExitComboCheck(SDL_GameController *pad)
 {
-    if (!pad) return;
+    static int requested = 0;
+    if (!pad) return 0;
     if (SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_START) &&
         SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_BACK)) {
-        sysLogPrintf(LOG_INFO, "input: Start+Select exit chord -> clean exit");
-        exit(0);
+        if (!requested) {
+            SDL_Event ev;
+            SDL_zero(ev);
+            ev.type = SDL_QUIT;
+            requested = 1;
+            sysLogPrintf(LOG_INFO, "input: Start+Select exit chord -> SDL quit request");
+            if (SDL_PushEvent(&ev) < 0) {
+                sysLogPrintf(LOG_WARNING, "input: failed to queue SDL quit: %s", SDL_GetError());
+                requested = 0;
+                return 0;
+            }
+        }
+        return 1;
     }
+    return 0;
 }
 
 static int mouseEnabled   = 1;
@@ -792,7 +806,11 @@ unsigned inputComputePad(int idx, signed char *stick_x, signed char *stick_y)
     if (idx == 0 && optionsOverlayIsOpen()) {
         /* Exit chord wins over overlay navigation/close, including when
          * Select opened the overlay one poll before Start was pressed. */
-        inputExitComboCheck(pads[0]);
+        if (inputExitComboCheck(pads[0])) {
+            if (stick_x) *stick_x = 0;
+            if (stick_y) *stick_y = 0;
+            return 0;
+        }
 
         /* Select closes the overlay. padSelectPrev is tracked on this path
          * and the open path below alike, so a button held across the
@@ -1241,7 +1259,11 @@ unsigned inputComputePad(int idx, signed char *stick_x, signed char *stick_y)
         /* Start+Select is reserved for returning to EmulationStation. Check
          * it before either button is forwarded/toggled so Select cannot steal
          * the chord by opening Port Control first. */
-        inputExitComboCheck(pad);
+        if (inputExitComboCheck(pad)) {
+            if (stick_x) *stick_x = 0;
+            if (stick_y) *stick_y = 0;
+            return 0;
+        }
         if (SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_START))
             button |= GE_CONT_START;
         if (SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_DPAD_UP))
