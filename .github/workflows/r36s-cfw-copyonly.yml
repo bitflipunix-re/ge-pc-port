@@ -22,7 +22,7 @@ jobs:
       - name: Install conversion tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cpio e2fsprogs zip
+          sudo apt-get install -y cpio e2fsprogs zip u-boot-tools
 
       - name: Download proven kernel artifact
         uses: actions/download-artifact@v4
@@ -64,29 +64,35 @@ jobs:
           test -n "$IMAGE"
           test -n "$DTB"
           cp "$IMAGE" cfw-copyonly-bundle/COPY_TO_BOOT/Image
-          cp "$DTB" cfw-copyonly-bundle/COPY_TO_BOOT/rk3326-r36s.dtb
-          cp rootfs.cpio.gz cfw-copyonly-bundle/COPY_TO_BOOT/rootfs.cpio.gz
+          cp "$DTB" cfw-copyonly-bundle/COPY_TO_BOOT/rk3326-r36s-linux.dtb
+          mkimage -A arm64 -O linux -T ramdisk -C gzip \
+            -n "R36S CFW Buildroot initramfs" \
+            -d rootfs.cpio.gz cfw-copyonly-bundle/COPY_TO_BOOT/uInitrd
+          dumpimage -l cfw-copyonly-bundle/COPY_TO_BOOT/uInitrd
           cp cfw/boot/boot-copy-only.ini cfw-copyonly-bundle/COPY_TO_BOOT/boot.ini
           cat > cfw-copyonly-bundle/README.txt <<'EOF'
           R36S CFW — G80CA PANEL-8 — CHROMEBOOK COPY-ONLY FIRST BOOT
 
-          Target: G80CA-MB V1.2-20250422 Panel 8
-          Kernel: Linux 6.12.111 LTS
-          Rootfs: Buildroot 2026.08 initramfs
+          This package intentionally matches the known-good stock G80CA U-Boot contract:
+            mmc 1:1
+            Image at 0x02000000
+            uInitrd at 0x01100000
+            rk3326-r36s-linux.dtb at 0x01f00000
+            booti with the three plain addresses
 
-          This test does NOT flash or repartition the SD card.
-          It leaves the existing SPL/U-Boot and partition table untouched.
+          It still uses Linux 6.12.111, the mainline G80CA Panel-8 DTB, and the
+          Buildroot 2026.08 RAM root filesystem.
 
           BEFORE TESTING
-          1. Open the R36S FAT BOOT partition in the Chromebook Files app.
-          2. Back up every existing file from that BOOT partition.
-          3. Do not format the card and do not use Chromebook Recovery Utility.
+          1. Back up every existing file from the FAT BOOT partition.
+          2. Do not format or repartition the card.
+          3. Do not use Chromebook Recovery Utility.
 
           INSTALL
           Copy all four files from COPY_TO_BOOT to the root of the FAT BOOT partition:
             Image
-            rk3326-r36s.dtb
-            rootfs.cpio.gz
+            uInitrd
+            rk3326-r36s-linux.dtb
             boot.ini
 
           Safely eject the card, insert it into the R36S, and power on.
@@ -97,7 +103,7 @@ jobs:
           EOF
           (
             cd cfw-copyonly-bundle
-            sha256sum COPY_TO_BOOT/Image COPY_TO_BOOT/rk3326-r36s.dtb COPY_TO_BOOT/rootfs.cpio.gz COPY_TO_BOOT/boot.ini > SHA256SUMS
+            sha256sum COPY_TO_BOOT/Image COPY_TO_BOOT/uInitrd COPY_TO_BOOT/rk3326-r36s-linux.dtb COPY_TO_BOOT/boot.ini > SHA256SUMS
             zip -r ../r36s-cfw-g80ca-chromebook-copy-only.zip .
           )
 
