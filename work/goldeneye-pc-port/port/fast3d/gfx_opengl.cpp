@@ -49,6 +49,40 @@ static GLuint opengl_vbo;
 static GLuint opengl_vao;
 static bool current_depth_mask;
 
+/* Driver-call cache for the two Fast3D texture units. Keep it deliberately
+ * frame-local: post-processing/framebuffer code also binds textures directly,
+ * so start_frame invalidates all assumptions before game submission begins. */
+static int current_active_texture_unit = -1;
+static GLuint current_bound_textures[2] = { 0, 0 };
+static bool current_bound_texture_valid[2] = { false, false };
+
+static inline void gfx_opengl_invalidate_texture_bindings(void) {
+    current_active_texture_unit = -1;
+    current_bound_texture_valid[0] = false;
+    current_bound_texture_valid[1] = false;
+}
+
+static inline void gfx_opengl_activate_texture_unit(int tile) {
+    if (current_active_texture_unit != tile) {
+        glActiveTexture(GL_TEXTURE0 + tile);
+        current_active_texture_unit = tile;
+    }
+}
+
+static inline void gfx_opengl_bind_texture_2d(int tile, GLuint texture_id) {
+    gfx_opengl_activate_texture_unit(tile);
+    if (tile >= 0 && tile < 2 && current_bound_texture_valid[tile] &&
+        current_bound_textures[tile] == texture_id) {
+        return;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    if (tile >= 0 && tile < 2) {
+        current_bound_textures[tile] = texture_id;
+        current_bound_texture_valid[tile] = true;
+    }
+}
+
 static uint32_t frame_count;
 
 static std::vector<Framebuffer> framebuffers;
@@ -718,12 +752,15 @@ static GLuint gfx_opengl_new_texture(void) {
 
 static void gfx_opengl_delete_texture(uint32_t texID) {
     glDeleteTextures(1, &texID);
+    for (int i = 0; i < 2; ++i) {
+        if (current_bound_texture_valid[i] && current_bound_textures[i] == texID) {
+            current_bound_texture_valid[i] = false;
+        }
+    }
 }
 
 static void gfx_opengl_select_texture(int tile, GLuint texture_id, bool linear_filter) {
-    glActiveTexture(GL_TEXTURE0 + tile);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-
+    gfx_opengl_bind_texture_2d(tile, texture_id);
     current_textures_linear_filter[tile] = linear_filter;
 }
 
@@ -800,7 +837,7 @@ static void gfx_opengl_set_sampler_parameters(int tile, bool linear_filter, uint
     const GLint min_filter = linear_filter ? min_filters[current_filter_mode][mip_idx] : GL_NEAREST;
     const GLint max_filter = linear_filter && (current_filter_mode == FILTER_LINEAR) ? GL_LINEAR : GL_NEAREST;
 
-    glActiveTexture(GL_TEXTURE0 + tile);
+    gfx_opengl_activate_texture_unit(tile);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, max_filter);
 
@@ -1114,6 +1151,7 @@ static void gfx_opengl_on_resize(void) {
 
 static void gfx_opengl_start_frame(void) {
     frame_count++;
+    gfx_opengl_invalidate_texture_bindings();
 }
 
 static GLuint taa_compile_shader(GLenum type, const char *src) {
@@ -1404,6 +1442,7 @@ static int gfx_opengl_create_framebuffer() {
     glGenFramebuffers(1, &fbo);
     framebuffers[i].fbo = fbo;
 
+    gfx_opengl_invalidate_texture_bindings();
     return i;
 }
 
@@ -1470,6 +1509,7 @@ static void gfx_opengl_update_framebuffer_parameters(int fb_id, uint32_t width, 
     fb.has_depth_buffer = has_depth_buffer;
     fb.msaa_level = msaa_level;
     fb.invert_y = opengl_invert_y;
+    gfx_opengl_invalidate_texture_bindings();
 }
 
 bool gfx_opengl_start_draw_to_framebuffer(int fb_id, float noise_scale) {
@@ -1568,9 +1608,7 @@ void* gfx_opengl_get_framebuffer_texture_id(int fb_id) {
 
 void gfx_opengl_select_texture_fb(int fb_id) {
     // glDisable(GL_DEPTH_TEST);
-    glActiveTexture(GL_TEXTURE0 + 0);
-    glBindTexture(GL_TEXTURE_2D, framebuffers[fb_id].clrbuf);
-
+    gfx_opengl_bind_texture_2d(0, framebuffers[fb_id].clrbuf);
     current_textures_linear_filter[0] = true;
 }
 
