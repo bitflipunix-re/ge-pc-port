@@ -86,6 +86,18 @@ endif()
 # Which ROM the executable expects in the data/ dir.
 set(ROMID "ntsc-final" CACHE STRING "ROM id: ntsc-final (US), pal-final (EU), jpn-final (JP)")
 
+# Render-path investigation probes are intentionally opt-in. Several D-series
+# probes execute inside vertex/triangle submission and are invaluable when
+# reproducing a specific visual bug, but they should not add branches or log
+# plumbing to normal R36S/release builds.
+option(GE_DEV_PROBES "Compile environment-gated Fast3D diagnostic probes" OFF)
+if(GE_DEV_PROBES)
+  add_compile_definitions(GE_DEV_PROBES=1)
+  message(STATUS "Fast3D developer probes: enabled")
+else()
+  message(STATUS "Fast3D developer probes: disabled")
+endif()
+
 # ----------------------------------------------------------------------------
 # Target arch / platform
 # ----------------------------------------------------------------------------
