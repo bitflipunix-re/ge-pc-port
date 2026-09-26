@@ -213,6 +213,10 @@ Vtx *lightFindVertexBaseForTri(Gfx *gfx, s32 room_index)
 
 void extract_vertex_indices_from_triangle(Gfx* gfx, u32 tri_type, s32* idx1, s32* idx2, s32* idx3)
 {
+    *idx1 = 0;
+    *idx2 = 0;
+    *idx3 = 0;
+
     switch (tri_type) 
     {
         case 0:
@@ -240,6 +244,8 @@ void extract_vertex_indices_from_triangle(Gfx* gfx, u32 tri_type, s32* idx1, s32
             *idx1 = ((u8*)gfx)[4] & 0xF;
             *idx2 = ((u32*)gfx)[1] >> 0x1C;
             *idx3 = ((((u16*)gfx)[1]) & 0xFFFFFFFFu) >> 0xC;
+            break;
+        default:
             break;
     }
 }
