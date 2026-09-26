@@ -2534,7 +2534,9 @@ Gfx *unused_draw_watch_inventory_page(Gfx *gdl, Mtx *param_2) {
         temp_2 = sp70;
 
         sp6C = 0x1E;
-        gdl = microcode_constructor_related_to_menus(gdl, temp_2, 0x1E, sp60, sp5C, 0x800050);
+        sp60 = temp_2 + sp54;
+        sp5C = sp6C + sp58;
+        gdl = microcode_constructor_related_to_menus(gdl, temp_2, sp6C, sp60, sp5C, 0x800050);
 
         if (watch_inventory_text_is_settled)
         {
