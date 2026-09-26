@@ -71,6 +71,10 @@ REQUIRED = {
         ("subdraw(arg0, arg1);", "PORT render-data pointer must not truncate through s32 in sub_GAME_7F074790"),
         ("void sub_GAME_7F074514(ModelRenderData *param_1", "PORT model node stubs must accept native render-data pointers"),
     ],
+    "src/game/bg.h": [
+        ("Visibility traversal state, not a pointer.", "US visibility queue next field must remain an integer token on PORT"),
+        ("u32 next;", "US s_bound_info must preserve its 32-bit next field on PORT"),
+    ],
 }
 
 for root in SCAN_ROOTS:

@@ -120,7 +120,14 @@ typedef struct s_bound_info
     // could be draw order?
     s32 unk1;
     struct bbox2d bbox;
+#ifdef PORT
+    /* Visibility traversal state, not a pointer. Every live use reads/writes
+     * this as integer flags. Keeping it u32 also preserves the N64 0x1C
+     * s_bound_info stride on LP64 hosts. */
+    u32 next;
+#else
     void* next;
+#endif
     #endif
 
 
