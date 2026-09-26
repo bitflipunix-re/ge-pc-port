@@ -1,12 +1,15 @@
 name: R36S CFW copy-only bundle
 
 on:
-  push:
-    branches: [r36s-cfw]
-    paths:
-      - '.github/workflows/r36s-cfw-copyonly.yml'
-      - 'cfw/boot/boot-copy-only.ini'
+  workflow_run:
+    workflows: ["R36S CFW kernel"]
+    types: [completed]
   workflow_dispatch:
+    inputs:
+      kernel_run_id:
+        description: "Successful R36S CFW kernel workflow run ID"
+        required: true
+        type: string
 
 concurrency:
   group: r36s-cfw-copyonly
@@ -14,6 +17,7 @@ concurrency:
 
 jobs:
   bundle:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -31,7 +35,7 @@ jobs:
           path: input/kernel
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
-          run-id: 36204659613
+          run-id: ${{ github.event.workflow_run.id || inputs.kernel_run_id }}
 
       - name: Download proven rootfs artifact
         uses: actions/download-artifact@v4
@@ -40,7 +44,7 @@ jobs:
           path: input/rootfs
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
-          run-id: 36202844336
+          run-id: 36210294947
 
       - name: Convert ext4 rootfs to compressed initramfs
         run: |
@@ -80,8 +84,9 @@ jobs:
             rk3326-r36s-linux.dtb at 0x01f00000
             booti with the three plain addresses
 
-          It still uses Linux 6.12.111, the mainline G80CA Panel-8 DTB, and the
-          Buildroot 2026.08 RAM root filesystem.
+          It uses Linux 6.12.111, the mainline G80CA Panel-8 DTB, the
+          Buildroot 2026.08 RAM root filesystem, and the kernel-native centered
+          BitflipUnix R36S CFW boot splash.
 
           BEFORE TESTING
           1. Back up every existing file from the FAT BOOT partition.
