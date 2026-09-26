@@ -414,6 +414,18 @@ static double hipPitchPhase = 0.0;              /* D166: hipfire pitch pulse pha
 static int    lastMenuMouseX = -1, lastMenuMouseY = -1;  /* WI-2: last abs cursor seen in a menu */
 
 
+/* Public query for game-side crosshair damping. When true the host mouse
+ * path owns crosshair_x/y_pos once per input poll. Game code must not replay
+ * the original damping g_ClockTimer times on the value we just supplied,
+ * otherwise batched simulation ticks produce visible zoom/reticle jumps. */
+int inputMouseAimOwnsCrosshair(void)
+{
+    int inStage = (current_menu == GE_MENU_RUN_STAGE ||
+                   current_menu == GE_MENU_INVALID);
+    return aimAbsolute && s_gepdHeldPrev && mouseGrabbed &&
+           inStage && g_CurrentPlayer != NULL;
+}
+
 /* ------------------------------------------------------------------------ */
 
 static void inputOpenPads(void)
@@ -1022,7 +1034,14 @@ unsigned inputComputePad(int idx, signed char *stick_x, signed char *stick_y)
                  * look stick (see aimGepdCompute). Keyboard turn (sx/sy set
                  * above) still works. Otherwise fall through to the legacy
                  * velocity stick below. */
-                if (!aimGepdCompute(edx * lookDtScale, dyLook * lookDtScale)) {
+                /* Absolute/GEPD aim is a displacement mapping: accumulated mouse
+                 * pixels map directly to crosshair position. Do NOT apply the
+                 * inverse-dt velocity normalizer here. Doing so makes identical
+                 * physical motion depend on controller-poll cadence and turns
+                 * small zoomed movements into quantized jumps on slower ARM
+                 * handhelds. Keep dt normalization only for the legacy
+                 * stick/rate fallback below. */
+                if (!aimGepdCompute(edx, dyLook)) {
                 double aimEdx = edx * lookDtScale, aimDyLook = dyLook * lookDtScale;
                 double aimSens = (mouseAimSpeed / 100.0) * (mouseSensitivity / 100.0);
                 double gamma = aimCurveGamma / 100.0;
@@ -1054,6 +1073,10 @@ unsigned inputComputePad(int idx, signed char *stick_x, signed char *stick_y)
                     s_centreClearTicks--;
                 }
             } else {
+                /* Direct-look is displacement based for the same reason as
+                 * absolute aim above. The legacy stick path is rate based and
+                 * keeps the dt-normalized deltas. */
+                double hipRawX = edx, hipRawY = dyLook;
                 double hipEdx = edx * lookDtScale, hipDyLook = dyLook * lookDtScale;
                 double hipSens = (mouseTurnSpeed / 100.0) * (mouseSensitivity / 100.0);
                 /* WI-1: direct camera write, same linear px->degree model as
@@ -1063,7 +1086,7 @@ unsigned inputComputePad(int idx, signed char *stick_x, signed char *stick_y)
                  * unrecognised" and fast motion bang-bang). Falls through to
                  * the legacy stick path below when it declines (disabled, no
                  * player, or a safety gate is closed). */
-                if (mouseDirectLook && hipDirectCompute(hipEdx, hipDyLook)) {
+                if (mouseDirectLook && hipDirectCompute(hipRawX, hipRawY)) {
                     /* Pitch handled inside hipDirectCompute too; nothing left
                      * to do for yaw/pitch this poll. Digital pitch-pulse
                      * (naturalPitchMode==0) still applies below only in the
@@ -1516,7 +1539,7 @@ static int aimGepdCompute(double dxPx, double dyLook)
  * same "in line" convention D238 established for aimGepdCompute's GepdSens):
  * at defaults this reduces to exactly GEPD's px/10 baseline.
  *
- * dxPx/dyLook are this poll's dt-scaled px (same convention as
+ * dxPx/dyLook are raw relative-mouse displacement for this poll (the
  * aimGepdCompute -- callers pre-multiply by lookDtScale).
  *
  * GEPD's safety gates (`camera==4||0 && menupage==11 && !dead && !watch &&
