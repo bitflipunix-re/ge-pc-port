@@ -646,7 +646,7 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
         glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, &max_length);
         char error_log[1024];
         glGetShaderInfoLog(vertex_shader, max_length, &max_length, &error_log[0]);
-        sysLogPrintf(LOG_ERROR, "Failed to compile this vertex shader (ID %llx, %x):\n%s", shader_id0, shader_id1, vs_buf);
+        sysLogPrintf(LOG_ERROR, "Failed to compile this vertex shader (ID %llx, %x):\n%s", (unsigned long long)shader_id0, shader_id1, vs_buf);
         sysFatalError("Vertex shader compilation failed:\n%s", error_log);
     }
 
@@ -659,7 +659,7 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
         glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &max_length);
         char error_log[1024];
         glGetShaderInfoLog(fragment_shader, max_length, &max_length, &error_log[0]);
-        sysLogPrintf(LOG_ERROR, "Failed to compile this fragment shader (ID %llx, %x):\n%s", shader_id0, shader_id1, fs_buf);
+        sysLogPrintf(LOG_ERROR, "Failed to compile this fragment shader (ID %llx, %x):\n%s", (unsigned long long)shader_id0, shader_id1, fs_buf);
         sysFatalError("Fragment shader compilation failed:\n%s", error_log);
     }
 
