@@ -16,7 +16,12 @@ Layout inside the zip:
             vendor/scripts/filelist.u.csv
             vendor/assets/**        file_resource_table + model headers
         build-info.txt
-    GoldenEye 007.sh                launcher (runs the converter on first boot)
+    GoldenEye 007.sh                EmulationStation/PortMaster launcher
+
+The archive is deliberately also a direct EmulationStation layout: extracting
+it into an active ROM volume's ports/ directory places the executable launcher
+beside ge007/. PortMaster runtime/device support must already exist, but the
+PortMaster UI does not need to be opened.
 
 Refuses to include any ROM (.z64/.n64/.v64) or sidecar (pcmodels.bin/pccg.bin).
 """
@@ -194,9 +199,13 @@ def main():
 
         with zipfile.ZipFile(zippath) as z:
             names = z.namelist()
+            infos = {i.filename: i for i in z.infolist()}
+        launcher_mode = (infos[LAUNCHER.name].external_attr >> 16) & 0o777 if LAUNCHER.name in infos else 0
         checks = {
             "ge007/ge007.aarch64 in zip": "ge007/ge007.aarch64" in names,
             "launcher in zip": LAUNCHER.name in names,
+            "launcher executable for EmulationStation": (launcher_mode & 0o111) != 0,
+            "direct ES sibling layout": LAUNCHER.name in names and "ge007/ge007.aarch64" in names,
             "port.json at zip root": "port.json" in names,
             "gameinfo.xml at zip root": "gameinfo.xml" in names,
             "README.md at zip root": "README.md" in names,
