@@ -1168,7 +1168,10 @@ static void valueText(const struct Row *r, char *out, int n)
     }
     if (r->kind == ROW_RES) {
         if (videoIsFullscreen()) {
-            snprintf(out, n, "(fullscreen)");
+            int w = 0, h = 0;
+            videoGetWindowSize(&w, &h);
+            if (w > 0 && h > 0) snprintf(out, n, "%d x %d PANEL", w, h);
+            else                snprintf(out, n, "PANEL NATIVE");
         } else if (s_resFitN <= 0) {
             snprintf(out, n, "n/a");
         } else {
