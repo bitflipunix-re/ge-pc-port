@@ -57,16 +57,16 @@ jobs:
       - name: Assemble Chromebook copy-only package
         run: |
           set -eux
-          mkdir -p bundle/COPY_TO_BOOT
+          rm -rf cfw-copyonly-bundle\n          mkdir -p cfw-copyonly-bundle/COPY_TO_BOOT
           IMAGE=$(find input/kernel -type f -name 'Image-*r36s' -print -quit)
           DTB=$(find input/kernel -type f -name 'rk3326-r36s.dtb' -print -quit)
           test -n "$IMAGE"
           test -n "$DTB"
-          cp "$IMAGE" bundle/COPY_TO_BOOT/Image
-          cp "$DTB" bundle/COPY_TO_BOOT/rk3326-r36s.dtb
-          cp rootfs.cpio.gz bundle/COPY_TO_BOOT/rootfs.cpio.gz
-          cp cfw/boot/boot-copy-only.ini bundle/COPY_TO_BOOT/boot.ini
-          cat > bundle/README.txt <<'EOF'
+          cp "$IMAGE" cfw-copyonly-bundle/COPY_TO_BOOT/Image
+          cp "$DTB" cfw-copyonly-bundle/COPY_TO_BOOT/rk3326-r36s.dtb
+          cp rootfs.cpio.gz cfw-copyonly-bundle/COPY_TO_BOOT/rootfs.cpio.gz
+          cp cfw/boot/boot-copy-only.ini cfw-copyonly-bundle/COPY_TO_BOOT/boot.ini
+          cat > cfw-copyonly-bundle/README.txt <<'EOF'
           R36S CFW — G80CA PANEL-8 — CHROMEBOOK COPY-ONLY FIRST BOOT
 
           Target: G80CA-MB V1.2-20250422 Panel 8
@@ -95,7 +95,7 @@ jobs:
           table are untouched by this test.
           EOF
           (
-            cd bundle
+            cd cfw-copyonly-bundle
             sha256sum COPY_TO_BOOT/Image COPY_TO_BOOT/rk3326-r36s.dtb COPY_TO_BOOT/rootfs.cpio.gz COPY_TO_BOOT/boot.ini > SHA256SUMS
             zip -r ../r36s-cfw-g80ca-chromebook-copy-only.zip .
           )
