@@ -1740,7 +1740,14 @@ Gfx *set_enviro_fog_for_items_in_solo_watch_menu(Gfx *gdl, ITEM_IDS itemid, Mtxf
 #else
     ModelRenderData renderdata = *((ModelRenderData *) (&D_80035D00));
 #endif
+#ifdef PORT
+    /* modelInit/subdraw use this object as a full Model. ModelHeader-sized
+     * storage was an N64 decomp overlay and is too small once Model carries
+     * 64-bit pointers. */
+    Model model;
+#else
     ModelHeader model;
+#endif
     u8 spb8[0x80];
     s32 padb4;
     Mtxf sp74;
