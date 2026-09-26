@@ -343,9 +343,17 @@ def process(name):
                 dstpos = add_region(puo, 2 * nv, dstpos)
                 op24_pointusage[puo] = nv
         elif op == 22:
+            # DisplayListPrimaryRecord is the star-gunfire/muzzle-flash path.
+            # Despite the historical field name, numVertices is a QUAD count:
+            # model.c:dorottex() consumes src[0..3] then src += 4 for every
+            # iteration. Relocating only nv vertices made the PC runtime read
+            # three records past the sidecar allocation per quad, interpreting
+            # the following relocated object as flash vertices (D303: normal
+            # muzzle flash plus a giant erroneous spike).
             nv = struct.unpack_from(">i", src, data)[0]; vo = be32o(src, data + 4)
             if nv and vo:
-                vtx_regions.append((vo, nv)); dstpos = add_region(vo, 16 * nv, dstpos)
+                qv = nv * 4
+                vtx_regions.append((vo, qv)); dstpos = add_region(vo, 16 * qv, dstpos)
 
     # All record-referenced GDLs (needed before zero-vtx/blob layout so the
     # "next object" boundaries include them).
