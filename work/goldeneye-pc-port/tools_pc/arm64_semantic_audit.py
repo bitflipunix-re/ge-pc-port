@@ -23,12 +23,6 @@ FORBIDDEN = [
     (re.compile(r"&\s*g_sndPlayerPtr\s*->\s*evtq"), "audio member address formed through player pointer"),
 ]
 
-# The snd rule is permitted only after an explicit NULL guard in the same
-# function. Handle it specially rather than blanket-failing all occurrences.
-def snd_member_is_guarded(text: str, pos: int) -> bool:
-    window = text[max(0, pos - 900):pos]
-    return bool(re.search(r"if\s*\(\s*g_sndPlayerPtr\s*==\s*NULL\s*\)\s*(?:\{|)\s*return", window))
-
 SUSPICIOUS = [
     re.compile(r"\(\s*u32\s*\)\s*[A-Za-z_][A-Za-z0-9_]*(?:->|\[|\.)"),
     re.compile(r"\(\s*s32\s*\)\s*[A-Za-z_][A-Za-z0-9_]*(?:->|\[|\.)"),
