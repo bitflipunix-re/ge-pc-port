@@ -64,7 +64,7 @@ void alCSeqNextEvent(ALCSeq *seq,ALEvent *evt)
 {
     u32     i;
     u32     firstTime = 0xFFFFFFFF;
-    u32     firstTrack;
+    u32     firstTrack = 0;
     u32     lastTicks = seq->lastDeltaTicks;
 
 #ifdef _DEBUG
@@ -73,6 +73,13 @@ void alCSeqNextEvent(ALCSeq *seq,ALEvent *evt)
 	__osError(ERR_ALSEQOVERRUN, 0);
 #endif
     
+
+    if (!seq->validTracks)
+    {
+        evt->type = AL_TRACK_END;
+        evt->msg.midi.ticks = 0;
+        return;
+    }
 
     for(i = 0; i < 16 ; i++)
     {
