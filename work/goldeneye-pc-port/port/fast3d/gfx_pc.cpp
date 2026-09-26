@@ -105,6 +105,7 @@ struct ColorCombiner {
 
 static std::map<ColorCombinerKey, struct ColorCombiner> color_combiner_pool;
 static std::map<ColorCombinerKey, struct ColorCombiner>::iterator prev_combiner = color_combiner_pool.end();
+static std::map<ColorCombinerKey, struct ColorCombiner>::iterator prev2_combiner = color_combiner_pool.end();
 
 static uint8_t* tex_upload_buffer = nullptr;
 
@@ -600,12 +601,27 @@ static struct ColorCombiner* gfx_lookup_or_create_color_combiner(const ColorComb
         return &prev_combiner->second;
     }
 
-    prev_combiner = color_combiner_pool.find(key);
-    if (prev_combiner != color_combiner_pool.end()) {
+    /* GE frequently alternates between two material combiners while walking
+     * room/object display lists. Keep the previous two map iterators hot so
+     * A/B/A/B patterns avoid a red-black-tree lookup on every triangle. */
+    if (prev2_combiner != color_combiner_pool.end() && prev2_combiner->first == key) {
+        auto hit = prev2_combiner;
+        prev2_combiner = prev_combiner;
+        prev_combiner = hit;
         return &prev_combiner->second;
     }
+
+    auto found = color_combiner_pool.find(key);
+    if (found != color_combiner_pool.end()) {
+        prev2_combiner = prev_combiner;
+        prev_combiner = found;
+        return &prev_combiner->second;
+    }
+
     gfx_flush();
-    prev_combiner = color_combiner_pool.insert(std::make_pair(key, ColorCombiner())).first;
+    auto inserted = color_combiner_pool.insert(std::make_pair(key, ColorCombiner())).first;
+    prev2_combiner = prev_combiner;
+    prev_combiner = inserted;
     gfx_generate_cc(&prev_combiner->second, key);
     return &prev_combiner->second;
 }
@@ -4031,6 +4047,7 @@ extern "C" void reset_texture_state() {
     gfx_rapi->clear_shaders();
     color_combiner_pool.clear();
     prev_combiner = color_combiner_pool.end();
+    prev2_combiner = color_combiner_pool.end();
 }
 
 extern "C" void gfx_set_texture_filter(enum FilteringMode mode) {
