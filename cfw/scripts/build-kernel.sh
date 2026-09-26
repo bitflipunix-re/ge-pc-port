@@ -31,14 +31,14 @@ else
 fi
 
 # shellcheck disable=SC2086
-make -C "$KSRC" $MAKE_ARGS defconfig
+make -C "$KSRC" $MAKE_ARGS tinyconfig
 
 "$KSRC/scripts/kconfig/merge_config.sh" -m -O "$OUT"     "$OUT/.config" "$CFW/config/kernel-r36s.fragment"
 
 # shellcheck disable=SC2086
 make -C "$KSRC" $MAKE_ARGS olddefconfig
 
-for sym in DRM_ROCKCHIP DRM_PANFROST DRM_PANEL_GENERIC_DSI PHY_ROCKCHIP_INNO_DSIDPHY; do
+for sym in DRM_ROCKCHIP DRM_PANFROST DRM_PANEL_GENERIC_DSI PHY_ROCKCHIP_INNO_DSIDPHY MMC_DW_ROCKCHIP MFD_RK8XX_I2C BLK_DEV_INITRD FRAMEBUFFER_CONSOLE; do
     if ! grep -q "^CONFIG_${sym}=y$" "$OUT/.config"; then
         echo "required config CONFIG_${sym}=y was not resolved" >&2
         exit 1
@@ -53,5 +53,12 @@ mkdir -p "$ART"
 cp "$OUT/arch/arm64/boot/Image" "$ART/Image-$KERNEL_VERSION-r36s"
 cp "$OUT/arch/arm64/boot/dts/rockchip/rk3326-r36s.dtb" "$ART/rk3326-r36s.dtb"
 cp "$OUT/.config" "$ART/kernel-$KERNEL_VERSION-r36s.config"
+
+IMAGE_BYTES=$(wc -c < "$ART/Image-$KERNEL_VERSION-r36s")
+echo "raw Image bytes: $IMAGE_BYTES"
+if [ "$IMAGE_BYTES" -gt 16777216 ]; then
+    echo "lean bring-up Image exceeds 16 MiB BOOT budget" >&2
+    exit 1
+fi
 
 printf 'built:\n  %s\n  %s\n'     "$ART/Image-$KERNEL_VERSION-r36s"     "$ART/rk3326-r36s.dtb"
