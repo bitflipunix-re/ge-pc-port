@@ -162,16 +162,17 @@ static const char *const kGpuGovernor[]   = { "SYSTEM", "SIMPLE ONDEMAND", "PERF
 static const char *const kRamProfile[]    = { "SYSTEM", "LOW SWAP", "BALANCED", "GAME", NULL };
 static const int         kMsaaSeq[]   = { 1, 2, 4, 8 };
 
-/* Complete graphics-preset definitions. Every preset owns the same fields so
- * cycling between presets cannot inherit a hidden value from the previous one.
- * In particular, AutoFOV only works when DrawDistance is back at 100. */
+/* Complete live graphics-preset definitions. Every preset owns the same
+ * live-applicable fields so cycling cannot inherit a hidden value from the
+ * previous one. Restart-bound FramebufferEffects is intentionally excluded:
+ * a preset must never claim a runtime state that will not exist until restart.
+ * AutoFOV only works when DrawDistance is back at 100. */
 static const char *const kGraphicsPresetKeys[] = {
     "Video.MSAA",
     "Video.RenderScale",
     "Video.TAA",
     "Video.TextureFilter",
     "Video.MipmapFilter",
-    "Video.FramebufferEffects",
     "Video.Anisotropy",
     "Video.FixMipTextures",
     "Video.WrapFix",
@@ -183,11 +184,11 @@ static const char *const kGraphicsPresetKeys[] = {
 };
 #define GRAPHICS_PRESET_FIELDS ((int)(sizeof(kGraphicsPresetKeys) / sizeof(kGraphicsPresetKeys[0])))
 static const int kGraphicsPresetValues[5][GRAPHICS_PRESET_FIELDS] = {
-    /* N64 */         { 1,100,0,0,1,1,1,1,0,100,0,100,0,100 },
-    /* CRISP */       { 1,125,0,0,0,1,1,1,0,100,0,150,0,150 },
-    /* ENHANCED */    { 4,125,1,2,2,1,8,1,0,115,1,100,0,200 },
-    /* R36S */        { 1,100,0,1,2,1,2,1,0,100,0,125,0,100 },
-    /* PERFORMANCE */ { 1, 75,0,1,1,1,1,1,0,100,0,100,0, 75 },
+    /* N64 */         { 1,100,0,0,1,1,1,0,100,0,100,0,100 },
+    /* CRISP */       { 1,125,0,0,0,1,1,0,100,0,150,0,150 },
+    /* ENHANCED */    { 4,125,1,2,2,8,1,0,115,1,100,0,200 },
+    /* R36S */        { 1,100,0,1,2,2,1,0,100,0,125,0,100 },
+    /* PERFORMANCE */ { 1, 75,0,1,1,1,1,0,100,0,100,0, 75 },
 };
 
 /* Windowed-mode resolution presets. Filtered at init to those that fit the
