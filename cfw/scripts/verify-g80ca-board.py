@@ -10,6 +10,9 @@ required_literals = [
     'model = "G80CA-MB V1.2-20250422 Panel 8";',
     'compatible = "bitflipunix,g80ca-r36s-panel8", "rockchip,rk3326";',
     'serial2 = &uart2;',
+    'mmc1 = &sdio;',
+    'vcc7-supply = <&vcc_3v0>;',
+    'vcc9-supply = <&usb_midu>;',
     'gpio = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;',
     'reset-gpios = <&gpio3 RK_PD3 GPIO_ACTIVE_LOW>;',
     'gpio = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;',
@@ -17,6 +20,14 @@ required_literals = [
     'mux-gpios = <&gpio2 RK_PB7 GPIO_ACTIVE_HIGH>,',
     '<&gpio2 RK_PC0 GPIO_ACTIVE_HIGH>;',
     'settle-time-us = <20>;',
+    'regulator-name = "vcc_backlight";',
+    'regulator-name = "vcc3v3_dvp";',
+    'vccio1-supply = <&vcc_backlight>;',
+    'vccio3-supply = <&vcc1v8_soc>;',
+    'vccio6-supply = <&vcc1v8_soc>;',
+    'cd-gpios = <&gpio0 RK_PA2 GPIO_ACTIVE_LOW>;',
+    'vmmc-supply = <&vcc3v3_dvp>;',
+    'vqmmc-supply = <&vcc_backlight>;',
     '"G size=153,85 delays=20,20,20,120,20 format=rgb888 lanes=4 flags=0xa03"',
     '"M clock=30000 horizontal=640,150,40,135 vertical=480,20,6,12 default=1"',
 ]
@@ -64,6 +75,11 @@ if actual != expected_commands:
     raise SystemExit(
         f"panel command count mismatch: expected {len(expected_commands)}, got {len(actual)}"
     )
+
+if text.count('card-detect-delay = <800>;') != 2:
+    raise SystemExit("G80CA must expose two SD slots with 800 ms detect delay")
+if not re.search(r'&emmc\s*\{\s*status\s*=\s*"disabled";\s*\};', text, re.S):
+    raise SystemExit("G80CA absent eMMC controller must remain disabled")
 
 if text.count('RK_PC6 GPIO_ACTIVE_LOW') < 1:
     raise SystemExit("G80CA DPAD-UP wiring missing")
