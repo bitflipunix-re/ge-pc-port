@@ -292,6 +292,8 @@ static void videoApplyImageOptions(void)
 {
     portFovScale = (f32)cfgFovScale / 100.0f;
     gfx_set_anisotropy_level(cfgAniso);
+    gfx_set_fix_mip_textures(cfgFixMipTex);
+    gfx_set_wrap_fix(cfgWrapFix);
     gfx_set_render_scale_percent(cfgRenderScale);
     gfx_set_taa_mode(cfgTAA);
     /* Fast3D reallocates the scene FBO when the sample count changes, so
