@@ -603,6 +603,13 @@ void watch_play_beep_sound(void) {
 
     if (watch_item_is_actively_selected == 1) {
         watch_item_is_actively_selected = 0;
+#ifdef PORT
+        /* Sliders/control-style selections update continuously while the row
+         * is active, so unlike discrete toggles they must not write EEPROM on
+         * every render tick. Commit the complete current settings snapshot
+         * once when the player finishes editing the row. */
+        deleteCurrentSelectedFolder();
+#endif
 
     } else {
         watch_item_is_actively_selected = 1;
@@ -3592,6 +3599,19 @@ void game_option_select_value(u32 *param_1, u32 param_2)
     *param_1 = param_2;
     set_controlstick_lr_disabled();
     sndPlaySfx(g_musicSfxBufferPtr, OPTION_CHOOSE_SFX, NULL);
+#ifdef PORT
+    /* The retail menu keeps these values in RAM and relies on a later save
+     * path to serialize them. On the host port that path is not guaranteed
+     * before the next stage/restart, so Auto-Aim, Look Ahead and the other
+     * discrete watch options can appear to switch themselves back.
+     *
+     * Persist only on a discrete value change (this function), not from the
+     * per-frame volume-slider render/update path. deleteCurrentSelectedFolder
+     * is unfortunately named: it routes to fileClearSavefileForFolder(),
+     * which preserves the current save and writes current settings only when
+     * they differ. */
+    deleteCurrentSelectedFolder();
+#endif
 }
 
 
