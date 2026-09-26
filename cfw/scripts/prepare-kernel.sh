@@ -42,6 +42,56 @@ p.write_text(s)
 print("patched Rockchip DSI lane margin: 1/0.8 -> 1/0.9")
 PY
 
+# PX30/RK3326 uses the newer INNO D-PHY family. Linux 6.12 still feeds
+# it the RK3288/RK3399 variable HSTT table. Use the fixed PX30 timings from
+# the current Rockchip upstream correction for this exact-target kernel.
+python3 - "$DSI_DRV" <<'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1])
+s = p.read_text()
+old = """static int
+dw_mipi_dsi_phy_get_timing(void *priv_data, unsigned int lane_mbps,
+                           struct dw_mipi_dsi_dphy_timing *timing)
+{
+        int i;
+
+        for (i = 0; i < ARRAY_SIZE(hstt_table); i++)
+                if (lane_mbps < hstt_table[i].maxfreq)
+                        break;
+
+        if (i == ARRAY_SIZE(hstt_table))
+                i--;
+
+        *timing = hstt_table[i].timing;
+
+        return 0;
+}"""
+# Kernel source uses tabs; normalize just this function for a robust match.
+start = s.find("static int\ndw_mipi_dsi_phy_get_timing(")
+end = s.find("\n\nstatic const struct dw_mipi_dsi_phy_ops", start)
+if start < 0 or end < 0:
+    raise SystemExit("Rockchip DSI timing function not found")
+new = """static int
+dw_mipi_dsi_phy_get_timing(void *priv_data, unsigned int lane_mbps,
+                           struct dw_mipi_dsi_dphy_timing *timing)
+{
+        /*
+         * PX30/RK3326 INNO D-PHY fixed timing.
+         * Backported from the current Rockchip DSI timing correction.
+         */
+        timing->clk_lp2hs = 0x40;
+        timing->clk_hs2lp = 0x40;
+        timing->data_lp2hs = 0x10;
+        timing->data_hs2lp = 0x14;
+
+        return 0;
+}"""
+s = s[:start] + new + s[end:]
+p.write_text(s)
+print("patched Rockchip PX30 fixed D-PHY timings")
+PY
+
 # Convert BitflipUnix artwork into Linux's 224-colour boot-logo format.
 if command -v magick >/dev/null 2>&1; then
     magick "$LOGO_SVG" -alpha off -colors 224 -compress none \
