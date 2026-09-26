@@ -309,26 +309,26 @@ void fileSetDifficultyStageTime(save_data *save, LEVEL_SOLO_SEQUENCE levelid, DI
         switch(7 - (offset & 7)) //bitmask
         {
             case 7: //no offset 4 8 12 etc agent
-                save->times[index] &= 0xff00;
-                save->times[index + 1] &= 0xff3f;
+                save->times[index] = 0;
+                save->times[index + 1] &= 0x3f;
                 save->times[index] |= (newtime >> 2) & 0xff;
                 save->times[index + 1] |= (newtime << 6) & 0xc0;
                 break;
             case 5: //first offset 5 9 13 etc secret agent
-                save->times[index] &= 0xffc0;
-                save->times[index + 1] &= 0xff0f;
+                save->times[index] &= 0xc0;
+                save->times[index + 1] &= 0x0f;
                 save->times[index] |= ((newtime >> 4) & 0x3f);
                 save->times[index + 1] |= (newtime << 4) & 0xf0;
                 break;
             case 3: //second offset 6 10 14 etc 00 agent
-                save->times[index] &= 0xfff0;
-                save->times[index + 1] &= 0xff03;
+                save->times[index] &= 0xf0;
+                save->times[index + 1] &= 0x03;
                 save->times[index] |= ((newtime >> 6) & 0xf);
                 save->times[index + 1] |= (newtime << 2) & 0xfC;
                 break;
             case 1: //third offset 7 11 15 etc 007
-                save->times[index] &= 0xfffc;
-                save->times[index + 1] &= 0xff00;
+                save->times[index] &= 0xfc;
+                save->times[index + 1] = 0;
                 save->times[index] |= ((newtime >> 8) & 3);
                 save->times[index + 1] |= newtime & 0xfff;
                 break;
