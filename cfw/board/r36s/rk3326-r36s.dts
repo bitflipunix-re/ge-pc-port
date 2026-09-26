@@ -18,6 +18,7 @@
 
 	aliases {
 		mmc0 = &sdmmc;
+		serial2 = &uart2;
 	};
 
 	chosen {
@@ -134,6 +135,9 @@
 		compatible = "pwm-backlight";
 		power-supply = <&vcc_bl>;
 		pwms = <&pwm1 0 25000 0>;
+		brightness-levels = <0 255>;
+		num-interpolated-steps = <255>;
+		default-brightness-level = <200>;
 	};
 
 	builtin_gamepad: gpio-keys {
@@ -280,6 +284,8 @@
 		regulator-max-microvolt = <1800000>;
 		gpio = <&gpio3 RK_PA3 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
+		pinctrl-names = "default";
+		pinctrl-0 = <&vcc18_lcd_n>;
 		regulator-boot-on;
 	};
 
@@ -349,6 +355,8 @@
 		vdd-supply = <&vcc18_lcd0>;
 		iovcc-supply = <&vcc18_lcd0>;
 		reset-gpios = <&gpio3 RK_PD3 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&panel_reset>;
 
 		/*
 		 * Exact G80CA-MB V1.2-20250422 Panel 8 parameters decoded from
@@ -724,6 +732,18 @@
 	headphone {
 		hp_det: hp-det {
 			rockchip,pins = <2 RK_PC6 RK_FUNC_GPIO &pcfg_pull_down>;
+		};
+	};
+
+	panel {
+		panel_reset: panel-reset {
+			rockchip,pins = <3 RK_PD3 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
+
+	vcc18-lcd {
+		vcc18_lcd_n: vcc18-lcd-n {
+			rockchip,pins = <3 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 	};
 
