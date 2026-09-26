@@ -1539,8 +1539,8 @@ static int aimGepdCompute(double dxPx, double dyLook)
  * same "in line" convention D238 established for aimGepdCompute's GepdSens):
  * at defaults this reduces to exactly GEPD's px/10 baseline.
  *
- * dxPx/dyLook are raw relative-mouse displacement for this poll (the
- * aimGepdCompute -- callers pre-multiply by lookDtScale).
+ * dxPx/dyLook are raw relative-mouse displacement for this poll, matching
+ * aimGepdCompute. Legacy stick/rate fallbacks apply lookDtScale separately.
  *
  * GEPD's safety gates (`camera==4||0 && menupage==11 && !dead && !watch &&
  * !pause`) matter here in a way they didn't for aim mode: aim mode requires
