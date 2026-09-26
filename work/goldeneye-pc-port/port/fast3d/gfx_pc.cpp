@@ -108,6 +108,31 @@ static std::map<ColorCombinerKey, struct ColorCombiner>::iterator prev_combiner 
 static std::map<ColorCombinerKey, struct ColorCombiner>::iterator prev2_combiner = color_combiner_pool.end();
 
 static uint8_t* tex_upload_buffer = nullptr;
+static size_t tex_upload_buffer_capacity = 0;
+
+static void gfx_ensure_tex_upload_buffer(size_t required) {
+    if (required <= tex_upload_buffer_capacity) {
+        return;
+    }
+
+    size_t cap = tex_upload_buffer_capacity ? tex_upload_buffer_capacity : 64u * 1024u;
+    while (cap < required) {
+        if (cap > std::numeric_limits<size_t>::max() / 2u) {
+            cap = required;
+            break;
+        }
+        cap *= 2u;
+    }
+
+    void* p = std::realloc(tex_upload_buffer, cap);
+    if (!p) {
+        std::fprintf(stderr, "F3D: unable to allocate %zu-byte texture upload scratch buffer\n", cap);
+        std::abort();
+    }
+
+    tex_upload_buffer = static_cast<uint8_t*>(p);
+    tex_upload_buffer_capacity = cap;
+}
 
 static struct RSP {
     float modelview_matrix_stack[11][4][4];
@@ -1143,6 +1168,15 @@ static void import_texture(int i, int tile, bool importReplacement) {
     const RawTexMetadata* metadata = &loaded_texture.raw_tex_metadata;
     const uint8_t* orig_addr = loaded_texture.addr;
     SUPPORT_CHECK(orig_addr);
+
+    /* Worst decode expansion is 4bpp -> RGBA8888: 8 output bytes per input
+     * byte. Grow on demand instead of reserving max_texture_size^2*4 (up to
+     * 256 MiB on an 8192-capable driver). */
+    if ((size_t)loaded_texture.size_bytes > std::numeric_limits<size_t>::max() / 8u) {
+        std::fprintf(stderr, "F3D: texture upload size overflow (%u bytes)\n", loaded_texture.size_bytes);
+        std::abort();
+    }
+    gfx_ensure_tex_upload_buffer((size_t)loaded_texture.size_bytes * 8u);
 
     TextureCacheKey key;
     if (fmt == G_IM_FMT_CI) {
@@ -3833,12 +3867,6 @@ extern "C" void gfx_init(const GfxInitSettings *settings) {
         segmentPointers[i] = 0;
     }
 
-    if (tex_upload_buffer == nullptr) {
-        // We cap texture max to 8k, because why would you need more?
-        int max_tex_size = std::min(8192, gfx_rapi->get_max_texture_size());
-        tex_upload_buffer = (uint8_t*)malloc(max_tex_size * max_tex_size * 4);
-    }
-
     /* D72: N64 boots with RSP memory zeroed — no lookat until gSPLookAt. */
     rsp.lookat_enabled = false;
 }
@@ -3848,6 +3876,9 @@ extern "C" void gfx_destroy(void) {
 
     // Texture cache and loaded textures store references to Resources which need to be unreferenced.
     gfx_texture_cache_clear();
+    std::free(tex_upload_buffer);
+    tex_upload_buffer = nullptr;
+    tex_upload_buffer_capacity = 0;
 }
 
 extern "C" struct GfxRenderingAPI* gfx_get_current_rendering_api(void) {
