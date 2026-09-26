@@ -14,6 +14,9 @@ required_literals = [
     'reset-gpios = <&gpio3 RK_PD3 GPIO_ACTIVE_LOW>;',
     'gpio = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;',
     'io-channels = <&saradc 2>;',
+    'mux-gpios = <&gpio2 RK_PB7 GPIO_ACTIVE_HIGH>,',
+    '<&gpio2 RK_PC0 GPIO_ACTIVE_HIGH>;',
+    'settle-time-us = <20>;',
     '"G size=153,85 delays=20,20,20,120,20 format=rgb888 lanes=4 flags=0xa03"',
     '"M clock=30000 horizontal=640,150,40,135 vertical=480,20,6,12 default=1"',
 ]
