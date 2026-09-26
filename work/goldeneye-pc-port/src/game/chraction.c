@@ -505,7 +505,7 @@ void chrlvKneelingAnimationRelated(ChrRecord *self)
         self->act_stand.wallcount = (randomGetNext() % 120) + 180;
         self->sleep = 0;
 
-        if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_OFFSET(fire_kneel_forward_one_handed_weapon_slow) + GE_ANIMDATA_BASE)
+        if (GE_ANIMDATA_MATCH(objecthandlerGetModelAnim(self->model), fire_kneel_forward_one_handed_weapon_slow))
         {
             modelSetAnimation(self->model, (struct ModelAnimation*)(GE_ANIMDATA_OFFSET(fire_kneel_forward_one_handed_weapon_slow) + GE_ANIMDATA_BASE), (s32) self->model->gunhand, 109.0f, chrlvGetGuard007SpeedRating(self, 0.5f, 0.8f), 16.0f);
             modelSetAnimEndFrame(self->model, 140.0f);
@@ -625,7 +625,7 @@ void chrlvPerformAnimationForActor(ChrRecord *self, s32 animID, s32 startframe, 
     }
 #endif
 
-    modelSetAnimation(self->model, (void *)animation_table_ptrs1[animID], (bitfield & ANIM_MIRROR) != 0, startframef, phi_f0, (f32)interpol_time60);
+    modelSetAnimation(self->model, GE_ANIMTABLE_ENTRY_PTR(animation_table_ptrs1, animID), (bitfield & ANIM_MIRROR) != 0, startframef, phi_f0, (f32)interpol_time60);
 
     if (endframe >= 0)
     {
@@ -1621,7 +1621,7 @@ void chrlvInitActAttackWalk(ChrRecord *chr, s32 arg1)
     }
     else if (weaponIsOneHanded(left) || weaponIsOneHanded(right))
     {
-        sp78 = (s32)left != 0;
+        sp78 = left != NULL;
 
         if (arg1)
         {
@@ -1643,7 +1643,7 @@ void chrlvInitActAttackWalk(ChrRecord *chr, s32 arg1)
     }
     else
     {
-        sp78 = (s32)left != 0;
+        sp78 = left != NULL;
 
         if (arg1)
         {
@@ -1762,7 +1762,7 @@ void chrlvInitActAttackRoll(ChrRecord *chr, GUNHAND side)
         }
         else
         {
-            sp7C = (s32)right_2 == 0;
+            sp7C = right_2 == NULL;
             sp78 = 1;
             sp64.p[1] = sp7C;
             sp64.p[0] = sp7C == 0;
@@ -1770,14 +1770,14 @@ void chrlvInitActAttackRoll(ChrRecord *chr, GUNHAND side)
     }
     else if (weaponIsOneHanded(left) || weaponIsOneHanded(right))
     {
-        sp7C = (s32)left != 0;
+        sp7C = left != NULL;
         sp78 = 1;
         sp64.p[1] = sp7C;
         sp64.p[0] = sp7C == 0;
     }
     else
     {
-        sp7C = (s32)left != 0;
+        sp7C = left != NULL;
         sp64.p[1] = sp7C;
         sp64.p[0] = sp7C == 0;
     }
@@ -2313,11 +2313,11 @@ void triggered_on_shot_hit(ChrRecord *self, coord3d *arg1, f32 arg2, s32 req_ani
                     another_flag = 1;
                     something_ani = &g_HitReactionTable[animation_something_index];
 
-                    if (((s32)&g_HitReactionTable[9] == (s32)something_ani) && (temp_left != NULL))
+                    if ((&g_HitReactionTable[9] == something_ani) && (temp_left != NULL))
                     {
                         animation_something_index = 10;
                     }
-                    else if (((s32)&g_HitReactionTable[12] == (s32)something_ani) && (temp_right != NULL))
+                    else if ((&g_HitReactionTable[12] == something_ani) && (temp_right != NULL))
                     {
                         animation_something_index = 13;
                     }
@@ -3618,13 +3618,13 @@ void get_sound_at_range(ChrRecord *self, s32 arg1, s32 arg2)
         {
             t = 0;
             flag = t;
-            ani_arg = (s32)left != 0;
+            ani_arg = left != NULL;
         }
         else
         {
             t = 1;
             flag = t;
-            ani_arg = (s32)left != 0;
+            ani_arg = left != NULL;
         }
     }
 
@@ -3810,13 +3810,13 @@ void chrlvWalkingAnimationRelated(ChrRecord *self)
         {
             t = 0;
             flag = t;
-            ani_arg = (s32)left != 0;
+            ani_arg = left != NULL;
         }
         else
         {
             t = 1;
             flag = t;
-            ani_arg = (s32)left != 0;
+            ani_arg = left != NULL;
         }
     }
 

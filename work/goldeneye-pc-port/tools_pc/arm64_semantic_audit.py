@@ -79,6 +79,10 @@ REQUIRED = {
         ("(void *)(uintptr_t)(u32)virtualaddress", "stored title address token must zero-extend at the host pointer boundary"),
         ("(Vtx *)(uintptr_t)(OS_K0_TO_PHYSICAL(barrelDisplayListPtr) | 0x80000000u)", "gunbarrel KSEG0 reconstruction must be an explicit low-address pointer conversion"),
     ],
+    "src/game/chraction.c": [
+        ("GE_ANIMTABLE_ENTRY_PTR(animation_table_ptrs1, animID)", "dense animation table entries must zero-extend at the host pointer boundary"),
+        ("GE_ANIMDATA_MATCH(objecthandlerGetModelAnim(self->model), fire_kneel_forward_one_handed_weapon_slow)", "animation comparisons must retain host pointer width"),
+    ],
 }
 
 for root in SCAN_ROOTS:
