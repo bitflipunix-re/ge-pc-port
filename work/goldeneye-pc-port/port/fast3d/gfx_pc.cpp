@@ -2447,9 +2447,6 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
                 continue;
             }
 
-            // TODO: fix this; for now just ignore smaller mips
-            const uint32_t tile = gfx_lod_tile_offset(t);
-
             float u = v_arr[i]->u * tex_u_scale[t] + tex_u_bias[t];
             float v = v_arr[i]->v * tex_v_scale[t] + tex_v_bias[t];
 
@@ -2498,6 +2495,7 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
 
 #if defined(PORT) && defined(GE_DEV_PROBES)
             {
+                const uint32_t tile = gfx_lod_tile_offset(t);
                 static int ge_d116 = -1;
                 if (ge_d116 < 0) ge_d116 = getenv("GE_D116") ? 1 : 0;
                 if (ge_d116 && is_rect && t == 0 && tex_width[t] > 0 && tex_width[t] <= 32) {
