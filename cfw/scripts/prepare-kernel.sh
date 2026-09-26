@@ -19,6 +19,29 @@ LOGO_SVG="$CFW/board/r36s/bitflipunix-logo.svg"
 install -m 0644 "$CFW/board/r36s/rk3326-r36s.dts" "$DTS_DIR/rk3326-r36s.dts"
 install -m 0644 "$CFW/board/r36s/panel-generic-dsi.c" "$PANEL_DIR/panel-generic-dsi.c"
 
+# Match the lower Rockchip DSI lane-rate margin used by downstream/vendor
+# code. Linux 6.12 uses 1/0.8 (25% margin); this exact panel shows loss of
+# sync/vertical-line decay when Linux takes ownership from U-Boot. Use 1/0.9
+# (~11% margin), matching the current upstream Rockchip correction.
+DSI_DRV="$KSRC/drivers/gpu/drm/rockchip/dw-mipi-dsi-rockchip.c"
+python3 - "$DSI_DRV" <<'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1])
+s = p.read_text()
+old1 = "tmp = mpclk * (bpp / lanes) * 10 / 8;"
+new1 = "tmp = DIV_ROUND_UP(mpclk * bpp * 10, lanes * 9);"
+old2 = "phy_mipi_dphy_get_default_config(mode->clock * 1000 * 10 / 8,"
+new2 = "phy_mipi_dphy_get_default_config((u32)mode->clock * 1000 * 10 / 9,"
+if old1 not in s:
+    raise SystemExit("Rockchip DSI lane-rate expression not found")
+if old2 not in s:
+    raise SystemExit("Rockchip external-DPHY rate expression not found")
+s = s.replace(old1, new1, 1).replace(old2, new2, 1)
+p.write_text(s)
+print("patched Rockchip DSI lane margin: 1/0.8 -> 1/0.9")
+PY
+
 # Convert BitflipUnix artwork into Linux's 224-colour boot-logo format.
 if command -v magick >/dev/null 2>&1; then
     magick "$LOGO_SVG" -alpha off -colors 224 -compress none \
