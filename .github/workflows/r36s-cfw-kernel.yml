@@ -14,6 +14,10 @@ on:
       - '.github/workflows/r36s-cfw-kernel.yml'
   workflow_dispatch:
 
+concurrency:
+  group: r36s-cfw-kernel
+  cancel-in-progress: true
+
 jobs:
   kernel:
     runs-on: ubuntu-24.04
