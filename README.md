@@ -12,12 +12,15 @@ ARM-GE has now moved from **alpha** to **beta** for the R36S / PortMaster target
 
 The first player-focused beta prerelease was published on **26 September 2026** from the validated main branch:
 
-- Source revision: `0ec8a06429aaf8892cd803618db77c40ef7c289e`
-- Build run: `36244612005`
+- Release publication revision: `88e15245756e82074bf63b9312e7197122b1cd03`
+- Build run: `36271139262`
 - Release tag: `r36s-beta-2026-09-26`
 - Release: https://github.com/bitflipunix-re/ge-pc-port/releases/tag/r36s-beta-2026-09-26
-- Installer: `ge007.zip` — 1,102,379 bytes
-- Installer SHA-256: `ecfa2ad389e9cf398569c86e773e9b6dc3ab18dfd5dbdbc5bc5308ce9c1242dd`
+- Standalone executable: `ge007.aarch64` — 1,798,512 bytes
+- Executable asset SHA-256: `0ae0578d9260c9d3ff4930fb933a96dad53692e5b9b417a5bd51e3c31f07a458`
+- PortMaster installer: `ge007-r36s-portmaster-beta.zip` — 1,102,377 bytes
+- Installer asset SHA-256: `e12d8fb37deb670f4f47629393657be60f65ba30b7fe54cb976adfa6b8ee546b`
+- Compatibility installer filename: `ge007.zip`
 - Architecture: AArch64
 - Graphics: SDL2 + OpenGL ES
 - Target: R36S / dArkOSRE / PortMaster
@@ -27,7 +30,7 @@ This beta is intentionally different from the development builds used during the
 
 The beta keeps the features needed for normal use: the ARM-GE Glass Control Deck, normal runtime error logging, production crash screen, controller support, clean Start+Select exit, ROM verification, first-run sidecar generation and the lightweight CPU/FPS/RAM telemetry backend used by Port Control.
 
-The release workflow verifies the AArch64 executable and installer, checks that the player package contains no benchmark launcher or development probe markers, and refuses to publish ROM images or generated ROM-derived sidecars.
+The release workflow verifies the AArch64 executable and installer, checks that the player package contains no benchmark launcher or development probe markers, refuses to publish ROM images or generated ROM-derived sidecars, and publishes both the standalone `.aarch64` executable and an explicitly named PortMaster installer package (while retaining `ge007.zip` for compatibility).
 
 ## September 26 completion pass
 
