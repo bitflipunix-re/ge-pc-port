@@ -1364,7 +1364,6 @@ bool sub_GAME_7F0B0914(StandTile **tileStack, f32 start_x, f32 start_z, f32 dest
     StandTile *nextTile;
     f32 lineNegDz;
     f32 lineDx;
-    s32 uninitialized;
     s32 edgeIndex;
     s32 crossings;
     s32 iterationCount;
@@ -1401,7 +1400,7 @@ bool sub_GAME_7F0B0914(StandTile **tileStack, f32 start_x, f32 start_z, f32 dest
     iterationCount = 0;
     lineDx = dest_x - start_x;
 
-    savedPointIndex = uninitialized;\
+    savedPointIndex = 0;
     while (1)
     {
         crossings = 0;
