@@ -68,7 +68,9 @@ static int cfgPerfHud = 0;
  */
 static int cfgVSync         = 1;   /* swap interval: 0 = off, 1 = on            */
 static int cfgFpsCap        = 0;   /* frame cap in fps; 0 = uncapped (vsync)    */
-static int cfgMSAA          = 4;   /* 1/2/4/8 samples; default 4 (modern ports ship AA on; snaps down to the highest supported level) */
+static int cfgMSAA          = 4;   /* 1/2/4/8 samples; clamped by GL_MAX_SAMPLES */
+static int cfgRenderScale   = 100; /* 50..200% main-scene render resolution */
+static int cfgTAA           = 0;   /* 0 off, 1 low, 2 high; TAA-lite experimental */
 static int cfgTexFilter     = 1;   /* 0 = nearest, 1 = bilinear (default), 2 = N64 3-point */
 static int cfgMipmapFilter  = 3;   /* 0 off, 1 nearest, 2 trilinear, 3 auto (legacy behavior) */
 static int cfgFramebufferEffects = 1; /* fast3d render-target effects; restart-bound */
@@ -236,6 +238,8 @@ PD_CONSTRUCTOR static void videoConfigInit(void)
     configRegisterInt("Video.VSync",         &cfgVSync,      0, 1);
     configRegisterInt("Video.FpsCap",        &cfgFpsCap,     0, 1000);
     configRegisterInt("Video.MSAA",          &cfgMSAA,       1, 8);
+    configRegisterInt("Video.RenderScale",   &cfgRenderScale, 50, 200);
+    configRegisterInt("Video.TAA",           &cfgTAA,         0, 2);
     configRegisterInt("Video.TextureFilter", &cfgTexFilter,  0, 2);
     configRegisterInt("Video.MipmapFilter",  &cfgMipmapFilter, 0, 3);
     configRegisterInt("Video.FramebufferEffects", &cfgFramebufferEffects, 0, 1);
@@ -288,6 +292,8 @@ static void videoApplyImageOptions(void)
 {
     portFovScale = (f32)cfgFovScale / 100.0f;
     gfx_set_anisotropy_level(cfgAniso);
+    gfx_set_render_scale_percent(cfgRenderScale);
+    gfx_set_taa_mode(cfgTAA);
 }
 
 static void videoApplyTexFilter(void)
@@ -424,18 +430,11 @@ int videoInit(void)
      * user-exposed. */
     gfx_detail_textures_enabled = false;
 
-    /* MSAA: snap the requested sample count down to a supported power of two. */
-#if defined(__aarch64__) && defined(USE_GLES)
-    /* R36S target policy: use the direct window framebuffer. The handheld
-     * baseline does not depend on multisample FBO/resolve support, which varies
-     * across its Mesa/EGL stacks; expose one deterministic GLES3 path. */
-    if (cfgMSAA != 1) {
-        sysLogPrintf(LOG_NOTE, "R36S video diagnostic: forcing MSAA 1 (configured %d)", cfgMSAA);
-    }
-    gfx_msaa_level = 1;
-#else
+    /* Fast3D already has a GLES3 multisample FBO + resolve path (including
+     * the RGB8 -> default-window GLES format workaround). Keep the conservative
+     * R36S package default at 1x, but let users opt into real 2x/4x/8x MSAA.
+     * The GL backend clamps to GL_MAX_SAMPLES at allocation time. */
     gfx_msaa_level = cfgMSAA >= 8 ? 8 : cfgMSAA >= 4 ? 4 : cfgMSAA >= 2 ? 2 : 1;
-#endif
 
     int winW = cfgWinW > 0 ? cfgWinW : 0;   /* 0 -> gfx_sdl2 auto-fits to the desktop */
     int winH = cfgWinH > 0 ? cfgWinH : 0;
@@ -557,8 +556,9 @@ void videoStartFrame(void)
         videoApplyTexFilter();
         videoApplyImageOptions();
         sysLogPrintf(LOG_INFO, "video: live config applied "
-                     "(vsync=%d fpscap=%d texfilter=%d fov=%d aniso=%d)",
-                     cfgVSync, cfgFpsCap, cfgTexFilter, cfgFovScale, cfgAniso);
+                     "(vsync=%d fpscap=%d texfilter=%d fov=%d aniso=%d render=%d%% taa=%d)",
+                     cfgVSync, cfgFpsCap, cfgTexFilter, cfgFovScale, cfgAniso,
+                     cfgRenderScale, cfgTAA);
     }
 
     gfx_start_frame();
