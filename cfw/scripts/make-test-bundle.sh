@@ -29,7 +29,18 @@ DTB=$(find "$TMP/kernel" -maxdepth 2 -type f -name 'rk3326-r36s.dtb' | head -n 1
 
 cp "$IMAGE" "$TMP/bundle/BOOT/Image"
 cp "$DTB" "$TMP/bundle/BOOT/rk3326-r36s.dtb"
-cp "$CFW/boot/boot.ini" "$TMP/bundle/BOOT/boot.ini"
+ROOT_UUID=""
+if command -v blkid >/dev/null 2>&1; then
+    ROOT_UUID=$(blkid -s UUID -o value "$ROOTFS" 2>/dev/null || true)
+fi
+
+if [ -n "$ROOT_UUID" ]; then
+    sed "s/root=LABEL=ROOTFS/root=UUID=$ROOT_UUID/" \
+        "$CFW/boot/boot.ini" > "$TMP/bundle/BOOT/boot.ini"
+else
+    cp "$CFW/boot/boot.ini" "$TMP/bundle/BOOT/boot.ini"
+fi
+
 cp "$ROOTFS" "$TMP/bundle/ROOTFS/rootfs.ext4"
 
 cat >"$TMP/bundle/README.txt" <<'EOF'
@@ -60,6 +71,14 @@ A successful graphics image should also run:
 
 Do not treat a software-rendered result as a Panfrost pass.
 EOF
+
+if [ -n "$ROOT_UUID" ]; then
+    {
+        echo
+        echo "Root filesystem UUID pinned by this bundle:"
+        echo "  $ROOT_UUID"
+    } >> "$TMP/bundle/README.txt"
+fi
 
 (
     cd "$TMP/bundle"
