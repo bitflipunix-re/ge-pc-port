@@ -15,6 +15,8 @@ elif [ -d "/opt/tools/PortMaster/" ]; then
   controlfolder="/opt/tools/PortMaster"
 elif [ -d "$XDG_DATA_HOME/PortMaster/" ]; then
   controlfolder="$XDG_DATA_HOME/PortMaster"
+elif [ -n "$SCRIPT_DIR" ] && [ -d "$SCRIPT_DIR/PortMaster/" ]; then
+  controlfolder="$SCRIPT_DIR/PortMaster"
 else
   controlfolder="/roms/ports/PortMaster"
 fi
