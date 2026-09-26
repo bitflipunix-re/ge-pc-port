@@ -5240,7 +5240,16 @@ void sub_GAME_7F068508(GUNHAND handnum, f32 floor_y_pos)
         return;
     }
  
+#ifdef PORT
+    /* D_80035EA4/EA8/EAC are three adjacent zero words in the N64 data image.
+     * Separate host globals are not guaranteed contiguous, so build the zero
+     * vector explicitly instead of reading across object boundaries. */
+    rot.x = 0.0f;
+    rot.y = 0.0f;
+    rot.z = 0.0f;
+#else
     rot = *((coord3d *) (&D_80035EA4));
+#endif
     casing->floor_y_pos = floor_y_pos;
  
     if (((((weaponid == ITEM_WPPK) || (weaponid == ITEM_WPPKSIL)) || (weaponid == ITEM_TT33)) || (weaponid == ITEM_SILVERWPPK)) || (weaponid == ITEM_GOLDWPPK))
@@ -5557,7 +5566,16 @@ void sub_GAME_7F068508(GUNHAND handnum, f32 floor_y_pos)
         return;
     }
  
+#ifdef PORT
+    /* D_80035EA4/EA8/EAC are three adjacent zero words in the N64 data image.
+     * Separate host globals are not guaranteed contiguous, so build the zero
+     * vector explicitly instead of reading across object boundaries. */
+    rot.x = 0.0f;
+    rot.y = 0.0f;
+    rot.z = 0.0f;
+#else
     rot = *((coord3d *) (&D_80035EA4));
+#endif
     casing->floor_y_pos = floor_y_pos;
  
     if (((((weaponid == ITEM_WPPK) || (weaponid == ITEM_WPPKSIL)) || (weaponid == ITEM_TT33)) || (weaponid == ITEM_SILVERWPPK)) || (weaponid == ITEM_GOLDWPPK))
@@ -5568,7 +5586,7 @@ void sub_GAME_7F068508(GUNHAND handnum, f32 floor_y_pos)
  
         rand = ((f32) ((u32) randomGetNext())) * 2.3283064e-10f;
         casing->vel.y = ((rand * 2.5f) * 0.0625f) + 2.5f;
-        casing->vel.z = frac * 0.0f;
+        casing->vel.z = 0.0f;
  
         mtx4RotateVecInPlace(THROWMTX, &casing->vel);
  
