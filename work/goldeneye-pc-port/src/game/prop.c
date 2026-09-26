@@ -1414,7 +1414,13 @@ void proplvreset2(enum LEVELID stageId)
                 /** Ugly matching hack. 
                 *   TODO: investigate if there's a way to get rid of this.
                 */
+#ifdef PORT
+                /* Matching-era no-op retained structurally, but never truncate
+                 * the host stage base while evaluating it on LP64. */
+                if ((((uintptr_t)local_stage) ^ 0) + ((uintptr_t)vol->plink));
+#else
                 if ((((u32) local_stage) ^ 0) + ((u32)vol->plink));
+#endif
 
                 vol->plink = (void *)((u8 *)local_stage + (uintptr_t)vol->plink);
                 vol->pos.f[0] *= roompos_2;
