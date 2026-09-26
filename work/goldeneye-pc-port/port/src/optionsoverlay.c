@@ -51,6 +51,7 @@
 #include "input.h"
 #include "optionsoverlay.h"
 #include "damlab.h"
+#include "systemperf.h"
 
 /* ---- game symbols (rendering/UI only; see input.c for the same pattern) ---- */
 struct font;
@@ -137,7 +138,7 @@ static const char *const kPageHints[PAGE_COUNT] = {
     "MOUSE / PAD / AIM",
     "GAMEPLAY / ACCESS",
     "ORIGINAL GOLDENEYE FUN",
-    "RUNTIME / DAM LAB"
+    "TELEMETRY / GOVERNORS / MEMORY"
 };
 
 static const char *const kOnOff[]     = { "OFF", "ON", NULL };
@@ -148,6 +149,10 @@ static const char *const kScreenRatio[]  = { "NORMAL", "16:9", NULL };
 static const char *const kAimControl[]    = { "HOLD", "TOGGLE", NULL };
 static const char *const kGraphicsPreset[]= { "CUSTOM", "N64", "CRISP", "ENHANCED", "R36S", NULL };
 static const char *const kAudioPreset[]   = { "CUSTOM", "LOW LATENCY", "BALANCED", "SAFE", NULL };
+static const char *const kTaaMode[]       = { "OFF", "LOW", "HIGH", NULL };
+static const char *const kCpuGovernor[]   = { "SYSTEM", "SCHEDUTIL", "PERFORMANCE", "POWERSAVE", NULL };
+static const char *const kGpuGovernor[]   = { "SYSTEM", "SIMPLE ONDEMAND", "PERFORMANCE", "POWERSAVE", NULL };
+static const char *const kRamProfile[]    = { "SYSTEM", "LOW SWAP", "BALANCED", NULL };
 static const int         kMsaaSeq[]   = { 1, 2, 4, 8 };
 
 /* Windowed-mode resolution presets. Filtered at init to those that fit the
@@ -190,10 +195,12 @@ static struct Row rows[] = {
     /* Graphics */
     { PAGE_GRAPHICS, "__GraphicsPreset",          "Graphics preset",     ROW_ENUM,   1,    kGraphicsPreset, 0, 0,   4,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.Fullscreen",         "Fullscreen",          ROW_TOGGLE, 1,    kOnOff,     0, 0,   0,   0,0,0,0,0 },
-    { PAGE_GRAPHICS, "__Resolution",             "Resolution",          ROW_RES,    0,    NULL,       0, 0,   0,   0,0,0,0,0 },
+    { PAGE_GRAPHICS, "__Resolution",             "Output resolution",   ROW_RES,    0,    NULL,       0, 0,   0,   0,0,0,0,0 },
+    { PAGE_GRAPHICS, "Video.RenderScale",        "Render resolution",   ROW_SLIDER, 25,   NULL,       0, 50, 200,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.VSync",              "VSync",               ROW_TOGGLE, 1,    kOnOff,     0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.FpsCap",             "Frame cap",           ROW_SLIDER, 10,   NULL,       0, 0, 360,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.MSAA",               "MSAA",                ROW_MSAA,   0,    NULL,       1, 0,   0,   0,0,0,0,0 },
+    { PAGE_GRAPHICS, "Video.TAA",                "Temporal AA (TAA)",   ROW_ENUM,   1,    kTaaMode,   0, 0,   2,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.TextureFilter",      "Texture filter",      ROW_ENUM,   1,    kTexFilter,      0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.MipmapFilter",       "Mipmap filter",       ROW_ENUM,   1,    kMipmapFilter,   0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.FramebufferEffects", "Framebuffer effects", ROW_TOGGLE, 1,    kOnOff,          1, 0,   0,   0,0,0,0,0 },
@@ -285,10 +292,15 @@ static struct Row rows[] = {
     { PAGE_CHEATS, "__Cheat2xRCP90",             "Dual RCP90s",          ROW_ACTION, 0, NULL,   0, 0, 0, 0,0,0,0,0 },
     { PAGE_CHEATS, "__CheatClearAll",            "Disable all cheats",   ROW_ACTION, 0, NULL,   0, 0, 0, 0,0,0,0,0 },
 
-    /* System / diagnostics */
-    { PAGE_SYSTEM, "Video.DisplayFPS",           "FPS-only counter",    ROW_TOGGLE, 1,    kOnOff,     0, 0,   0,   0,0,0,0,0 },
-    { PAGE_SYSTEM, "Debug.PerfHUD",              "CPU/FPS/RAM HUD",     ROW_TOGGLE, 1,    kOnOff,     0, 0,   0,   0,0,0,0,0 },
-    { PAGE_SYSTEM, "Debug.InputLog",             "Input logging",       ROW_TOGGLE, 1,    kOnOff,     0, 0,   0,   0,0,0,0,0 },
+    /* System / diagnostics. Governor/VM profiles are applied by the
+     * PortMaster launcher on the next launch and restored on game exit. */
+    { PAGE_SYSTEM, "Video.DisplayFPS",           "FPS-only counter",    ROW_TOGGLE, 1,    kOnOff,       0, 0,   0,   0,0,0,0,0 },
+    { PAGE_SYSTEM, "Debug.PerfHUD",              "CPU/FPS/RAM HUD",     ROW_TOGGLE, 1,    kOnOff,       0, 0,   0,   0,0,0,0,0 },
+    { PAGE_SYSTEM, "Debug.InputLog",             "Input logging",       ROW_TOGGLE, 1,    kOnOff,       0, 0,   0,   0,0,0,0,0 },
+    { PAGE_SYSTEM, "System.CpuGovernor",         "CPU governor",        ROW_ENUM,   1,    kCpuGovernor, 1, 0,   3,   0,0,0,0,0 },
+    { PAGE_SYSTEM, "System.GpuGovernor",         "GPU governor",        ROW_ENUM,   1,    kGpuGovernor, 1, 0,   3,   0,0,0,0,0 },
+    { PAGE_SYSTEM, "System.RamProfile",          "RAM profile",         ROW_ENUM,   1,    kRamProfile,  1, 0,   2,   0,0,0,0,0 },
+    { PAGE_SYSTEM, "__TrimRAM",                  "Trim allocator now",  ROW_ACTION, 0,    NULL,         0, 0,   0,   0,0,0,0,0 },
 };
 #define NUM_ROWS ((int)(sizeof(rows) / sizeof(rows[0])))
 
@@ -347,20 +359,29 @@ static void fpsTick(void)
  * emit path and the mouse hit-testing in optionsOverlayHandleInput().
  * BankGothic caps are ~9 units tall here, so rows need ~16 units of pitch and
  * values are right-aligned to the panel edge to survive the wide font. */
-#define OV_X0        10
-#define OV_TOP       8
-#define OV_TAB_Y     24
-#define OV_BODY_Y    43
-#define OV_LINE      17
-#define OV_LABEL_X   22
-#define OV_RIGHT     (viGetX() - 14)
-#define OV_BAR_X     ((viGetX() * 58) / 100)
-#define OV_NUM_W     46
+/* Resolution-scalable logical layout. GoldenEye's VI coordinate space
+ * changes between gameplay/front-end modes, so all important edges derive
+ * from the current logical viewport instead of assuming 320x240. */
+#define OV_MARGIN_X  ((viGetX() >= 400) ? 12 : 7)
+#define OV_MARGIN_Y  ((viGetY() >= 300) ? 8 : 5)
+#define OV_TOP       (OV_MARGIN_Y + 3)
+#define OV_TAB_Y     ((viGetY() * 10) / 100)
+#define OV_BODY_Y    ((viGetY() * 18) / 100)
+#define OV_LINE      ((viGetY() >= 300) ? 19 : 17)
+#define OV_LABEL_X   (OV_MARGIN_X + ((viGetX() >= 400) ? 14 : 15))
+#define OV_RIGHT     (viGetX() - OV_MARGIN_X - 7)
+#define OV_BAR_X     ((viGetX() * 57) / 100)
+#define OV_NUM_W     ((viGetX() >= 400) ? 58 : 46)
 #define OV_ROW_Y(i)  (OV_BODY_Y + (i) * OV_LINE)
 
 static int maxVisibleRows(void)
 {
-    int n = (viGetY() - OV_BODY_Y - 24) / OV_LINE;
+    int reserve = 24;
+    if (s_page == PAGE_SYSTEM)
+        reserve += (viGetY() >= 300) ? 76 : 64;
+    else if (s_page == PAGE_AUDIO)
+        reserve += 30;
+    int n = (viGetY() - OV_BODY_Y - reserve) / OV_LINE;
     return n < 4 ? 4 : n;
 }
 
@@ -648,6 +669,13 @@ static void rowSet(struct Row *r, double v)
         return;
     }
 
+    if (strcmp(r->key, "__TrimRAM") == 0) {
+        int released = systemPerfTrimMemory();
+        sysLogPrintf(LOG_INFO, "optionsoverlay: allocator trim %s",
+                     released ? "released pages" : "completed/no pages released");
+        return;
+    }
+
     /* Original GoldenEye cheat machinery. */
     if (strcmp(r->key, "__CheatMaxAmmo") == 0) {
         cheatButtonTurnOnCheatForPlayers(GE_CHEAT_MAXAMMO);
@@ -822,21 +850,15 @@ static void rowAdjust(struct Row *r, int dir)
         rowSet(r, (v != 0.0) ? 0.0 : 1.0);
         break;
     case ROW_MSAA: {
-#if defined(__aarch64__) && defined(USE_GLES)
-        /* R36S target keeps the direct framebuffer path deterministic; its
-         * Mesa/EGL stacks vary in multisample resolve support. */
-        break;
-#else
         int idx = 0;
         for (int i = 0; i < 4; i++) {
             if (kMsaaSeq[i] == (int)lround(v)) idx = i;
         }
-        /* Wrap like a normal settings-menu cycle: OFF->2x->4x->8x->OFF, in
-         * both directions (left/right click and arrows all roll). */
+        /* GLES3 Fast3D owns a real multisample FBO/resolve path. The backend
+         * clamps the chosen value to GL_MAX_SAMPLES at allocation time. */
         idx = (idx + dir + 4) % 4;
         rowSet(r, (double)kMsaaSeq[idx]);
         break;
-#endif
     }
     case ROW_ENUM: {
         double lo = rowLo(r), hi = rowHi(r);
@@ -1165,15 +1187,13 @@ static void valueText(const struct Row *r, char *out, int n)
         }
     }
     if (r->kind == ROW_MSAA) {
-#if defined(__aarch64__) && defined(USE_GLES)
-        snprintf(out, n, "R36S OFF");
-#else
         if ((int)lround(v) <= 1) snprintf(out, n, "OFF");
         else                     snprintf(out, n, "%dx", (int)lround(v));
-#endif
         return;
     }
-    if (strcmp(r->key, "__MusicVolume") == 0 || strcmp(r->key, "__SfxVolume") == 0) {
+    if (strcmp(r->key, "__MusicVolume") == 0 || strcmp(r->key, "__SfxVolume") == 0 ||
+        strcmp(r->key, "Video.RenderScale") == 0 || strcmp(r->key, "Video.FovScale") == 0 ||
+        strcmp(r->key, "Video.DrawDistance") == 0 || strcmp(r->key, "Video.LodDistance") == 0) {
         snprintf(out, n, "%d%%", (int)lround(v));
         return;
     }
