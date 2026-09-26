@@ -6,8 +6,9 @@
  *
  * Port-layer only. No src/ menu code is touched: the overlay draws its own
  * fast3d 2D display list (appended after the game DL in gfx_run) and edits the
- * port-owned config.c variables directly. Live knobs apply immediately; the
- * two that need an FBO/window rebuild (MSAA, Fullscreen) are tagged "(restart)".
+ * port-owned config.c variables directly. Live video knobs are routed back
+ * through video.c/Fast3D; privileged system tuning is persisted for the
+ * PortMaster launcher to apply safely on the next launch and restore on exit.
  *
  * The panel adapts to whatever 2D space it is drawn in (320x240 in-game vs
  * 440x330 on front-end screens -- viSetXY differs) and scrolls when the row
@@ -66,6 +67,12 @@ extern void  textMeasure(s32 *textheight, s32 *textwidth, char *text,
                          struct fontchar *chars, struct font *font, s32 lineheight);
 extern s16   viGetX(void);
 extern s16   viGetY(void);
+
+/* Fast3D's exact logical-UI rectangle in SDL window pixels. Using this rather
+ * than assuming the VI canvas fills the window keeps mouse hit-testing aligned
+ * with the glass UI when gameplay safe-area cropping/inset viewports are active. */
+extern void gfx_get_ui_screen_rect(int32_t *outX, int32_t *outY,
+                                   int32_t *outW, int32_t *outH);
 
 /* GoldenEye-owned display settings. These are the same getters/setters used
  * by the in-watch options page; Port Control is only another UI surface. */
@@ -149,10 +156,10 @@ static const char *const kScreenRatio[]  = { "NORMAL", "16:9", NULL };
 static const char *const kAimControl[]    = { "HOLD", "TOGGLE", NULL };
 static const char *const kGraphicsPreset[]= { "CUSTOM", "N64", "CRISP", "ENHANCED", "R36S", NULL };
 static const char *const kAudioPreset[]   = { "CUSTOM", "LOW LATENCY", "BALANCED", "SAFE", NULL };
-static const char *const kTaaMode[]       = { "OFF", "LOW", "HIGH", NULL };
+static const char *const kTaaMode[]       = { "OFF", "TEMPORAL LOW", "TEMPORAL HIGH", NULL };
 static const char *const kCpuGovernor[]   = { "SYSTEM", "SCHEDUTIL", "PERFORMANCE", "POWERSAVE", NULL };
 static const char *const kGpuGovernor[]   = { "SYSTEM", "SIMPLE ONDEMAND", "PERFORMANCE", "POWERSAVE", NULL };
-static const char *const kRamProfile[]    = { "SYSTEM", "LOW SWAP", "BALANCED", NULL };
+static const char *const kRamProfile[]    = { "SYSTEM", "LOW SWAP", "BALANCED", "GAME", NULL };
 static const int         kMsaaSeq[]   = { 1, 2, 4, 8 };
 
 /* Windowed-mode resolution presets. Filtered at init to those that fit the
@@ -196,11 +203,11 @@ static struct Row rows[] = {
     { PAGE_GRAPHICS, "__GraphicsPreset",          "Graphics preset",     ROW_ENUM,   1,    kGraphicsPreset, 0, 0,   4,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.Fullscreen",         "Fullscreen",          ROW_TOGGLE, 1,    kOnOff,     0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "__Resolution",             "Output resolution",   ROW_RES,    0,    NULL,       0, 0,   0,   0,0,0,0,0 },
-    { PAGE_GRAPHICS, "Video.RenderScale",        "Render resolution",   ROW_SLIDER, 25,   NULL,       0, 50, 200,   0,0,0,0,0 },
+    { PAGE_GRAPHICS, "Video.RenderScale",        "Internal resolution", ROW_SLIDER, 25,   NULL,       0, 50, 200,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.VSync",              "VSync",               ROW_TOGGLE, 1,    kOnOff,     0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.FpsCap",             "Frame cap",           ROW_SLIDER, 10,   NULL,       0, 0, 360,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.MSAA",               "MSAA",                ROW_MSAA,   0,    NULL,       0, 0,   0,   0,0,0,0,0 },
-    { PAGE_GRAPHICS, "Video.TAA",                "Temporal AA (TAA)",   ROW_ENUM,   1,    kTaaMode,   0, 0,   2,   0,0,0,0,0 },
+    { PAGE_GRAPHICS, "Video.TAA",                "Temporal AA (TXAA-style)", ROW_ENUM, 1, kTaaMode, 0, 0, 2, 0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.TextureFilter",      "Texture filter",      ROW_ENUM,   1,    kTexFilter,      0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.MipmapFilter",       "Mipmap filter",       ROW_ENUM,   1,    kMipmapFilter,   0, 0,   0,   0,0,0,0,0 },
     { PAGE_GRAPHICS, "Video.FramebufferEffects", "Framebuffer effects", ROW_TOGGLE, 1,    kOnOff,          1, 0,   0,   0,0,0,0,0 },
@@ -299,7 +306,7 @@ static struct Row rows[] = {
     { PAGE_SYSTEM, "Debug.InputLog",             "Input logging",       ROW_TOGGLE, 1,    kOnOff,       0, 0,   0,   0,0,0,0,0 },
     { PAGE_SYSTEM, "System.CpuGovernor",         "CPU governor",        ROW_ENUM,   1,    kCpuGovernor, 1, 0,   3,   0,0,0,0,0 },
     { PAGE_SYSTEM, "System.GpuGovernor",         "GPU governor",        ROW_ENUM,   1,    kGpuGovernor, 1, 0,   3,   0,0,0,0,0 },
-    { PAGE_SYSTEM, "System.RamProfile",          "RAM profile",         ROW_ENUM,   1,    kRamProfile,  1, 0,   2,   0,0,0,0,0 },
+    { PAGE_SYSTEM, "System.RamProfile",          "RAM profile",         ROW_ENUM,   1,    kRamProfile,  1, 0,   3,   0,0,0,0,0 },
     { PAGE_SYSTEM, "__TrimRAM",                  "Trim allocator now",  ROW_ACTION, 0,    NULL,         0, 0,   0,   0,0,0,0,0 },
 };
 #define NUM_ROWS ((int)(sizeof(rows) / sizeof(rows[0])))
@@ -320,6 +327,8 @@ static int  s_audioPreset = 0;
 static int  s_presetDepth = 0;
 static int  s_bindCaptureRow = -1;
 static int  s_bindWaitRelease = 0;
+static int  s_verifiedRows = 0;
+static int  s_missingRows = 0;
 
 /* D213: optional on-screen FPS readout (PD parity: Video.DisplayFPS). Drawn
  * top-right whenever enabled, independent of the F10 panel. Config-only knob
@@ -435,7 +444,7 @@ static void overlayUpdateScroll(void)
 static int tabAtX(double ox)
 {
     const int W = viGetX();
-    const int left = 14, right = W - 14;
+    const int left = OV_MARGIN_X + 6, right = W - OV_MARGIN_X - 6;
     const int span = right - left;
     for (int i = 0; i < PAGE_COUNT; ++i) {
         int x0 = left + (span * i) / PAGE_COUNT;
@@ -496,6 +505,16 @@ static void overlayInit(void)
                          rows[i].key);
         }
     }
+
+    s_verifiedRows = 0;
+    s_missingRows = 0;
+    for (int i = 0; i < NUM_ROWS; ++i) {
+        if (rows[i].found) s_verifiedRows++;
+        else s_missingRows++;
+    }
+    sysLogPrintf(s_missingRows ? LOG_WARNING : LOG_INFO,
+                 "optionsoverlay: control map %d/%d wired (%d missing)",
+                 s_verifiedRows, NUM_ROWS, s_missingRows);
 
     /* Resolve the hidden-while-on sources (manual % rows vs their auto
      * toggles), then build the initial visible list. */
@@ -1082,8 +1101,13 @@ void optionsOverlayHandleInput(void)
     int ww = 0, wh = 0;
     videoGetWindowSize(&ww, &wh);
     if (ww > 0 && wh > 0) {
-        double ox = (double)mx * (double)viGetX() / ww;
-        double oy = (double)my * (double)viGetY() / wh;
+        int32_t ux = 0, uy = 0, uw = ww, uh = wh;
+        gfx_get_ui_screen_rect(&ux, &uy, &uw, &uh);
+        if (uw <= 0 || uh <= 0) {
+            ux = 0; uy = 0; uw = ww; uh = wh;
+        }
+        double ox = ((double)mx - (double)ux) * (double)viGetX() / (double)uw;
+        double oy = ((double)my - (double)uy) * (double)viGetY() / (double)uh;
         int hoverVis = overlayRowAtY(oy);
         int onClose  = overlayInCloseBox(ox, oy);
         int hoverTab = (oy >= OV_TAB_Y - 3 && oy <= OV_TAB_Y + 13) ? tabAtX(ox) : -1;
@@ -1206,8 +1230,20 @@ static void valueText(const struct Row *r, char *out, int n)
         else                     snprintf(out, n, "%dx", (int)lround(v));
         return;
     }
+    if (strcmp(r->key, "Video.RenderScale") == 0) {
+        int w = 0, h = 0;
+        videoGetWindowSize(&w, &h);
+        if (w > 0 && h > 0) {
+            const int pct = (int)lround(v);
+            snprintf(out, n, "%dx%d  %d%%",
+                     (w * pct + 50) / 100, (h * pct + 50) / 100, pct);
+        } else {
+            snprintf(out, n, "%d%%", (int)lround(v));
+        }
+        return;
+    }
     if (strcmp(r->key, "__MusicVolume") == 0 || strcmp(r->key, "__SfxVolume") == 0 ||
-        strcmp(r->key, "Video.RenderScale") == 0 || strcmp(r->key, "Video.FovScale") == 0 ||
+        strcmp(r->key, "Video.FovScale") == 0 ||
         strcmp(r->key, "Video.DrawDistance") == 0 || strcmp(r->key, "Video.LodDistance") == 0) {
         snprintf(out, n, "%d%%", (int)lround(v));
         return;
@@ -1294,15 +1330,22 @@ Gfx *optionsOverlayEmit(void)
         const int my = OV_MARGIN_Y;
         const int footerTop = H - ((H >= 300) ? 28 : 22);
 
-        gdl = fillRect(gdl, 0, 0, W, H, 1, 5, 10, 118);                    /* dim */
-        gdl = fillRect(gdl, mx - 1, my - 1, W - mx, H - my, 62, 218, 208, 96); /* glass rim */
-        gdl = fillRect(gdl, mx, my, W - mx - 1, H - my - 1, 7, 14, 24, 218);   /* pane */
+        /* Layered smoked glass: shadow -> cold rim -> translucent body ->
+         * soft top reflection. No fixed-pixel asset is involved, so the same
+         * composition scales with every logical VI mode and output resolution. */
+        gdl = fillRect(gdl, 0, 0, W, H, 0, 3, 8, 126);                         /* dim */
+        gdl = fillRect(gdl, mx + 2, my + 2, W - mx + 1, H - my + 1,
+                       0, 0, 0, 92);                                           /* shadow */
+        gdl = fillRect(gdl, mx - 1, my - 1, W - mx, H - my,
+                       112, 224, 255, 92);                                     /* ice rim */
+        gdl = fillRect(gdl, mx, my, W - mx - 1, H - my - 1,
+                       8, 15, 27, 224);                                        /* smoked pane */
         gdl = fillRect(gdl, mx + 2, my + 2, W - mx - 3, OV_TAB_Y - 6,
-                       28, 44, 58, 164);                                      /* top reflection */
+                       50, 70, 92, 150);                                       /* reflection */
         gdl = fillRect(gdl, mx, OV_BODY_Y - 7, W - mx - 1, OV_BODY_Y - 6,
-                       79, 231, 213, 188);                                    /* cyan hairline */
+                       95, 231, 255, 196);                                     /* glass edge */
         gdl = fillRect(gdl, mx + 2, footerTop, W - mx - 3, H - my - 2,
-                       12, 25, 37, 205);                                      /* footer glass */
+                       13, 25, 43, 212);                                       /* footer */
     }
 
     /* Top tab strip: selected page gets a luminous glass tile, inactive tabs
@@ -1313,10 +1356,10 @@ Gfx *optionsOverlayEmit(void)
         int x0 = tabLeft + (tabSpan * i) / PAGE_COUNT;
         int x1 = tabLeft + (tabSpan * (i + 1)) / PAGE_COUNT - 2;
         if (i == s_page) {
-            gdl = fillRect(gdl, x0, OV_TAB_Y - 4, x1, OV_TAB_Y + 12, 39, 105, 112, 218);
-            gdl = fillRect(gdl, x0 + 1, OV_TAB_Y - 3, x1 - 1, OV_TAB_Y - 1, 116, 245, 225, 150);
+            gdl = fillRect(gdl, x0, OV_TAB_Y - 4, x1, OV_TAB_Y + 12, 41, 86, 111, 224);
+            gdl = fillRect(gdl, x0 + 1, OV_TAB_Y - 3, x1 - 1, OV_TAB_Y - 1, 151, 235, 255, 170);
         } else {
-            gdl = fillRect(gdl, x0, OV_TAB_Y - 4, x1, OV_TAB_Y + 12, 15, 30, 43, 152);
+            gdl = fillRect(gdl, x0, OV_TAB_Y - 4, x1, OV_TAB_Y + 12, 17, 28, 46, 162);
         }
     }
 
@@ -1329,28 +1372,28 @@ Gfx *optionsOverlayEmit(void)
         const int lx = OV_MARGIN_X + 6;
         const int rx = W - OV_MARGIN_X - 6;
         gdl = fillRect(gdl, lx, y - 4, rx, y + 11,
-                       selected ? 29 : 12, selected ? 55 : 27,
-                       selected ? 66 : 39, selected ? 224 : 152);
+                       selected ? 28 : 12, selected ? 49 : 25,
+                       selected ? 72 : 43, selected ? 226 : 158);
         gdl = fillRect(gdl, lx + 1, y - 3, rx - 1, y - 2,
-                       selected ? 94 : 38, selected ? 214 : 73,
-                       selected ? 205 : 83, selected ? 125 : 66);
+                       selected ? 124 : 42, selected ? 208 : 70,
+                       selected ? 242 : 94, selected ? 142 : 72);
         if (selected)
-            gdl = fillRect(gdl, lx, y - 4, lx + 3, y + 11, 104, 247, 218, 255);
+            gdl = fillRect(gdl, lx, y - 4, lx + 3, y + 11, 142, 235, 255, 255);
 
         if (r->kind == ROW_SLIDER && r->found) {
             double lo=rowLo(r), hi=rowHi(r);
             double f=(hi>lo)?(rowGet(r)-lo)/(hi-lo):0.0;
             if(f<0)f=0; if(f>1)f=1;
-            gdl=fillRect(gdl,bx0,y+3,bx1,y+6,30,48,59,210);
-            gdl=fillRect(gdl,bx0,y+3,bx0+(s32)((bx1-bx0)*f),y+6,92,235,207,240);
+            gdl=fillRect(gdl,bx0,y+3,bx1,y+6,30,44,62,216);
+            gdl=fillRect(gdl,bx0,y+3,bx0+(s32)((bx1-bx0)*f),y+6,102,206,241,244);
             gdl=fillRect(gdl,bx0+(s32)((bx1-bx0)*f)-1,y+2,
-                         bx0+(s32)((bx1-bx0)*f)+1,y+7,184,255,241,230);
+                         bx0+(s32)((bx1-bx0)*f)+1,y+7,209,249,255,236);
         }
     }
 
     gdl = microcode_constructor(gdl);
 
-    gdl = drawText(gdl, OV_MARGIN_X + 7, OV_TOP, "ARM-GE // PORT CONTROL", 0x9ff8e4ff);
+    gdl = drawText(gdl, OV_MARGIN_X + 7, OV_TOP, "ARM-GE // GLASS CONTROL DECK", 0xb9f3ffff);
     gdl = drawTextR(gdl, W - OV_MARGIN_X - 7, OV_TOP, "F10  CLOSE", 0x9aadb8ff);
 
     for (int i = 0; i < PAGE_COUNT; ++i) {
@@ -1434,8 +1477,8 @@ Gfx *optionsOverlayEmit(void)
             snprintf(b, sizeof(b), "CPU GOV %s", systemPerfCpuGovernor());
             snprintf(c, sizeof(c), "GPU GOV %s   SWAP %d",
                      systemPerfGpuGovernor(), swap);
-            snprintf(e, sizeof(e), "%s  STAGE %d ROOM %d %s",
-                     systemPerfTuneStatus(),
+            snprintf(e, sizeof(e), "CTRL %d/%d %s  STAGE %d ROOM %d %s",
+                     s_verifiedRows, NUM_ROWS, systemPerfTuneStatus(),
                      d ? d->stage : -1, d ? d->room : -1,
                      (d && d->stan) ? "STAN OK" : "STAN NULL");
 
