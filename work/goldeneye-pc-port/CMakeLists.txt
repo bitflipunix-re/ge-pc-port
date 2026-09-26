@@ -560,6 +560,15 @@ set(SRC_ENGINE
 )
 list(PREPEND SRC_ENGINE "${CMAKE_SOURCE_DIR}")
 
+# R36S/AArch64 hot path: Fast3D is the host-side software RSP + GLES
+# translation layer and dominates CPU-side render submission. Keep the
+# reconstructed game code on the established RelWithDebInfo/-O2 behavior,
+# but let this isolated port layer use -O3. Deliberately no -ffast-math:
+# matrix/clip/fog semantics remain IEEE-compatible.
+if(TARGET_ARCH MATCHES "aarch64" AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set_source_files_properties(${SRC_FAST3D} PROPERTIES COMPILE_OPTIONS "-O3")
+endif()
+
 set(SRC
   ${SRC_GAME}
   ${SRC_PORT}
