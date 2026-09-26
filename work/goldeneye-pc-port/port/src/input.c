@@ -396,7 +396,6 @@ static int s_centreClearTicks = 0;
  * with it pinned to 0 they take exactly the pre-D194 paths. */
 static int    s_absAimSuspend = 0;
 
-static int aimAbsCompute(double dxPx, double dyPx, int *outSx, int *outSy);  /* D194 */
 static int naturalPitchMode = 1;    /* D194/D238: 1 = force GE's own 1.2/SOLITARE
                                       * control style for continuous analog pitch;
                                       * 0 = legacy 1.1/HONEY + D166 digital pulse. */
