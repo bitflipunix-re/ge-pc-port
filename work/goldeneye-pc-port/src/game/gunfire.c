@@ -40,6 +40,10 @@
 #ifdef PORT
 #include <stdlib.h>
 #include <stdio.h>
+/* Port input owns crosshair/gun offsets while absolute mouse aim is active.
+ * Keep this game-side dependency to a single boolean query rather than
+ * pulling SDL-facing input.h into game code. */
+extern int inputMouseAimOwnsCrosshair(void);
 /* D102: the 1P weapon Model and its RW-data pool were punned onto
  * hand->field_B68 / hand->modeldatas; on x86-64 struct Model (0xE8) is too
  * big for that layout and modelInit() aliases objinst->datas onto the pool
@@ -4829,6 +4833,7 @@ void gunSetTracerTarget(coord3d* pos)
 void caclulate_gun_crosshair_position_rotation(f32 turn_x, f32 turn_y, f32 guncrossdamp, f32 gunaimdamp)
 {
     s32 i;
+    s32 damping_ticks;
     f32 screen_width;
     f32 screen_height;
     coord3d coords;
@@ -4850,7 +4855,21 @@ void caclulate_gun_crosshair_position_rotation(f32 turn_x, f32 turn_y, f32 guncr
         g_CurrentPlayer->gunaimdamp = gunaimdamp;
     }
 
-    for (i = 0; i < g_ClockTimer; i++)
+    damping_ticks = g_ClockTimer;
+#ifdef PORT
+    /* The host absolute-mouse path writes a fresh displacement once per input
+     * poll. Replaying the N64 damping recurrence once for every batched sim
+     * tick makes the same host value shrink by damp^N, so N=1/2 timing
+     * changes visibly kick the reticle -- most obvious while scoped/zoomed.
+     * Preserve native timing everywhere else; only collapse a batched host-
+     * owned update to one damping step. A zero-tick frame remains zero. */
+    if (damping_ticks > 1 && inputMouseAimOwnsCrosshair())
+    {
+        damping_ticks = 1;
+    }
+#endif
+
+    for (i = 0; i < damping_ticks; i++)
     {
         g_CurrentPlayer->crosshair_x_pos = (g_CurrentPlayer->crosshair_x_pos * guncrossdamp) + turn_x;
         g_CurrentPlayer->crosshair_y_pos = (g_CurrentPlayer->crosshair_y_pos * guncrossdamp) + turn_y;
@@ -4880,7 +4899,7 @@ void caclulate_gun_crosshair_position_rotation(f32 turn_x, f32 turn_y, f32 guncr
     g_CurrentPlayer->crosshair_angle.f[0] += getPlayer_c_screenleft();
     g_CurrentPlayer->crosshair_angle.f[1] += getPlayer_c_screentop();
 
-    for (i = 0; i < g_ClockTimer; i++)
+    for (i = 0; i < damping_ticks; i++)
     {
         g_CurrentPlayer->gun_azimuth_angle = (g_CurrentPlayer->gun_azimuth_angle * gunaimdamp) + turn_x;
         g_CurrentPlayer->gun_azimuth_turning = (g_CurrentPlayer->gun_azimuth_turning * gunaimdamp) + turn_y;

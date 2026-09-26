@@ -57,9 +57,10 @@ static struct GfxRenderingAPI *renderingAPI;
 static int initDone = 0;
 static int crashScreenActive = 0;
 
-/* Dam lab hardware/runtime HUD. Kept config-backed so the F10 overlay can
- * hide it without rebuilding or disabling the underlying telemetry/logging. */
-static int cfgPerfHud = 1;
+/* Dam lab hardware/runtime HUD. Keep diagnostics available from F10 but
+ * default the intrusive panel off for public alpha builds; telemetry/logging
+ * remains live regardless of visibility. */
+static int cfgPerfHud = 0;
 
 /*
  * [Video] ge007.ini knobs. Every default reproduces the previously-hardcoded

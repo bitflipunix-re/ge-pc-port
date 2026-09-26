@@ -38,6 +38,11 @@ int  inputConnectedMask(void);
  * mouse-aim accumulator maintained by inputUpdate(). */
 unsigned inputComputePad(int idx, signed char *stick_x, signed char *stick_y);
 
+/* True while the host absolute/GEPD mouse-aim path owns the live crosshair.
+ * Game-side crosshair damping uses this to avoid replaying a host-supplied
+ * displacement once per batched simulation tick. */
+int inputMouseAimOwnsCrosshair(void);
+
 /* Grab/release the mouse (relative-mouse mode). The host event pump calls
  * this on window focus loss/gain so alt-tabbing frees the cursor. A release
  * also suspends mouse-aim reads until re-grabbed. No-op if the mouse is

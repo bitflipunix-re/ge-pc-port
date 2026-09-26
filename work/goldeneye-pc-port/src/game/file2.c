@@ -858,7 +858,11 @@ void fileUnlockStageInFolderAtDifficulty(s32 foldernum, LEVEL_SOLO_SEQUENCE stag
             }
         }
 
-        fileOverwriteSaveSlotWithNewSave(&save[0], &new_save);
+        /* save may legitimately be NULL for a fresh folder. The overwrite
+         * helper already treats a NULL old-save pointer as "first write";
+         * passing &save[0] forms an invalid lvalue from NULL and is undefined
+         * on a 64-bit host even though it often collapses back to zero. */
+        fileOverwriteSaveSlotWithNewSave(save, &new_save);
     }
 }
 

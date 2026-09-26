@@ -9,6 +9,14 @@ on:
       - 'bundle/**'
       - 'port/**'
       - 'package.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-r36s.yml'
+      - 'work/goldeneye-pc-port/**'
+      - 'bundle/**'
+      - 'port/**'
+      - 'package.py'
   workflow_dispatch:
 
 concurrency:
