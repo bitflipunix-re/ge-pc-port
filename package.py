@@ -40,7 +40,6 @@ ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "work" / "goldeneye-pc-port"
 BUNDLE = ROOT / "bundle" / "prepare-assets"
 LAUNCHER = ROOT / "port" / "GoldenEye 007.sh"
-BENCH_LAUNCHER = ROOT / "port" / "GoldenEye Benchmark.sh"
 PORT_JSON = ROOT / "port" / "port.json"
 GAMEINFO = ROOT / "port" / "gameinfo.xml"
 README = ROOT / "port" / "README.md"
@@ -131,11 +130,10 @@ def main():
         die(f"--game-bin {game_bin}: not a file")
     if not check_elf_aarch64(game_bin):
         die(f"--game-bin {game_bin}: not an AArch64 ELF")
-    for launcher_path in (LAUNCHER, BENCH_LAUNCHER):
-        if not launcher_path.is_file():
-            die(f"missing launcher: {launcher_path}")
-        if b"\r\n" in launcher_path.read_bytes():
-            die(f"{launcher_path} has CRLF line endings")
+    if not LAUNCHER.is_file():
+        die(f"missing launcher: {LAUNCHER}")
+    if b"\r\n" in LAUNCHER.read_bytes():
+        die(f"{LAUNCHER} has CRLF line endings")
     for f in (PORT_JSON, GAMEINFO, README):
         if not f.is_file():
             die(f"missing {f}")
@@ -159,9 +157,7 @@ def main():
         (data / "ge007.ini").write_text(INI, encoding="ascii", newline="\n")
 
         launcher = stage / LAUNCHER.name
-        bench_launcher = stage / BENCH_LAUNCHER.name
         shutil.copy2(LAUNCHER, launcher)
-        shutil.copy2(BENCH_LAUNCHER, bench_launcher)
         shutil.copy2(PORT_JSON, stage / "port.json")
         shutil.copy2(GAMEINFO, stage / "gameinfo.xml")
         shutil.copy2(README, stage / "README.md")
@@ -190,7 +186,7 @@ def main():
         zippath = outdir / zip_name
         if zippath.exists():
             zippath.unlink()
-        exec_files = {wrapper.resolve(), launcher.resolve(), bench_launcher.resolve(),
+        exec_files = {wrapper.resolve(), launcher.resolve(),
                       (stage / "ge007" / "ge007.aarch64").resolve()}
         with zipfile.ZipFile(zippath, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
             for p in sorted(stage.rglob("*")):
@@ -205,13 +201,11 @@ def main():
             names = z.namelist()
             infos = {i.filename: i for i in z.infolist()}
         launcher_mode = (infos[LAUNCHER.name].external_attr >> 16) & 0o777 if LAUNCHER.name in infos else 0
-        bench_launcher_mode = (infos[BENCH_LAUNCHER.name].external_attr >> 16) & 0o777 if BENCH_LAUNCHER.name in infos else 0
         checks = {
             "ge007/ge007.aarch64 in zip": "ge007/ge007.aarch64" in names,
             "launcher in zip": LAUNCHER.name in names,
             "launcher executable for EmulationStation": (launcher_mode & 0o111) != 0,
-            "benchmark launcher in zip": BENCH_LAUNCHER.name in names,
-            "benchmark launcher executable": (bench_launcher_mode & 0o111) != 0,
+            "no benchmark launcher": "GoldenEye Benchmark.sh" not in names,
             "direct ES sibling layout": LAUNCHER.name in names and "ge007/ge007.aarch64" in names,
             "port.json at zip root": "port.json" in names,
             "gameinfo.xml at zip root": "gameinfo.xml" in names,

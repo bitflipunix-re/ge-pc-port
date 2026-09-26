@@ -42,6 +42,7 @@ jobs:
       - name: Validate PortMaster launcher and packager
         run: |
           bash -n 'port/GoldenEye 007.sh'
+          ! grep -q -- '--benchmark-suite' 'port/GoldenEye 007.sh'
           python3 -m py_compile package.py
 
       - name: Install AArch64 cross-build dependencies
@@ -136,6 +137,9 @@ jobs:
             -DCMAKE_SYSTEM_NAME=Linux \
             -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
             -DROMID=ntsc-final \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGE_BETA_RELEASE=ON \
+            -DGE_DEV_PROBES=OFF \
             -DSDL2_INCLUDE_DIR=/usr/include/SDL2 \
             -DSDL2_LIBRARY=/usr/lib/aarch64-linux-gnu/libSDL2.so \
             -DZLIB_INCLUDE_DIR=/usr/include \
@@ -149,6 +153,9 @@ jobs:
 
       - name: Build ge007.aarch64
         run: cmake --build build/arm64 -j$(nproc)
+
+      - name: Strip beta binary
+        run: aarch64-linux-gnu-strip --strip-unneeded build/arm64/ge007.aarch64
 
       - name: Verify binary
         run: |
@@ -167,14 +174,17 @@ jobs:
           unzip -Z1 dist/ge007.zip | grep -qx 'gameinfo.xml'
           unzip -Z1 dist/ge007.zip | grep -qx 'README.md'
           unzip -Z1 dist/ge007.zip | grep -qx 'GoldenEye 007.sh'
+          ! unzip -Z1 dist/ge007.zip | grep -q 'GoldenEye Benchmark.sh'
           unzip -Z1 dist/ge007.zip | grep -qx 'ge007/ge007.aarch64'
+          ! strings build/arm64/ge007.aarch64 | grep -q -- '--benchmark'
+          ! strings build/arm64/ge007.aarch64 | grep -q 'GE007 VIDEO DEBUG'
           ! unzip -Z1 dist/ge007.zip | grep -Eq '\.(z64|n64|v64)$|(^|/)(pcmodels|pccg)\.bin$'
           sha256sum dist/ge007.zip | tee dist/ge007.zip.sha256
 
-      - name: Upload alpha install
+      - name: Upload beta install
         uses: actions/upload-artifact@v4
         with:
-          name: ge007-r36s-portmaster-alpha
+          name: ge007-r36s-portmaster-beta
           path: |
             dist/ge007.zip
             dist/ge007.zip.sha256
@@ -183,3 +193,32 @@ jobs:
             build/arm64/ge007.elf-header.txt
             build/arm64/ge007.sha256
           if-no-files-found: error
+
+      - name: Publish beta release
+        if: contains(github.event.head_commit.message, '[beta-release]')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="r36s-beta-2026-09-26"
+          TITLE="ARM-GE R36S Beta — 2026-09-26"
+          cat > /tmp/release-notes.md <<'EOF'
+          First player-focused ARM-GE beta package for R36S / PortMaster.
+
+          Compiled in Release mode and stripped. Development-only benchmark
+          code, the PortMaster benchmark launcher, DAM-lab HUD, render probes,
+          and frame-dump/debug capture paths are excluded.
+
+          ARM-GE Port Control, normal gameplay, crash handling, runtime error
+          logging, ROM verification and first-run sidecar generation remain.
+
+          Supply your own GoldenEye 007 US NTSC big-endian ROM as:
+          ge007/data/ge007.ntsc-final.z64
+          SHA-1: abe01e4aeb033b6c0836819f549c791b26cfde83
+          EOF
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/ge007.zip dist/ge007.zip.sha256 --clobber
+            gh release edit "$TAG" --title "$TITLE" --notes-file /tmp/release-notes.md --prerelease
+          else
+            gh release create "$TAG" dist/ge007.zip dist/ge007.zip.sha256 \
+              --target "$GITHUB_SHA" --title "$TITLE" --notes-file /tmp/release-notes.md --prerelease
+          fi

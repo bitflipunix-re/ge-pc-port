@@ -3,15 +3,8 @@
   <game>
     <path>./GoldenEye 007.sh</path>
     <name>GoldenEye 007</name>
-    <desc>Native ARM64/GLES GoldenEye 007 port with ARM-GE Glass Control Deck. Launches directly from EmulationStation after install; supply your own US NTSC ROM.</desc>
+    <desc>ARM-GE beta: native ARM64/GLES GoldenEye 007 for R36S. Player-only package with development benchmark/probe instrumentation excluded.</desc>
     <genre>Action</genre>
-    <players>1</players>
-  </game>
-  <game>
-    <path>./GoldenEye Benchmark.sh</path>
-    <name>GoldenEye Benchmark</name>
-    <desc>Automated in-engine GoldenEye benchmark suite. Runs representative missions, records FPS, frame pacing, CPU and RAM telemetry, saves reports, then returns to EmulationStation.</desc>
-    <genre>Utilities</genre>
     <players>1</players>
   </game>
 </gameList>

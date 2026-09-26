@@ -1,3 +1,10 @@
+# ARM-GE R36S Beta Package
+
+This is the player-facing beta package. Development benchmark launchers,
+render probes, DAM-lab HUD instrumentation, frame-dump paths and debug symbols
+are excluded from the beta build. The production crash screen, normal runtime
+error logging and ARM-GE Port Control gameplay/settings overlay remain.
+
 ## Launch directly from EmulationStation
 
 After the port files are installed, **you do not need to open the PortMaster UI to launch GoldenEye**. EmulationStation sees the root launcher:

@@ -3,19 +3,18 @@
   "name": "ge007.zip",
   "items": [
     "GoldenEye 007.sh",
-    "GoldenEye Benchmark.sh",
     "ge007/"
   ],
   "items_opt": [],
   "attr": {
-    "title": "GoldenEye 007",
+    "title": "GoldenEye 007 Beta",
     "porter": [
       "bitflipunix",
       "Tomobobo710"
     ],
-    "desc": "Alpha native AArch64/GLES GoldenEye 007 source port for R36S with the ARM-GE Glass Control Deck and a launchable automated benchmark suite. Supply your own verified US NTSC ROM; first launch generates ROM-derived sidecars locally.",
+    "desc": "Beta native AArch64/GLES GoldenEye 007 source port for R36S with the ARM-GE Glass Control Deck. Player package only: benchmark, probing and port-debug instrumentation are excluded.",
     "desc_md": null,
-    "inst": "Install ge007.zip normally with PortMaster. Two Ports entries are installed: 'GoldenEye 007' for normal play and 'GoldenEye Benchmark' for the automated performance suite. Put your own US NTSC ROM at ge007/data/ge007.ntsc-final.z64.",
+    "inst": "Install ge007.zip normally with PortMaster, provide your own verified US NTSC ROM at ge007/data/ge007.ntsc-final.z64, then launch GoldenEye 007 from Ports.",
     "inst_md": null,
     "genres": [
       "action"
