@@ -53,6 +53,7 @@
 #include "optionsoverlay.h"
 #include "damlab.h"
 #include "systemperf.h"
+#include "port/fast3d/gfx_api.h"
 
 /* ---- game symbols (rendering/UI only; see input.c for the same pattern) ---- */
 struct font;
@@ -1522,10 +1523,18 @@ Gfx *optionsOverlayEmit(void)
     }
 
     {
-        char perf[112];
-        snprintf(perf,sizeof(perf),"%s   Q %d   %s",
-                 s_fpsText[0]?s_fpsText:"-- FPS",
-                 audioGetSamplesBuffered(), kPageHints[s_page]);
+        char perf[128];
+        if (s_page == PAGE_SYSTEM) {
+            struct GfxPerfStats rs = {0};
+            gfx_get_perf_stats(&rs);
+            snprintf(perf,sizeof(perf),"%s  T%u D%u TX%u SH%u",
+                     s_fpsText[0]?s_fpsText:"-- FPS",
+                     rs.triangles, rs.draw_calls, rs.texture_uploads, rs.shader_switches);
+        } else {
+            snprintf(perf,sizeof(perf),"%s   Q %d   %s",
+                     s_fpsText[0]?s_fpsText:"-- FPS",
+                     audioGetSamplesBuffered(), kPageHints[s_page]);
+        }
         gdl=drawText(gdl,OV_MARGIN_X+7,H-18,perf,0x8cebd1ff);
         gdl=drawTextR(gdl,W-OV_MARGIN_X-7,H-18,"LB/RB TAB   F10 CLOSE",0x81959fff);
     }
