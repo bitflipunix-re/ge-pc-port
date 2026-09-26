@@ -26,6 +26,17 @@ struct GfxInitSettings {
     struct GfxWindowInitSettings window_settings;
 };
 
+/* Previous completed frame's host-render workload. These are deliberately
+ * cheap counters, not timers: useful on low-power handhelds without adding
+ * profiler/syscall noise to the hot path. */
+struct GfxPerfStats {
+    uint32_t triangles;
+    uint32_t draw_calls;
+    uint32_t texture_lookups;
+    uint32_t texture_uploads;
+    uint32_t shader_switches;
+};
+
 extern struct GfxDimensions gfx_current_window_dimensions; // The dimensions of the window
 extern struct GfxDimensions
     gfx_current_dimensions; // The dimensions of the draw area the game draws to, before scaling (if applicable)
@@ -64,6 +75,7 @@ void gfx_set_safe_area_crop(int on);       /* crop the N64 TV-overscan safe-area
  * crop above -- for inverting a window mouse click into logical 2D UI space
  * (see port/src/optionsoverlay.c, D316). */
 void gfx_get_ui_screen_rect(int32_t *outX, int32_t *outY, int32_t *outW, int32_t *outH);
+void gfx_get_perf_stats(struct GfxPerfStats *out);
 void gfx_texture_cache_clear(void);
 void gfx_texture_cache_delete(const uint8_t *orig_addr);
 void gfx_texture_cache_delete_range(const uint8_t *start, const uint8_t *end);
