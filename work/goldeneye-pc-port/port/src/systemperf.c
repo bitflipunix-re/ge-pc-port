@@ -100,8 +100,10 @@ int systemPerfSwappiness(void)
     return -1;
 #else
     char value[32];
+    int parsed = -1;
     if (!readLine("/proc/sys/vm/swappiness", value, sizeof(value))) return -1;
-    return atoi(value);
+    if (sscanf(value, "%d", &parsed) != 1) return -1;
+    return parsed;
 #endif
 }
 
