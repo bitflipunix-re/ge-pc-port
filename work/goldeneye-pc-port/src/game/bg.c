@@ -377,7 +377,11 @@ void sub_GAME_7F0B37EC(void) {
         }
 
         ptr++;
+#ifdef PORT
+    } while (ptr < end);
+#else
     } while ((u32)ptr < (u32)end);
+#endif
 }
 
 
