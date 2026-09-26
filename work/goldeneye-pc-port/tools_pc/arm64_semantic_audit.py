@@ -29,10 +29,6 @@ FORBIDDEN = [
         ),
         "audio queue pointer formed before NULL guard",
     ),
-    (
-        re.compile(r"f32\s+pointbuf\s*\[\s*10\s*\]"),
-        "intro swirl spline host buffer is undersized",
-    ),
 ]
 
 SUSPICIOUS = [
@@ -45,6 +41,14 @@ failures: list[str] = []
 suspects: list[str] = []
 files = 0
 
+# Positive invariants for PORT-only fixes where the original N64 form remains
+# in a #else branch and therefore cannot be rejected by a plain-text regex.
+REQUIRED = {
+    "src/game/bondview2.c": [
+        ("f32 pointbuf[12];", "host intro swirl spline buffer must hold four coord3d points"),
+    ],
+}
+
 for root in SCAN_ROOTS:
     if not root.exists():
         continue
@@ -54,6 +58,11 @@ for root in SCAN_ROOTS:
         files += 1
         text = path.read_text(encoding="utf-8", errors="replace")
         rel = path.relative_to(ROOT)
+
+        relstr = rel.as_posix()
+        for required, why in REQUIRED.get(relstr, []):
+            if required not in text:
+                failures.append(f"{rel}: required invariant missing: {why}")
 
         for rx, why in FORBIDDEN:
             for m in rx.finditer(text):
