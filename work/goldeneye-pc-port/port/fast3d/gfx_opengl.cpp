@@ -279,31 +279,31 @@ static const char* shader_item_to_str(uint32_t item, bool with_alpha, bool only_
 
 #undef RAND_NOISE
 
-static void append_formula(char* buf, size_t* len, uint8_t c[2][4], bool do_single, bool do_multiply, bool do_mix,
+static void append_formula(char* buf, size_t capacity, size_t* len, uint8_t c[2][4], bool do_single, bool do_multiply, bool do_mix,
                            bool with_alpha, bool only_alpha, bool opt_alpha) {
     if (do_single) {
-        append_str(buf, len, shader_item_to_str(c[only_alpha][3], with_alpha, only_alpha, opt_alpha, false));
+        append_str(buf, capacity, len, shader_item_to_str(c[only_alpha][3], with_alpha, only_alpha, opt_alpha, false));
     } else if (do_multiply) {
-        append_str(buf, len, shader_item_to_str(c[only_alpha][0], with_alpha, only_alpha, opt_alpha, false));
-        append_str(buf, len, " * ");
-        append_str(buf, len, shader_item_to_str(c[only_alpha][2], with_alpha, only_alpha, opt_alpha, true));
+        append_str(buf, capacity, len, shader_item_to_str(c[only_alpha][0], with_alpha, only_alpha, opt_alpha, false));
+        append_str(buf, capacity, len, " * ");
+        append_str(buf, capacity, len, shader_item_to_str(c[only_alpha][2], with_alpha, only_alpha, opt_alpha, true));
     } else if (do_mix) {
-        append_str(buf, len, "mix(");
-        append_str(buf, len, shader_item_to_str(c[only_alpha][1], with_alpha, only_alpha, opt_alpha, false));
-        append_str(buf, len, ", ");
-        append_str(buf, len, shader_item_to_str(c[only_alpha][0], with_alpha, only_alpha, opt_alpha, false));
-        append_str(buf, len, ", ");
-        append_str(buf, len, shader_item_to_str(c[only_alpha][2], with_alpha, only_alpha, opt_alpha, true));
-        append_str(buf, len, ")");
+        append_str(buf, capacity, len, "mix(");
+        append_str(buf, capacity, len, shader_item_to_str(c[only_alpha][1], with_alpha, only_alpha, opt_alpha, false));
+        append_str(buf, capacity, len, ", ");
+        append_str(buf, capacity, len, shader_item_to_str(c[only_alpha][0], with_alpha, only_alpha, opt_alpha, false));
+        append_str(buf, capacity, len, ", ");
+        append_str(buf, capacity, len, shader_item_to_str(c[only_alpha][2], with_alpha, only_alpha, opt_alpha, true));
+        append_str(buf, capacity, len, ")");
     } else {
-        append_str(buf, len, "(");
-        append_str(buf, len, shader_item_to_str(c[only_alpha][0], with_alpha, only_alpha, opt_alpha, false));
-        append_str(buf, len, " - ");
-        append_str(buf, len, shader_item_to_str(c[only_alpha][1], with_alpha, only_alpha, opt_alpha, false));
-        append_str(buf, len, ") * ");
-        append_str(buf, len, shader_item_to_str(c[only_alpha][2], with_alpha, only_alpha, opt_alpha, true));
-        append_str(buf, len, " + ");
-        append_str(buf, len, shader_item_to_str(c[only_alpha][3], with_alpha, only_alpha, opt_alpha, false));
+        append_str(buf, capacity, len, "(");
+        append_str(buf, capacity, len, shader_item_to_str(c[only_alpha][0], with_alpha, only_alpha, opt_alpha, false));
+        append_str(buf, capacity, len, " - ");
+        append_str(buf, capacity, len, shader_item_to_str(c[only_alpha][1], with_alpha, only_alpha, opt_alpha, false));
+        append_str(buf, capacity, len, ") * ");
+        append_str(buf, capacity, len, shader_item_to_str(c[only_alpha][2], with_alpha, only_alpha, opt_alpha, true));
+        append_str(buf, capacity, len, " + ");
+        append_str(buf, capacity, len, shader_item_to_str(c[only_alpha][3], with_alpha, only_alpha, opt_alpha, false));
     }
 }
 
@@ -554,14 +554,14 @@ static struct ShaderProgram* gfx_opengl_create_and_load_new_shader(uint64_t shad
         append_str(fs_buf, sizeof(fs_buf), &fs_len, "    texel = ");
         if (!cc_features.color_alpha_same[c] && cc_features.opt_alpha) {
             append_str(fs_buf, sizeof(fs_buf), &fs_len, "vec4(");
-            append_formula(fs_buf, &fs_len, cc_features.c[c], cc_features.do_single[c][0],
+            append_formula(fs_buf, sizeof(fs_buf), &fs_len, cc_features.c[c], cc_features.do_single[c][0],
                            cc_features.do_multiply[c][0], cc_features.do_mix[c][0], false, false, true);
             append_str(fs_buf, sizeof(fs_buf), &fs_len, ", ");
-            append_formula(fs_buf, &fs_len, cc_features.c[c], cc_features.do_single[c][1],
+            append_formula(fs_buf, sizeof(fs_buf), &fs_len, cc_features.c[c], cc_features.do_single[c][1],
                            cc_features.do_multiply[c][1], cc_features.do_mix[c][1], true, true, true);
             append_str(fs_buf, sizeof(fs_buf), &fs_len, ")");
         } else {
-            append_formula(fs_buf, &fs_len, cc_features.c[c], cc_features.do_single[c][0],
+            append_formula(fs_buf, sizeof(fs_buf), &fs_len, cc_features.c[c], cc_features.do_single[c][0],
                            cc_features.do_multiply[c][0], cc_features.do_mix[c][0], cc_features.opt_alpha, false,
                            cc_features.opt_alpha);
         }
