@@ -5582,6 +5582,7 @@ s8 bgSwapConnectedRooms(s32 index)
     t = g_BgPortals[index].connectedRoom1;
     g_BgPortals[index].connectedRoom1 = g_BgPortals[index].connectedRoom2;
     g_BgPortals[index].connectedRoom2 = t;
+    return (s8)t;
 }
 
 
