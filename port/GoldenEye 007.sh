@@ -4,6 +4,11 @@
 
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 
+# EmulationStation launches this file directly from the Ports directory. Resolve
+# the installed game relative to this script first; fall back to PortMaster's
+# directory variable only for unusual/symlinked installations.
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" 2>/dev/null && pwd -P)"
+
 if [ -d "/opt/system/Tools/PortMaster/" ]; then
   controlfolder="/opt/system/Tools/PortMaster"
 elif [ -d "/opt/tools/PortMaster/" ]; then
@@ -23,7 +28,11 @@ source "$controlfolder/control.txt"
 [ -f "${controlfolder}/mod_${CFW_NAME}.txt" ] && source "${controlfolder}/mod_${CFW_NAME}.txt"
 get_controls
 
-GAMEDIR="/$directory/ports/ge007"
+if [ -n "$SCRIPT_DIR" ] && [ -d "$SCRIPT_DIR/ge007" ]; then
+  GAMEDIR="$SCRIPT_DIR/ge007"
+else
+  GAMEDIR="/$directory/ports/ge007"
+fi
 CONFDIR="$GAMEDIR/conf"
 ROM="$GAMEDIR/data/ge007.ntsc-final.z64"
 CONVERTER="$GAMEDIR/prepare-assets/ge007-convert"
@@ -214,6 +223,7 @@ perf_apply() {
 echo "=== GoldenEye 007 / R36S PortMaster alpha ==="
 date
 echo "directory=${directory:-unset}"
+echo "launcher_dir=${SCRIPT_DIR:-unset}"
 echo "GAMEDIR=$GAMEDIR"
 echo "CFW=${CFW_NAME:-unknown}"
 echo "DEVICE=${DEVICE:-unknown}"
