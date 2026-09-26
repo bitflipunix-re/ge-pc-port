@@ -2139,8 +2139,6 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
     float tex_v_scale[2] = { 1.0f / 32.0f, 1.0f / 32.0f };
     float tex_u_bias[2] = { 0.0f, 0.0f };
     float tex_v_bias[2] = { 0.0f, 0.0f };
-    float inv_tex_width[2] = { 0.0f, 0.0f };
-    float inv_tex_height[2] = { 0.0f, 0.0f };
     float clamp_s_norm[2] = { 0.0f, 0.0f };
     float clamp_t_norm[2] = { 0.0f, 0.0f };
     const bool perspective_texcoords = (rdp.other_mode_h & G_TP_PERSP) != 0;
@@ -2216,10 +2214,10 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
             }
             tex_u_bias[i] = -(float)rdp.texture_tile[tile].uls / 4.0f;
             tex_v_bias[i] = -(float)rdp.texture_tile[tile].ult / 4.0f;
-            inv_tex_width[i] = 1.0f / (float)tex_width[i];
-            inv_tex_height[i] = 1.0f / (float)tex_height[i];
-            clamp_s_norm[i] = ((float)tex_width2[i] - 0.5f) * inv_tex_width[i];
-            clamp_t_norm[i] = ((float)tex_height2[i] - 0.5f) * inv_tex_height[i];
+            /* Clamp coordinates are identical for all three vertices, so keep
+             * the original divide semantics but perform each one once. */
+            clamp_s_norm[i] = ((float)tex_width2[i] - 0.5f) / (float)tex_width[i];
+            clamp_t_norm[i] = ((float)tex_height2[i] - 0.5f) / (float)tex_height[i];
 
             uint32_t tex_width1 = tex_width[i] << (cms & G_TX_MIRROR);
             uint32_t tex_height1 = tex_height[i] << (cmt & G_TX_MIRROR);
@@ -2493,8 +2491,11 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
                 }
             }
 
-            buf_vbo[buf_vbo_len++] = u * inv_tex_width[t];
-            buf_vbo[buf_vbo_len++] = v * inv_tex_height[t];
+            /* Keep arbitrary-width normalization as division. Replacing it
+             * with u*(1/width) changes IEEE-754 rounding for non-power-of-two
+             * textures and can move edge samples by an ulp. */
+            buf_vbo[buf_vbo_len++] = u / (float)tex_width[t];
+            buf_vbo[buf_vbo_len++] = v / (float)tex_height[t];
 
 #if defined(PORT) && defined(GE_DEV_PROBES)
             {
