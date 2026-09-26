@@ -603,6 +603,13 @@ void watch_play_beep_sound(void) {
 
     if (watch_item_is_actively_selected == 1) {
         watch_item_is_actively_selected = 0;
+#ifdef PORT
+        /* Sliders/control-style selections update continuously while the row
+         * is active, so unlike discrete toggles they must not write EEPROM on
+         * every render tick. Commit the complete current settings snapshot
+         * once when the player finishes editing the row. */
+        deleteCurrentSelectedFolder();
+#endif
 
     } else {
         watch_item_is_actively_selected = 1;
