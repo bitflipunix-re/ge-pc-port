@@ -305,6 +305,9 @@ static float buf_vbo[MAX_BUFFERED * (32 * 3)]; // 3 vertices in a triangle and 3
 static size_t buf_vbo_len;
 static size_t buf_vbo_num_tris;
 
+static GfxPerfStats g_perf_current = {};
+static GfxPerfStats g_perf_last = {};
+
 static struct GfxWindowManagerAPI* gfx_wapi;
 static struct GfxRenderingAPI* gfx_rapi;
 
@@ -326,6 +329,8 @@ static constexpr float clampf(const float x, const float min, const float max) {
 
 static void gfx_flush(void) {
     if (buf_vbo_len > 0) {
+        g_perf_current.triangles += (uint32_t)buf_vbo_num_tris;
+        g_perf_current.draw_calls++;
         gfx_rapi->draw_triangles(buf_vbo, buf_vbo_len, buf_vbo_num_tris);
         buf_vbo_len = 0;
         buf_vbo_num_tris = 0;
@@ -602,6 +607,7 @@ void gfx_texture_cache_clear() {
 }
 
 static bool gfx_texture_cache_lookup(int i, const TextureCacheKey& key) {
+    g_perf_current.texture_lookups++;
     TextureCacheMap::iterator it = gfx_texture_cache.map.find(key);
     TextureCacheNode** n = &rendering_state.textures[i];
 
@@ -1119,6 +1125,7 @@ static void import_texture(int i, int tile, bool importReplacement) {
     if (gfx_texture_cache_lookup(i, key)) {
         return;
     }
+    g_perf_current.texture_uploads++;
 
     // D71: importers read raw N64 byte streams; normalize C-array sources.
     const uint8_t* saved_addr = loaded_texture.addr;
@@ -2345,6 +2352,7 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
             gfx_lookup_or_create_shader_program(comb->shader_id0, comb->shader_id1 | (tm * SHADER_OPT_TEXEL0_CLAMP_S));
     }
     if (prg != rendering_state.shader_program) {
+        g_perf_current.shader_switches++;
         gfx_flush();
         gfx_rapi->unload_shader(rendering_state.shader_program);
         gfx_rapi->load_shader(prg);
@@ -3711,6 +3719,12 @@ extern "C" void gfx_get_dimensions(uint32_t* width, uint32_t* height, int32_t* p
     gfx_wapi->get_dimensions(width, height, posX, posY);
 }
 
+extern "C" void gfx_get_perf_stats(GfxPerfStats *out) {
+    if (out) {
+        *out = g_perf_last;
+    }
+}
+
 extern "C" void gfx_init(const GfxInitSettings *settings) {
     gfx_wapi = settings->wapi;
     gfx_rapi = settings->rapi;
@@ -3761,6 +3775,8 @@ extern "C" struct GfxRenderingAPI* gfx_get_current_rendering_api(void) {
 }
 
 extern "C" void gfx_start_frame(void) {
+    g_perf_last = g_perf_current;
+    g_perf_current = {};
     gfx_wapi->handle_events();
     gfx_wapi->get_dimensions(&gfx_current_window_dimensions.width, &gfx_current_window_dimensions.height,
                              &gfx_current_window_position_x, &gfx_current_window_position_y);
