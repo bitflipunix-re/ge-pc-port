@@ -3582,7 +3582,7 @@ void modelTickAnim(struct Model *model, s32 numticks, s32 update_chrstuff)
             f32 playspeed;
             f32 speed;
             f32 limit;
-            f32 endframe;
+            f32 endframe = model->endframe;
             f32 saved_newspeed;
             f32 saved_oldspeed;
             f32 saved_timespeed;
@@ -5916,7 +5916,7 @@ s32 sub_GAME_7F074CAC(Model *model, ModelNode *node, coord3d *raypos, coord3d *r
     ModelOp17MainStack rayData[1];
     f32 centerProjection;
     Mtxf *otherNodeMtx;
-    ModelOp17AxisStack axisData[1];
+    ModelOp17AxisStack axisData[1] = {0};
     f32 scaledProjection;
     f32 projectionScalar;
     f32 secondAxisScale;
