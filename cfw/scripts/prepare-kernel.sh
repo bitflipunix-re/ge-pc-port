@@ -8,8 +8,7 @@ KSRC=${1:-"$CFW/.cache/src/linux-$KERNEL_VERSION"}
 DTS_DIR="$KSRC/arch/arm64/boot/dts/rockchip"
 PANEL_DIR="$KSRC/drivers/gpu/drm/panel"
 LOGO_DIR="$KSRC/drivers/video/logo"
-LOGO_B64="$CFW/board/r36s/bitflipunix-logo-384.png.b64"
-LOGO_PNG="$LOGO_DIR/bitflipunix-r36s.png"
+LOGO_SVG="$CFW/board/r36s/bitflipunix-logo.svg"
 
 [ -d "$KSRC" ] || {
     echo "kernel source not found: $KSRC" >&2
@@ -20,13 +19,13 @@ LOGO_PNG="$LOGO_DIR/bitflipunix-r36s.png"
 install -m 0644 "$CFW/board/r36s/rk3326-r36s.dts" "$DTS_DIR/rk3326-r36s.dts"
 install -m 0644 "$CFW/board/r36s/panel-generic-dsi.c" "$PANEL_DIR/panel-generic-dsi.c"
 
-# Decode the generated BitflipUnix artwork and replace Linux's default
-# CLUT224 logo. fbcon centers this at runtime via bootargs.
-base64 -d "$LOGO_B64" > "$LOGO_PNG"
+# Convert BitflipUnix artwork into Linux's 224-colour boot-logo format.
 if command -v magick >/dev/null 2>&1; then
-    magick "$LOGO_PNG" -alpha off -colors 224 -compress none         "$LOGO_DIR/logo_linux_clut224.ppm"
+    magick "$LOGO_SVG" -alpha off -colors 224 -compress none \
+        "$LOGO_DIR/logo_linux_clut224.ppm"
 elif command -v convert >/dev/null 2>&1; then
-    convert "$LOGO_PNG" -alpha off -colors 224 -compress none         "$LOGO_DIR/logo_linux_clut224.ppm"
+    convert "$LOGO_SVG" -alpha off -colors 224 -compress none \
+        "$LOGO_DIR/logo_linux_clut224.ppm"
 else
     echo "ImageMagick is required to prepare the BitflipUnix boot logo" >&2
     exit 1
