@@ -24,7 +24,7 @@
  * check). Env-gated, harmless when unset.
  */
 
-#include <math.h>
+#include "port_math.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -340,6 +340,12 @@ static struct Row rows[] = {
 };
 #define NUM_ROWS ((int)(sizeof(rows) / sizeof(rows[0])))
 
+/* Used by overlayInit before their definitions below. Keep these beside the
+ * row table so C99/GCC never falls back to an implicit declaration. */
+static int cheatIdForKey(const char *key);
+static struct Row *rowByKey(const char *key);
+static int graphicsPresetDetect(void);
+
 static int  s_inited = 0;
 static volatile int s_open = 0;
 static int  s_sel = 0;
@@ -593,10 +599,6 @@ static void overlayInit(void)
         sysLogPrintf(LOG_INFO, "optionsoverlay: auto-opened (GE_OPTIONSOVERLAY)");
     }
 }
-
-static int cheatIdForKey(const char *key);
-static struct Row *rowByKey(const char *key);
-static int graphicsPresetDetect(void);
 
 static double rowGet(const struct Row *r)
 {
