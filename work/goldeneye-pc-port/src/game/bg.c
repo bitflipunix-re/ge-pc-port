@@ -858,7 +858,19 @@ void load_bg_file(LEVEL_INDEX levelid)
     }
  
     lightFixtureInitTables();
- 
+
+#ifdef PORT
+    /* The 0x40-byte probe lives on the native host stack. Never route its
+     * pointer through ptr_bg_data (s32): that truncates a normal LP64 stack
+     * address before obLoadBGFileBytesAtOffset() dereferences it. The probe
+     * exists only to discover the full BG allocation size, so keep it local. */
+    obLoadBGFileBytesAtOffset(levelinfotable[levelentry_index].bg_seg_filename, (u8 *)header, 0, 0x40);
+    {
+        bg_room_data *probe_rooms =
+            (bg_room_data *)BG_SEG_TO_PTR(header, header[1]);
+        size = (((((u32)probe_rooms[1].pPointTableBin) & 0x00ffffff) - 1) | 0xf) + 1;
+    }
+#else
     ptr_bg_data = (s32)header;
     obLoadBGFileBytesAtOffset(levelinfotable[levelentry_index].bg_seg_filename, (u8 *) ptr_bg_data, 0, 0x40);
 
@@ -866,8 +878,9 @@ void load_bg_file(LEVEL_INDEX levelid)
 
     ptr_bgdata_offsets = ptr_bg_data;
     ptr_bgdata_room_fileposition_list = (bg_room_data *) BG_SEG_TO_PTR(ptr_bg_data, ((s32 *)ptr_bg_data)[1]);
- 
+
     size = (((((u32) ptr_bgdata_room_fileposition_list[1].pPointTableBin) & 0x00ffffff) - 1) | 0xf) + 1;
+#endif
  
     ptr_bg_data = (s32) mempAllocBytesInBank(size, 4);
     obLoadBGFileBytesAtOffset(levelinfotable[levelentry_index].bg_seg_filename, (u8 *) ptr_bg_data, 0, size);
