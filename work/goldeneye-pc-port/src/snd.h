@@ -59,7 +59,11 @@ typedef enum ALSndpMsgType_e {
  * of these for ownerless infinite-loop SFX voices so they fade out after a
  * bounded time instead of ringing until level exit (the faithful N64
  * behavior). See docs/dev/findings.md D202, M-66. */
-#define AL_SNDP_PORT_EXPIRE_EVT AL_SNDP_UNUSED_13_EVT
+#define AL_SNDP_PORT_EXPIRE_EVT      AL_SNDP_UNUSED_13_EVT
+/* Port-only global SFX reset serialized through the sound-player thread.
+ * Used at level boundaries so orphaned/retriggering stage SFX cannot
+ * accumulate across a long campaign. */
+#define AL_SNDP_PORT_STAGE_FLUSH_EVT AL_SNDP_UNUSED_14_EVT
 #endif
 
 // based on n64devkit\ultra\usr\src\pr\libsrc\libultra\audio\sndp.h
@@ -186,6 +190,9 @@ void sndNewPlayerInit(ALSeqpSfxConfig *arg0);
 u8 sndGetPlayingState(ALSoundState *state);
 void sndDeactivate(ALSoundState *state);
 void sndDeactivateAllSfxByFlag_1(void);
+#ifdef PORT
+void sndPortFlushStageSfx(void);
+#endif
 void sndCreatePostEvent(ALSoundState *state, s16 eventType, s32 arg2);
 ALSoundState *sndPlaySfx(struct ALBankAlt_s *soundBank, s16 soundIndex, ALSoundState *pendingState);
 u16 sndGetSfxSlotFirstNaturalVolume(void);
