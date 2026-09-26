@@ -15,93 +15,190 @@ permissions:
 
 jobs:
   notify:
-    # #main-builds is deliberately the green, verified feed:
-    # push to main -> full R36S/AArch64 build passes -> one Discord changelog.
+    # #main-builds is the verified feed:
+    # main push -> full R36S/AArch64 build passes -> one compact Discord card.
     if: ${{ github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-24.04
     env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_MAIN_BUILDS }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
       RUN_URL: ${{ github.event.workflow_run.html_url }}
       SHA: ${{ github.event.workflow_run.head_sha }}
-      TITLE: ${{ github.event.workflow_run.display_title }}
       REPOSITORY: ${{ github.repository }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - name: Build verified changelog
+      - name: Build verified main summary
         if: ${{ env.DISCORD_WEBHOOK != '' }}
         shell: bash
         run: |
           set -euo pipefail
-          gh api "repos/$REPOSITORY/commits/$SHA" > /tmp/commit.json
+
+          # Find the most recent earlier successful main/push build.  A single
+          # source commit can cancel an earlier in-flight build, so comparing
+          # only the triggering commit produces misleading "1 file" reports.
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$REPOSITORY/actions/workflows/build-r36s.yml/runs?branch=main&event=push&status=success&per_page=30" \
+            > /tmp/runs.json
+
+          python3 - <<'PY' > /tmp/base-sha.txt
+          import json, os
+          current_id = int(os.environ["RUN_ID"])
+          current_sha = os.environ["SHA"]
+          runs = json.load(open("/tmp/runs.json", encoding="utf-8")).get("workflow_runs", [])
+          for run in runs:
+              if int(run.get("id", 0)) == current_id:
+                  continue
+              sha = run.get("head_sha")
+              if sha and sha != current_sha:
+                  print(sha)
+                  break
+          PY
+
+          BASE_SHA="$(cat /tmp/base-sha.txt 2>/dev/null || true)"
+
+          if [ -n "$BASE_SHA" ]; then
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              "repos/$REPOSITORY/compare/$BASE_SHA...$SHA" \
+              > /tmp/change.json
+          else
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              "repos/$REPOSITORY/commits/$SHA" \
+              > /tmp/commit.json
+          fi
+
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$REPOSITORY/actions/runs/$RUN_ID/artifacts" \
+            > /tmp/artifacts.json
 
           python3 - <<'PY' > /tmp/discord-payload.json
           import json
           import os
-          import re
+          from pathlib import Path
 
-          with open("/tmp/commit.json", "r", encoding="utf-8") as f:
-              commit = json.load(f)
-
+          repo = os.environ["REPOSITORY"]
           sha = os.environ["SHA"]
           short_sha = sha[:7]
-          repo = os.environ["REPOSITORY"]
           run_url = os.environ["RUN_URL"]
-          commit_url = commit.get("html_url") or f"https://github.com/{repo}/commit/{sha}"
+          base_sha_path = Path("/tmp/base-sha.txt")
+          base_sha = base_sha_path.read_text(encoding="utf-8").strip() if base_sha_path.exists() else ""
 
-          message = (commit.get("commit", {}).get("message") or os.environ.get("TITLE") or "").strip()
-          parts = message.splitlines()
-          subject = parts[0].strip() if parts else os.environ.get("TITLE", "main update")
+          artifacts = json.load(open("/tmp/artifacts.json", encoding="utf-8")).get("artifacts", [])
+          artifact = next((a for a in artifacts if a.get("name") == "ge007-r36s-portmaster-alpha"), None)
+          artifact_text = "ge007-r36s-portmaster-alpha"
+          if artifact:
+              size = int(artifact.get("size_in_bytes") or 0)
+              if size:
+                  artifact_text += f" · {size / (1024*1024):.1f} MiB"
+              if artifact.get("expired"):
+                  artifact_text += " · expired"
+              else:
+                  artifact_text += " · ready"
 
-          body_lines = []
-          for raw in parts[1:]:
-              line = raw.strip()
-              if not line:
-                  continue
-              if re.match(r"^(Co-authored-by|Signed-off-by|Reviewed-by):", line, re.I):
-                  continue
-              body_lines.append(line)
+          commit_count = 1
+          changed = 0
+          additions = 0
+          deletions = 0
+          subjects = []
 
-          files = commit.get("files") or []
-          stats = commit.get("stats") or {}
-          changed = len(files)
-          additions = int(stats.get("additions") or 0)
-          deletions = int(stats.get("deletions") or 0)
+          if Path("/tmp/change.json").exists():
+              data = json.load(open("/tmp/change.json", encoding="utf-8"))
+              commits = data.get("commits") or []
+              files = data.get("files") or []
+              commit_count = len(commits)
+              changed = len(files)
+              additions = sum(int(f.get("additions") or 0) for f in files)
+              deletions = sum(int(f.get("deletions") or 0) for f in files)
 
-          changelog = []
-          if body_lines:
-              for line in body_lines[:6]:
-                  changelog.append(f"• {line[:220]}")
+              # Newest useful commit subjects first. Merge commits are omitted
+              # when there are ordinary commits to show.
+              ordinary = []
+              merges = []
+              for c in commits:
+                  subject = ((c.get("commit") or {}).get("message") or "").splitlines()[0].strip()
+                  if not subject:
+                      continue
+                  (merges if subject.lower().startswith("merge ") else ordinary).append(subject)
+              pool = ordinary or merges
+              subjects = list(reversed(pool))[:6]
           else:
-              for item in files[:6]:
-                  name = item.get("filename", "unknown")
-                  changelog.append(f"• {name[:180]}")
-              if len(files) > 6:
-                  changelog.append(f"• …and {len(files) - 6} more files")
+              data = json.load(open("/tmp/commit.json", encoding="utf-8"))
+              files = data.get("files") or []
+              stats = data.get("stats") or {}
+              changed = len(files)
+              additions = int(stats.get("additions") or 0)
+              deletions = int(stats.get("deletions") or 0)
+              subject = ((data.get("commit") or {}).get("message") or "").splitlines()[0].strip()
+              if subject:
+                  subjects = [subject]
 
-          if not changelog:
-              changelog.append("• Verified main-branch rebuild; no file delta reported by GitHub.")
+          highlights = "\n".join(f"• {s[:150]}" for s in subjects[:6])
+          if not highlights:
+              highlights = "• Verified main rebuild."
 
-          content = (
-              "✅ **VERIFIED MAIN BUILD — GREEN**\n"
-              f"{short_sha} — **{subject[:240]}**\n\n"
-              "**Changelog**\n"
-              + "\n".join(changelog)
-              + f"\n\n**Diff:** {changed} files · +{additions} / -{deletions}"
-              + "\n**Artifact:** ge007-r36s-portmaster-alpha"
-              + f"\n[Build run]({run_url}) · [Commit]({commit_url})"
-          )
+          omitted = max(0, commit_count - len(subjects))
+          if omitted:
+              highlights += f"\n• …plus {omitted} earlier commit{'s' if omitted != 1 else ''} in this green range"
 
-          if len(content) > 1950:
-              content = content[:1910].rstrip() + "\n…\n" + f"[Build run]({run_url})"
+          range_text = f"{base_sha[:7]} → {short_sha}" if base_sha else short_sha
+          commit_url = f"https://github.com/{repo}/commit/{sha}"
+          compare_url = f"https://github.com/{repo}/compare/{base_sha}...{sha}" if base_sha else commit_url
+
+          embed = {
+              "title": "✅ VERIFIED MAIN BUILD — GREEN",
+              "url": run_url,
+              "description": (
+                  f"**{range_text}**\n"
+                  f"{commit_count} commit{'s' if commit_count != 1 else ''} · "
+                  f"{changed} file{'s' if changed != 1 else ''} · "
+                  f"+{additions} / -{deletions}"
+              ),
+              "color": 0x57F287,
+              "fields": [
+                  {
+                      "name": "Changes since previous green",
+                      "value": highlights[:1024],
+                      "inline": False,
+                  },
+                  {
+                      "name": "Verification",
+                      "value": (
+                          "ARM64 semantic audit ✅\n"
+                          "AArch64 build ✅\n"
+                          "ELF verification ✅\n"
+                          "PortMaster package validation ✅"
+                      ),
+                      "inline": True,
+                  },
+                  {
+                      "name": "Artifact",
+                      "value": artifact_text[:1024],
+                      "inline": True,
+                  },
+                  {
+                      "name": "Links",
+                      "value": f"[Build run]({run_url}) · [Changes]({compare_url}) · [Commit]({commit_url})",
+                      "inline": False,
+                  },
+              ],
+              "footer": {
+                  "text": f"ARM-GE main · {short_sha}"
+              },
+          }
 
           print(json.dumps({
               "username": "ARM-GE Build Bot",
-              "content": content,
+              "content": "",
+              "embeds": [embed],
               "allowed_mentions": {"parse": []},
           }))
           PY
 
-      - name: Post green build and changelog to Discord
+      - name: Post green build to Discord
         if: ${{ env.DISCORD_WEBHOOK != '' }}
         shell: bash
         run: |
