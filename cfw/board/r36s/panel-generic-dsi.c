@@ -362,6 +362,7 @@ static int generic_panel_init_sequence(struct generic_panel *ctx)
 						    &readbuf[0], iseq->read);
 			if (ret < 0) {
 				dev_err(dev, "failed to read: %d\n", ret);
+				return ret;
 			} else {
 				int i;
 
@@ -371,9 +372,18 @@ static int generic_panel_init_sequence(struct generic_panel *ctx)
 		} else if (iseq->dcs == DCS_PSEUDO_CMD_SEQ) {
 			ret = mipi_dsi_dcs_write_buffer(dsi, iseq->data, iseq->len);
 			dev_dbg(dev, "iseq 0x%px len=%d -> %d\n", (void *)iseq, iseq->len, ret);
+			if (ret < 0) {
+				dev_err(dev, "panel init sequence write failed: %d\n", ret);
+				return ret;
+			}
 		} else {
 			ret = mipi_dsi_dcs_write(dsi, iseq->dcs, iseq->data, iseq->len);
 			dev_dbg(dev, "iseq %02x len=%d -> %d\n", iseq->dcs, iseq->len, ret);
+			if (ret < 0) {
+				dev_err(dev, "panel DCS command %02x failed: %d\n",
+					iseq->dcs, ret);
+				return ret;
+			}
 		}
 		if (iseq->wait)
 			msleep(iseq->wait);
@@ -447,25 +457,19 @@ static int generic_panel_prepare(struct drm_panel *panel)
 
 	msleep(ctx->delays.init);
 
+	/*
+	 * The description carries the complete controller program, including
+	 * sleep-out/display-on and their required waits. Sending those commands
+	 * again here breaks panels whose init stream is order-sensitive.
+	 */
 	ret = generic_panel_init_sequence(ctx);
 	if (ret < 0) {
 		dev_err(ctx->dev, "Panel init sequence failed: %d\n", ret);
 		goto disable_iovcc;
 	}
 
-	ret = mipi_dsi_dcs_set_display_on(dsi);
-	if (ret < 0) {
-		dev_err(ctx->dev, "Failed to set display on: %d\n", ret);
-		goto disable_iovcc;
-	}
-
-	ret = mipi_dsi_dcs_exit_sleep_mode(dsi);
-	if (ret < 0) {
-		dev_err(ctx->dev, "Failed to exit sleep mode: %d\n", ret);
-		goto disable_iovcc;
-	}
-
-	msleep(ctx->delays.enable);
+	if (ctx->delays.ready)
+		msleep(ctx->delays.ready);
 
 	ctx->prepared = true;
 	return 0;
