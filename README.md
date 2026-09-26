@@ -52,6 +52,47 @@ Latest public video: https://www.youtube.com/shorts/lcN9C9waB6I
 
 [Full showcase notes →](SHOWCASE.md)
 
+## ARM-GE Glass Control Deck
+
+The F10 overlay is a first-class port feature rather than a debug-only menu. Its layout is generated from the live GoldenEye VI coordinate space, so the same interface scales across the R36S target and larger desktop/handheld resolutions without fixed-resolution artwork.
+
+Open it with **F10**. On a controller, use the D-pad/left stick to navigate, **LB/RB** to change pages, **A/X** to advance a value, **B/Y** to step backward, and **Start** to close. Mouse interaction is mapped through Fast3D's actual cropped UI viewport, so click targets remain aligned when gameplay safe-area or viewport cropping is active.
+
+### Video controls
+
+The VIDEO page exposes the renderer rather than presenting cosmetic placeholders:
+
+- **Output resolution** — windowed output-size presets filtered against the current desktop. Fullscreen uses the panel/display mode supplied by SDL/PortMaster.
+- **Internal resolution** — 50–200% render scale. The overlay displays the resulting internal pixel dimensions and the percentage.
+- **MSAA** — OFF/2x/4x/8x through Fast3D's multisample framebuffer/resolve path, clamped to what the GLES driver reports.
+- **Temporal AA (TXAA-style)** — optional low/high temporal accumulation on the final frame. This is an ARM-GE temporal AA implementation inspired by the same class of techniques; it is **not NVIDIA TXAA** and does not claim NVIDIA's proprietary implementation.
+- VSync, frame cap, texture filtering, mip filtering, anisotropic filtering, FOV, draw distance, LOD distance, framebuffer effects and graphics presets.
+- Live video settings are routed through `video.c` into Fast3D. Settings that can safely rebuild or reconfigure at runtime apply live; settings explicitly marked for restart are persisted instead.
+
+### System / performance controls
+
+The SYSTEM page combines live telemetry with conservative per-game tuning:
+
+- live FPS, CPU use, process RAM and available system memory;
+- current CPU governor, GPU governor and VM swappiness;
+- **CPU governor:** System / schedutil / performance / powersave;
+- **GPU governor:** System / simple_ondemand / performance / powersave;
+- **RAM profile:** System / Low Swap / Balanced / Game;
+- allocator trim action;
+- live overlay control-map verification count.
+
+Governor/RAM selections are intentionally **not** written to privileged sysfs/procfs by the game executable. They are saved in `ge007.ini`; the PortMaster launcher applies supported values on the **next launch** using PortMaster's privilege helper when required, records the original kernel values, and restores them when the game exits. Unsupported governors/endpoints are logged and skipped.
+
+The **Game** RAM profile currently uses a conservative temporary VM policy: swappiness 5 and `vm.vfs_cache_pressure=50`. It does not resize zram, drop caches, overclock hardware, pin clocks, or make persistent system changes.
+
+The overlay performs a startup wiring audit and writes the result to `log.txt` as:
+
+```text
+optionsoverlay: control map <wired>/<total> wired (<missing> missing)
+```
+
+A public build should report zero missing registered controls before the overlay is considered fully wired.
+
 ## What works on real hardware
 
 The port has demonstrated:
