@@ -165,7 +165,11 @@ void bossInitMainthreadData(void)
     OSMesg bossmsg;
     OSTimer bosstimer;
     OSMesgQueue bossmq;
+#ifdef PORT
+    uintptr_t start;
+#else
     u32 start;
+#endif
     u32 unused;
     s32 i;
 
@@ -261,8 +265,14 @@ void bossInitMainthreadData(void)
         g_CurentMMallocValue = (s32) (strtol(tokenFind(1, "-m"), 0, 0) << 0xa);
     }
 
+#ifdef PORT
+    start = (uintptr_t)PHYS_TO_K0(osVirtualToPhysical(&_bssSegmentEnd));
+    mempCheckMemflagTokens(start,
+        (s32)((uintptr_t)tlbmanageGetTlbAllocatedBlock() - start));
+#else
     start = (PHYS_TO_K0(osVirtualToPhysical(&_bssSegmentEnd)));
     mempCheckMemflagTokens(start, ((u32)tlbmanageGetTlbAllocatedBlock() - (u32)start));
+#endif
     mempResetBank(MEMPOOL_PERMANENT);
     langInit();
     lvInit();
