@@ -1,3 +1,29 @@
+## Launch directly from EmulationStation
+
+After the port files are installed, **you do not need to open the PortMaster UI to launch GoldenEye**. EmulationStation sees the root launcher:
+
+```text
+GoldenEye 007.sh
+```
+
+The launcher locates the adjacent `ge007/` directory from its own path, loads PortMaster's existing device/runtime support, and starts the native AArch64 executable.
+
+For a direct/offline install, with PortMaster support already present on the firmware:
+
+1. Extract `ge007.zip` directly into the active ROM volume's `ports/` directory.
+2. Confirm these sit beside each other:
+
+   ```text
+   ports/GoldenEye 007.sh
+   ports/ge007/
+   ```
+
+3. Put the verified ROM at `ports/ge007/data/ge007.ntsc-final.z64`.
+4. Refresh/restart EmulationStation's game list.
+5. Launch **GoldenEye 007** from the Ports system.
+
+This bypasses opening the PortMaster application; it does not remove the dependency on PortMaster's installed `control.txt`/device helpers.
+
 ## Notes
 
 GoldenEye 007 AArch64/GLES alpha for R36S / dArkOSRE.
