@@ -84,6 +84,9 @@ REQUIRED: dict[str, list[tuple[str, str]]] = {
     "src/game/chrprop.c": [
         ("coord2d *port_poly_points = collision->polygon;", "PORT collision hull generation must use canonical eight-point storage"),
     ],
+    "src/game/gunfire.c": [
+        ("Model model;", "watch-menu temporary model must have full host-width Model storage"),
+    ],
 }
 
 for root in SCAN_ROOTS:
