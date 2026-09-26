@@ -373,6 +373,10 @@
 		panel_description =
 			"G size=153,85 delays=20,20,20,120,20 format=rgb888 lanes=4 flags=0xa03",
 			"M clock=30000 horizontal=640,150,40,135 vertical=480,20,6,12 default=1",
+			/* Same porch geometry; experimental refresh ladder for Panel 8. */
+			"M clock=37490 horizontal=640,150,40,135 vertical=480,20,6,12 default=0",
+			"M clock=44988 horizontal=640,150,40,135 vertical=480,20,6,12 default=0",
+			"M clock=49987 horizontal=640,150,40,135 vertical=480,20,6,12 default=0",
 			"I seq=b9f11283",
 			"I seq=b1000000da80",
 			"I seq=b2001370",
