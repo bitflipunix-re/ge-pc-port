@@ -3,7 +3,7 @@
   <game>
     <path>./GoldenEye 007.sh</path>
     <name>GoldenEye 007</name>
-    <desc>ARM64 build of the GoldenEye 007 PC port. Supply your own US NTSC ROM; first launch builds the data files from it.</desc>
+    <desc>Native ARM64/GLES GoldenEye 007 port with ARM-GE Glass Control Deck. Launches directly from EmulationStation after install; supply your own US NTSC ROM.</desc>
     <genre>Action</genre>
     <players>1</players>
   </game>
