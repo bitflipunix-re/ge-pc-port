@@ -27,16 +27,24 @@ The interesting part is not simply that GoldenEye runs on another device. The en
 
 ## Current alpha
 
-The latest verified R36S PortMaster build was produced on 24 September 2026 from:
+The latest verified public R36S PortMaster prerelease was produced on **26 September 2026** after consolidating the active ARM64 completion branches into `main`:
 
-- source revision: `c762a153a75ac6eadbef6fa4e4547bf465597ecd`
-- installer: `ge007.zip`
-- installer SHA-256: `738c0c754ffab04911651db14095604aa0cbc5e3f1f2478b3ddf917681381eb9`
+- source revision: `09ce89bfa07fc2e9de37e14e1726a7739e813477`
+- build run: `36231558781`
+- release tag: `r36s-alpha-2026-09-26-completion-pass`
+- release: https://github.com/bitflipunix-re/ge-pc-port/releases/tag/r36s-alpha-2026-09-26-completion-pass
+- build artifact digest: `sha256:9e4f7f2ff290937871c69e3b752339d177f2b7bb4e32fa402a3a7bd020faf4dd`
+- installer: `ge007.zip` (4,611,208 bytes)
+- native executable: `ge007.aarch64` (9,740,864 bytes)
 - architecture: AArch64
-- graphics: SDL2 + GLES
+- graphics: SDL2 + OpenGL ES
 - ROM target: GoldenEye 007 NTSC-U, big-endian
 
-The CI build verifies the executable as AArch64, builds the PortMaster package, runs `unzip -t`, validates package metadata, and rejects ROM files or generated sidecar binaries from the release archive.
+This completion-pass build folds the currently verified ARM64 work into the mainline: host-width stage/setup rebasing, animation/model/title/language/background pointer fixes, teardown hardening, stage-boundary SFX cleanup, fresh-save safety, displacement-stable mouse aim, batched-tick crosshair stabilization, scripted-camera ownership, watch-menu setting persistence, and the ARM64 semantic regression gate.
+
+The CI build passed the semantic audit, AArch64 cross-configuration and compile, ELF architecture verification, PortMaster package construction, `unzip -t`, package metadata checks, and the release workflow's second checksum/content verification. ROM files and generated ROM-derived sidecars are explicitly rejected from the published archive.
+
+This is still an alpha: the completion pass is source/CI verified, while full-campaign, long-session audio, level-state, rendering and broader handheld behavior still require continued real-device testing.
 
 ## What works on real hardware
 
@@ -51,7 +59,7 @@ The port has demonstrated:
 - first-run generation of required ROM-derived sidecars from the user's own ROM;
 - runtime logging and on-device diagnostics.
 
-Active work is focused on correctness and polish: stage behavior, spawn positions, AI/objectives/props, collision/navigation edge cases, GLES rendering defects, audio/runtime behavior and broader handheld compatibility.
+Active work is now concentrated on real-device correctness and polish rather than broad 32→64 conversion: full-campaign stage behavior, spawn/state transitions, AI/objectives/props, collision/navigation edge cases, GLES rendering defects, long-session audio behavior and broader handheld compatibility. Older Dam/PortMaster/Tom experiment branches are behind the consolidated mainline; the R36S CFW branch remains a separate firmware effort and is intentionally not merged into the game port.
 
 ## The portability work
 
@@ -102,7 +110,7 @@ The first launch generates the required host-format data locally and then starts
 
 ## Building
 
-The reference build is the GitHub Actions workflow in `.github/workflows/build-r36s.yml`.
+The reference build is the GitHub Actions workflow in `.github/workflows/build-r36s.yml`. Every ARM64 build first runs `work/goldeneye-pc-port/tools_pc/arm64_semantic_audit.py` to catch known pointer-width and token/pointer regression classes before compilation.
 
 For local package assembly after producing `ge007.aarch64`:
 
