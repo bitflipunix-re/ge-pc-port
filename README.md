@@ -63,10 +63,10 @@ Open it with **F10**. On a controller, use the D-pad/left stick to navigate, **L
 The VIDEO page exposes the renderer rather than presenting cosmetic placeholders:
 
 - **Output resolution** — windowed output-size presets filtered against the current desktop. Fullscreen uses the panel/display mode supplied by SDL/PortMaster.
-- **Internal resolution** — 50–200% render scale. The overlay displays the resulting internal pixel dimensions and the percentage.
+- **Internal resolution** — 50–200% render scale with full-output presentation. The game renders the 3D scene into the selected lower/higher-resolution framebuffer and then scales that image to the complete output surface; it does **not** shrink the viewport. On the 640x480 R36S panel, 75% therefore renders 480x360 internally and presents it across the full 640x480 panel. The overlay shows both dimensions.
 - **MSAA** — OFF/2x/4x/8x through Fast3D's multisample framebuffer/resolve path, clamped to what the GLES driver reports.
 - **Temporal AA (TXAA-style)** — optional low/high temporal accumulation on the final frame. This is an ARM-GE temporal AA implementation inspired by the same class of techniques; it is **not NVIDIA TXAA** and does not claim NVIDIA's proprietary implementation.
-- **Graphics presets** — N64 / Crisp / Enhanced / R36S / Performance. Preset identity is derived from the live renderer settings, so a manual change immediately becomes Custom instead of leaving a stale preset label. Every preset writes a complete owned setting set; Performance uses 75% internal resolution, 1x MSAA, temporal AA off, low anisotropy and earlier LOD.
+- **Graphics presets** — N64 / Crisp / Enhanced / R36S / Performance. Preset identity is derived from the live renderer settings, so a manual change immediately becomes Custom instead of leaving a stale preset label. Every preset writes a complete owned setting set. Performance renders at 75% internally and upscales to full output, uses 1x MSAA, disables temporal AA, keeps anisotropy low, and uses the game's own model-LOD machinery at 50% distance to reduce model/matrix/render work without changing AI or simulation timing.
 - VSync, frame cap, texture filtering, mip filtering, anisotropic filtering, FOV, draw distance, LOD distance and framebuffer effects.
 - Live video settings are routed through `video.c` into Fast3D. Settings that can safely rebuild or reconfigure at runtime apply live; settings explicitly marked for restart are persisted instead.
 
@@ -133,6 +133,8 @@ The interface uses a resolution-scalable translucent glass layout and currently 
 - a safe in-process allocator trim action.
 
 The R36S package intentionally ships conservative defaults: **1x MSAA, 100% render scale, TAA off and system-default governors**. More expensive graphics features are opt-in.
+
+The AArch64 render path also uses larger same-state Fast3D triangle batches and builds the isolated Fast3D/RSP translation layer at `-O3` (without `-ffast-math`). These optimizations reduce host/GLES submission overhead without changing the reconstructed GoldenEye simulation.
 
 CPU/GPU/RAM profiles do not run the game as root. Port Control stores small numeric profile selections in `ge007.ini`; on the next launch the PortMaster wrapper translates them into fixed known values, uses PortMaster's existing privileged helper only for the required sysfs/procfs writes, records the previous values, and restores them when the game exits.
 
