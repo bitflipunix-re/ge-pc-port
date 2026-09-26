@@ -1446,9 +1446,25 @@ static int aimGepdCompute(double dxPx, double dyLook)
     struct player *p = g_CurrentPlayer;
 
     /* Needs the grabbed-cursor relative deltas (capture mode, locked in a
-     * stage) and a live player. dxPx/dyLook are this poll's dt-scaled px. */
+     * stage) and a live player. dxPx/dyLook are raw displacement for this
+     * input poll; rate-based fallbacks apply their own dt normalization. */
     if (!aimAbsolute || !mouseGrabbed || p == NULL)
         return 0;
+
+    /* Match the direct-look safety gates. In particular, POSEND/INTRO
+     * cutscenes (including Dam's abseil/bungee transition) must retain sole
+     * ownership of the camera even if RMB was held as the script started. */
+    if (p->bonddead || !p->outside_watch_menu || p->pause_state != 0) {
+        s_gepdHeldPrev = 0;
+        return 0;
+    }
+    {
+        extern int gameScriptedCameraActive(void);
+        if (gameScriptedCameraActive()) {
+            s_gepdHeldPrev = 0;
+            return 0;
+        }
+    }
 
     /* On entry adopt the game's current position (GEPD adopts every
      * non-aim frame; input.c does that in the !aimHeld branch). */
@@ -1543,11 +1559,10 @@ static int aimGepdCompute(double dxPx, double dyLook)
  * aimGepdCompute. Legacy stick/rate fallbacks apply lookDtScale separately.
  *
  * GEPD's safety gates (`camera==4||0 && menupage==11 && !dead && !watch &&
- * !pause`) matter here in a way they didn't for aim mode: aim mode requires
- * RMB held, so it naturally can't fire during a death/cutscene/pause state a
- * player would be holding RMB through; hipfire looks are always live, so a
- * frozen or scripted-camera state (POSEND/INTRO cutscenes, death cam, pause)
- * must be checked explicitly or this would fight the game's own camera
+ * !pause`) matter for both direct mouse paths. Absolute aim now applies the
+ * same gates above; hipfire looks are always live, so a frozen or scripted-
+ * camera state (POSEND/INTRO cutscenes, death cam, pause) must also be checked
+ * explicitly here or this would fight the game's own camera
  * control during those states. `current_menu` already gates menupage==11
  * (checked by the caller's menuMode branch, same as aim mode); the rest are
  * read here directly -- read-only, no logic change.
