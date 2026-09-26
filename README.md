@@ -8,20 +8,26 @@ The current reference target is **R36S / dArkOSRE / PortMaster** using **AArch64
 
 ## Current release
 
-The latest verified public R36S PortMaster prerelease was produced on **26 September 2026** after consolidating the active ARM64 completion branches into `main`.
+ARM-GE has now moved from **alpha** to **beta** for the R36S / PortMaster target.
 
-- Source revision: `09ce89bfa07fc2e9de37e14e1726a7739e813477`
-- Build run: `36231558781`
-- Release tag: `r36s-alpha-2026-09-26-completion-pass`
-- Release: https://github.com/bitflipunix-re/ge-pc-port/releases/tag/r36s-alpha-2026-09-26-completion-pass
-- Build artifact digest: `sha256:9e4f7f2ff290937871c69e3b752339d177f2b7bb4e32fa402a3a7bd020faf4dd`
-- Installer: `ge007.zip` — 4,611,208 bytes
-- Native executable: `ge007.aarch64` — 9,740,864 bytes
+The first player-focused beta prerelease was published on **26 September 2026** from the validated main branch:
+
+- Source revision: `0ec8a06429aaf8892cd803618db77c40ef7c289e`
+- Build run: `36244612005`
+- Release tag: `r36s-beta-2026-09-26`
+- Release: https://github.com/bitflipunix-re/ge-pc-port/releases/tag/r36s-beta-2026-09-26
+- Installer: `ge007.zip` — 1,102,379 bytes
+- Installer SHA-256: `ecfa2ad389e9cf398569c86e773e9b6dc3ab18dfd5dbdbc5bc5308ce9c1242dd`
 - Architecture: AArch64
 - Graphics: SDL2 + OpenGL ES
+- Target: R36S / dArkOSRE / PortMaster
 - ROM target: GoldenEye 007 NTSC-U, big-endian
 
-The release workflow independently re-verifies the executable and package checksums, validates the ZIP, and refuses to publish ROM images or generated ROM-derived sidecars.
+This beta is intentionally different from the development builds used during the ARM64 bring-up. It is built in **Release** mode and stripped, with development-only benchmarking, render probes, frame-dump capture paths and the standalone DAM-lab HUD excluded from the player binary/package.
+
+The beta keeps the features needed for normal use: the ARM-GE Glass Control Deck, normal runtime error logging, production crash screen, controller support, clean Start+Select exit, ROM verification, first-run sidecar generation and the lightweight CPU/FPS/RAM telemetry backend used by Port Control.
+
+The release workflow verifies the AArch64 executable and installer, checks that the player package contains no benchmark launcher or development probe markers, and refuses to publish ROM images or generated ROM-derived sidecars.
 
 ## September 26 completion pass
 
@@ -109,7 +115,7 @@ The port has demonstrated:
 - native **Start + Select** clean-exit chord back to EmulationStation, including while Port Control is open;
 - direct EmulationStation Ports launcher after installation;
 
-This remains an alpha. Active work is now concentrated on real-device correctness and polish rather than broad 32→64 conversion: full-campaign behavior, spawn/state transitions, AI/objectives/props, collision/navigation edge cases, GLES rendering defects, long-session audio behavior and broader handheld compatibility.
+This is now a **beta-stage port**. Active work is concentrated on real-device correctness, campaign completion and polish rather than broad 32→64 conversion: full-campaign behavior, spawn/state transitions, AI/objectives/props, collision/navigation edge cases, GLES rendering defects, long-session audio behavior and broader handheld compatibility.
 
 ## Port Control overlay
 
@@ -433,6 +439,9 @@ cmake -S work/goldeneye-pc-port -B build/arm64 \
   -DCMAKE_SYSTEM_NAME=Linux \
   -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
   -DROMID=ntsc-final \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DGE_BETA_RELEASE=ON \
+  -DGE_DEV_PROBES=OFF \
   -DSDL2_INCLUDE_DIR=/usr/include/SDL2 \
   -DSDL2_LIBRARY=/usr/lib/aarch64-linux-gnu/libSDL2.so \
   -DZLIB_INCLUDE_DIR=/usr/include \
@@ -444,7 +453,19 @@ cmake -S work/goldeneye-pc-port -B build/arm64 \
 
 A correct configure must report an AArch64 target and the output binary `ge007.aarch64`.
 
-Normal builds compile the Fast3D render path without the historical D-series diagnostic probes. To reproduce a render investigation that relies on environment variables such as `GE_D172`, `GE_D229`, `GE_D236*`, `GE_D288` or texture dumps, add `-DGE_DEV_PROBES=ON` to the CMake configure command. Keep it off for performance testing and release builds so per-vertex/per-triangle probe branches do not contaminate measurements.
+Normal builds compile the Fast3D render path without the historical D-series diagnostic probes.
+
+For a player-equivalent beta build, configure with:
+
+```text
+-DCMAKE_BUILD_TYPE=Release
+-DGE_BETA_RELEASE=ON
+-DGE_DEV_PROBES=OFF
+```
+
+`GE_BETA_RELEASE=ON` compiles the development benchmark hooks, standalone DAM-lab HUD, presentation probes and frame-dump/debug capture paths out of the player binary while retaining the telemetry backend used by Port Control.
+
+To reproduce a render investigation that relies on environment variables such as `GE_D172`, `GE_D229`, `GE_D236*`, `GE_D288` or texture dumps, use a development build with `-DGE_DEV_PROBES=ON`. Do not use developer probes for performance testing or release packages.
 
 ## Compile
 
