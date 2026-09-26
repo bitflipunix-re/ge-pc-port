@@ -66,7 +66,8 @@ The VIDEO page exposes the renderer rather than presenting cosmetic placeholders
 - **Internal resolution** — 50–200% render scale. The overlay displays the resulting internal pixel dimensions and the percentage.
 - **MSAA** — OFF/2x/4x/8x through Fast3D's multisample framebuffer/resolve path, clamped to what the GLES driver reports.
 - **Temporal AA (TXAA-style)** — optional low/high temporal accumulation on the final frame. This is an ARM-GE temporal AA implementation inspired by the same class of techniques; it is **not NVIDIA TXAA** and does not claim NVIDIA's proprietary implementation.
-- VSync, frame cap, texture filtering, mip filtering, anisotropic filtering, FOV, draw distance, LOD distance, framebuffer effects and graphics presets.
+- **Graphics presets** — N64 / Crisp / Enhanced / R36S / Performance. Preset identity is derived from the live renderer settings, so a manual change immediately becomes Custom instead of leaving a stale preset label. Every preset writes a complete owned setting set; Performance uses 75% internal resolution, 1x MSAA, temporal AA off, low anisotropy and earlier LOD.
+- VSync, frame cap, texture filtering, mip filtering, anisotropic filtering, FOV, draw distance, LOD distance and framebuffer effects.
 - Live video settings are routed through `video.c` into Fast3D. Settings that can safely rebuild or reconfigure at runtime apply live; settings explicitly marked for restart are persisted instead.
 
 ### System / performance controls
@@ -105,7 +106,8 @@ The port has demonstrated:
 - PortMaster installation and launch;
 - first-run generation of required ROM-derived sidecars from the user's own ROM;
 - runtime logging and on-device diagnostics;
-- Select + Start exit back to EmulationStation.
+- native **Start + Select** clean-exit chord back to EmulationStation, including while Port Control is open;
+- direct EmulationStation Ports launcher after installation;
 
 This remains an alpha. Active work is now concentrated on real-device correctness and polish rather than broad 32→64 conversion: full-campaign behavior, spawn/state transitions, AI/objectives/props, collision/navigation edge cases, GLES rendering defects, long-session audio behavior and broader handheld compatibility.
 
@@ -169,6 +171,23 @@ abe01e4aeb033b6c0836819f549c791b26cfde83
 The launcher checks the SHA-1 when `sha1sum` is available and refuses a known-wrong ROM.
 
 ## Recommended installation
+
+### Direct EmulationStation install
+
+If PortMaster support is already installed on the firmware, **the PortMaster application does not need to be opened to launch or install this build manually**.
+
+Extract `ge007.zip` directly into the active ROM volume's `ports/` directory. The resulting layout must include:
+
+```text
+/roms/ports/GoldenEye 007.sh
+/roms/ports/ge007/
+```
+
+(or the equivalent `/roms2/ports/` path).
+
+The root launcher is executable in the package and self-locates the adjacent `ge007/` directory. Put the ROM under `ge007/data/`, refresh/restart EmulationStation, and launch **GoldenEye 007** from the Ports system. The launcher still uses PortMaster's installed `control.txt` and device helpers; it simply does not require opening the PortMaster UI.
+
+### PortMaster autoinstall
 
 For ArkOS/dArkOSRE, copy `ge007.zip` into the PortMaster autoinstall directory:
 
