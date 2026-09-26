@@ -3779,6 +3779,29 @@ extern "C" void gfx_start_frame(void) {
         gfx_current_dimensions.internal_mul = scale;
     }
 
+    /* Device-proof breadcrumb: report the render target separately from the
+     * physical presentation target whenever either changes. This makes it
+     * unambiguous in ge007/log.txt that 75% on R36S means 480x360 rendered
+     * and then scaled to the full 640x480 panel. */
+    {
+        static uint32_t lastInternalW = 0, lastInternalH = 0;
+        static uint32_t lastOutputW = 0, lastOutputH = 0;
+        if (lastInternalW != gfx_current_dimensions.width ||
+            lastInternalH != gfx_current_dimensions.height ||
+            lastOutputW != gfx_current_window_dimensions.width ||
+            lastOutputH != gfx_current_window_dimensions.height) {
+            sysLogPrintf(LOG_INFO,
+                "F3D: render %ux%u (%d%%) -> present %ux%u fullscreen",
+                gfx_current_dimensions.width, gfx_current_dimensions.height,
+                g_render_scale_percent,
+                gfx_current_window_dimensions.width, gfx_current_window_dimensions.height);
+            lastInternalW = gfx_current_dimensions.width;
+            lastInternalH = gfx_current_dimensions.height;
+            lastOutputW = gfx_current_window_dimensions.width;
+            lastOutputH = gfx_current_window_dimensions.height;
+        }
+    }
+
     if (gfx_current_dimensions.height != gfx_prev_dimensions.height ||
         gfx_current_dimensions.width != gfx_prev_dimensions.width) {
         for (auto& fb : framebuffers) {
