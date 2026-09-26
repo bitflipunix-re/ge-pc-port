@@ -188,7 +188,7 @@ static const int kGraphicsPresetValues[5][GRAPHICS_PRESET_FIELDS] = {
     /* CRISP */       { 1,125,0,0,0,1,1,0,100,0,150,0,150 },
     /* ENHANCED */    { 4,125,1,2,2,8,1,0,115,1,100,0,200 },
     /* R36S */        { 1,100,0,1,2,2,1,0,100,0,125,0,100 },
-    /* PERFORMANCE */ { 1, 75,0,1,1,1,1,0,100,0,100,0, 75 },
+    /* PERFORMANCE */ { 1, 75,0,1,1,1,1,0,100,0,100,0, 50 },
 };
 
 /* Windowed-mode resolution presets. Filtered at init to those that fit the
