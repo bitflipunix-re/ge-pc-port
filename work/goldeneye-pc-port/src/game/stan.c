@@ -515,13 +515,21 @@ next_room:
 
 void stanLoadFile(struct StanPrefixRecord *file)
 {
-    struct StanPrefixRecord *prefix = &stan_prefix;
     s32 tokenIndexMask;
 
     m_stanRegion = 1;
     tokenIndexMask = !file->ptr_firstroom;
+#ifdef PORT
+    /*
+     * The retail code overlays the two 32-bit BSS words at stan_prefix and
+     * dword_CODE_bss_8007B124 as a StanPrefixRecord by taking &stan_prefix.
+     * A host pointer is 8 bytes, so that trick writes only half of the pointer.
+     * On PORT the loaded sidecar already supplies a real StanPrefixRecord.
+     */
+    stan_prefix = file;
+#else
+    struct StanPrefixRecord *prefix = &stan_prefix;
     prefix->stanfile = file;
-    tokenIndexMask = 1;
 
     /*
      * Matching artifacts.
@@ -529,6 +537,8 @@ void stanLoadFile(struct StanPrefixRecord *file)
     if (prefix);
     if (prefix);
     if (prefix);
+#endif
+    tokenIndexMask = 1;
 
 #ifdef PORT
     /* This is an address rebasing operation inside the loaded stan blob, not C
