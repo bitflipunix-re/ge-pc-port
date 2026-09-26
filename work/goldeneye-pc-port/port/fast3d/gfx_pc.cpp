@@ -269,6 +269,32 @@ extern "C" void gfx_set_safe_area_crop(int on) {
 
 uint32_t gfx_msaa_level = 1;
 
+/* Port-level presentation controls. Keep scene scale independent from the
+ * VI/native logical resolution: fast3d still interprets GoldenEye coordinates
+ * normally, only the intermediate color/depth target changes size. */
+static int g_render_scale_percent = 100;
+static int g_taa_mode = 0;
+
+extern "C" void gfx_set_render_scale_percent(int percent) {
+    if (percent < 50) percent = 50;
+    if (percent > 200) percent = 200;
+    g_render_scale_percent = percent;
+}
+
+extern "C" int gfx_get_render_scale_percent(void) {
+    return g_render_scale_percent;
+}
+
+extern "C" void gfx_set_taa_mode(int mode) {
+    if (mode < 0) mode = 0;
+    if (mode > 2) mode = 2;
+    g_taa_mode = mode;
+}
+
+extern "C" int gfx_get_taa_mode(void) {
+    return g_taa_mode;
+}
+
 static bool dropped_frame;
 
 static float buf_vbo[MAX_BUFFERED * (32 * 3)]; // 3 vertices in a triangle and 32 floats per vtx
@@ -3729,12 +3755,29 @@ extern "C" void gfx_start_frame(void) {
 
     gfx_current_window_dimensions.aspect_ratio = (float)gfx_current_window_dimensions.width / gfx_current_window_dimensions.height;
 
+    /* The game-window viewport always describes the physical output. Scene
+     * dimensions may be independently scaled and are rendered through the
+     * existing offscreen framebuffer path before the final window blit. */
+    gfx_current_game_window_viewport.x = 0;
+    gfx_current_game_window_viewport.y = 0;
+    gfx_current_game_window_viewport.width = gfx_current_window_dimensions.width;
+    gfx_current_game_window_viewport.height = gfx_current_window_dimensions.height;
+
     gfx_current_dimensions = gfx_current_window_dimensions;
+    {
+        const float scale = (float)g_render_scale_percent / 100.0f;
+        uint32_t rw = (uint32_t)std::lround((double)gfx_current_window_dimensions.width * scale);
+        uint32_t rh = (uint32_t)std::lround((double)gfx_current_window_dimensions.height * scale);
+        if (rw < 1) rw = 1;
+        if (rh < 1) rh = 1;
+        gfx_current_dimensions.width = rw;
+        gfx_current_dimensions.height = rh;
+        gfx_current_dimensions.aspect_ratio = (float)rw / (float)rh;
+        gfx_current_dimensions.internal_mul = scale;
+    }
 
-    gfx_current_game_window_viewport.width = gfx_current_dimensions.width;
-    gfx_current_game_window_viewport.height = gfx_current_dimensions.height;
-
-    if (gfx_current_dimensions.height != gfx_prev_dimensions.height) {
+    if (gfx_current_dimensions.height != gfx_prev_dimensions.height ||
+        gfx_current_dimensions.width != gfx_prev_dimensions.width) {
         for (auto& fb : framebuffers) {
             uint32_t width, height, msaa;
             if (fb.second.autoresize) {
@@ -3841,7 +3884,16 @@ extern "C" void gfx_run(Gfx* commands) {
                 gfx_rapi->resolve_msaa_color_buffer(0, game_framebuffer);
             }
         } else {
-            gfxFramebuffer = (uintptr_t)gfx_rapi->get_framebuffer_texture_id(game_framebuffer);
+            bool different_size = gfx_current_dimensions.width != gfx_current_game_window_viewport.width ||
+                                  gfx_current_dimensions.height != gfx_current_game_window_viewport.height;
+            if (different_size) {
+                /* Single-sample render-scale path: the old code exposed the
+                 * offscreen texture but never presented it. Reuse the resolve
+                 * backend as a scaled color blit into the window. */
+                gfx_rapi->resolve_msaa_color_buffer(0, game_framebuffer);
+            } else {
+                gfxFramebuffer = (uintptr_t)gfx_rapi->get_framebuffer_texture_id(game_framebuffer);
+            }
         }
     }
 
