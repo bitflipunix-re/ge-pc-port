@@ -1277,7 +1277,7 @@ void chrlvInitActAttack(ChrRecord *self, struct anim_group_info **arg1, s32 arg2
 #endif
 
     if ((self->chrflags & CHRSTART_FORCENOBLOOD)
-        && ((s32)panim_float->anim.anim == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(fire_hip)]))
+        && ((s32)panim_float->anim.anim == GE_ANIMDATA_ADDR(fire_hip)))
     {
         // should be:
         //     panim_float = &arg1[anim_index]->table[(next_anim + 1) % len]
@@ -2214,7 +2214,7 @@ void triggered_on_shot_hit(ChrRecord *self, coord3d *arg1, f32 arg2, s32 req_ani
 
                     modelSetAnimationWithMerge(model, struck_anib->struck_anim, struck_anib->flip, 0.0f, struck_anib->speed, 16.0f, flag1 == 0);
 
-                    if ((s32)struck_anib->struck_anim == (GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(death_neck)]) && ((randomGetNext() % (u32)0x64) != 0))
+                    if ((s32)struck_anib->struck_anim == (GE_ANIMDATA_ADDR(death_neck)) && ((randomGetNext() % (u32)0x64) != 0))
                     {
                         modelSetAnimEndFrame(model, 241.0f);
                     }
@@ -3073,37 +3073,37 @@ f32 chrlvModelScaleAnimationRelated(ChrRecord *self)
 {
     f32 scale_factor = D_80030984;
 
-    if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(sprinting)])
+    if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_ADDR(sprinting))
     {
         scale_factor = D_8003098C;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(running)])
+    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_ADDR(running))
     {
         scale_factor = D_80030988;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_OFFSET(sprinting_one_handed_weapon) + GE_ANIMDATA_BASE[0])
+    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_ADDR(sprinting_one_handed_weapon))
     {
         scale_factor = D_80030998;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(running_one_handed_weapon)])
+    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_ADDR(running_one_handed_weapon))
     {
         scale_factor = D_80030994;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(walking_unarmed)])
+    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_ADDR(walking_unarmed))
     {
         scale_factor = D_80030990;
     }
     // typo/mistake, `ANIM_DATA_sprinting_one_handed_weapon` is duplicate of above.
     // compiler swaps addition order when reading this from the stack, unlike addresses only seen once (seen once means not saved to stack).
-    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_OFFSET(sprinting_one_handed_weapon) + GE_ANIMDATA_BASE[0])
+    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_ADDR(sprinting_one_handed_weapon))
     {
         scale_factor = D_800309A4;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(running_female)])
+    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_ADDR(running_female))
     {
         scale_factor = D_800309A0;
     }
-    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(walking_female)])
+    else if ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_ADDR(walking_female))
     {
         scale_factor = D_8003099C;
     }
@@ -5256,7 +5256,7 @@ void chrlvTickAnim(ChrRecord *self)
     }
 
     if (
-        ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(sneeze)])
+        ((s32)objecthandlerGetModelAnim(self->model) == GE_ANIMDATA_ADDR(sneeze))
         && (modelGetAnimFrame(self->model) >= 42.0f)
         && !(self->chrflags & CHRFLAG_02000000)
        )
@@ -5289,7 +5289,7 @@ void chrlvTickSurrender(ChrRecord *self)
         model = self->model;
         self->sleep = 0x10;
 
-        if (((s32)objecthandlerGetModelAnim(model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(surrendering_armed_drop_weapon)])
+        if (((s32)objecthandlerGetModelAnim(model) == GE_ANIMDATA_ADDR(surrendering_armed_drop_weapon))
             && (modelGetAnimFrame(model) >= 80.0f))
         {
             coord3d sp30 = D_80030A44;
@@ -5459,7 +5459,7 @@ void chrlvTickDie(ChrRecord *self)
 
     if (modelGetAnimFrame(model) >= modelGetAnimEndFrame(model))
     {
-        if ((s32)objecthandlerGetModelAnim(model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(death_left_leg)])
+        if ((s32)objecthandlerGetModelAnim(model) == GE_ANIMDATA_ADDR(death_left_leg))
         {
             modelSetAnimation(
                 model,
@@ -5494,7 +5494,7 @@ void chrlvTickArgh(ChrRecord *self)
     {
         chrlvSetTargetToPlayer(self);
 
-        if ((s32)objecthandlerGetModelAnim(model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(death_left_leg)])
+        if ((s32)objecthandlerGetModelAnim(model) == GE_ANIMDATA_ADDR(death_left_leg))
         {
             chrlvIdleAnimationRelated7F023E14(self, 26.0f);
         }
@@ -5624,11 +5624,11 @@ void chrlvTickSurprised(ChrRecord *self)
 
     if (modelGetAnimFrame(model) >= modelGetAnimEndFrame(model))
     {
-        if ((s32)objecthandlerGetModelAnim(model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(surrendering_armed)])
+        if ((s32)objecthandlerGetModelAnim(model) == GE_ANIMDATA_ADDR(surrendering_armed))
         {
             chrlvIdleAnimationRelated7F023E14(self, 26.0f);
         }
-        else if ((s32)objecthandlerGetModelAnim(model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(spotting_bond)])
+        else if ((s32)objecthandlerGetModelAnim(model) == GE_ANIMDATA_ADDR(spotting_bond))
         {
             chrlvIdleAnimationRelated7F023E14(self, 26.0f);
         }
@@ -8149,7 +8149,7 @@ void chrlvTickRunPos(ChrRecord *self)
 
         sp2C = D_80030988;
 
-        if ((s32)objecthandlerGetModelAnim(self_model) == GE_ANIMDATA_BASE[GE_ANIMDATA_OFFSET(running_one_handed_weapon)])
+        if ((s32)objecthandlerGetModelAnim(self_model) == GE_ANIMDATA_ADDR(running_one_handed_weapon))
         {
             sp2C = D_80030994;
         }
