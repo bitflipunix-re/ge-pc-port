@@ -311,6 +311,19 @@ static GfxPerfStats g_perf_last = {};
 static struct GfxWindowManagerAPI* gfx_wapi;
 static struct GfxRenderingAPI* gfx_rapi;
 
+/* Clip-space convention only changes when the active render target changes.
+ * Cache it at framebuffer switches instead of crossing the rendering API
+ * function table once per submitted triangle. */
+static struct GfxClipParameters g_clip_parameters = {};
+
+static bool gfx_start_draw_to_framebuffer_cached(int fb, float noise_scale) {
+    const bool ok = gfx_rapi->start_draw_to_framebuffer(fb, noise_scale);
+    if (ok) {
+        g_clip_parameters = gfx_rapi->get_clip_parameters();
+    }
+    return ok;
+}
+
 static uintptr_t segmentPointers[16];
 
 struct FBInfo {
@@ -656,21 +669,18 @@ void gfx_texture_cache_delete(const uint8_t* orig_addr) {
         }
     }
 
-    while (gfx_texture_cache.map.bucket_count() > 0) {
-        TextureCacheKey key = { orig_addr, { 0 }, 0, 0, 0 }; // bucket index only depends on the address
-        size_t bucket = gfx_texture_cache.map.bucket(key);
-        bool again = false;
-        for (auto it = gfx_texture_cache.map.begin(bucket); it != gfx_texture_cache.map.end(bucket); ++it) {
-            if (it->first.texture_addr == orig_addr) {
-                gfx_texture_cache.lru.erase(it->second.lru_location);
-                gfx_texture_cache.free_texture_ids.push_back(it->second.texture_id);
-                gfx_texture_cache.map.erase(it->first);
-                again = true;
-                break;
-            }
-        }
-        if (!again) {
-            break;
+    /* TextureCacheKey::Hasher mixes the complete texture description, so
+     * variants sharing an address can occupy different buckets. Walk the
+     * bounded cache (max 1024 entries) to invalidate every variant correctly.
+     * This path is rare and correctness matters more than a bogus O(1)
+     * address-only bucket assumption. */
+    for (auto it = gfx_texture_cache.map.begin(); it != gfx_texture_cache.map.end(); ) {
+        if (it->first.texture_addr == orig_addr) {
+            gfx_texture_cache.lru.erase(it->second.lru_location);
+            gfx_texture_cache.free_texture_ids.push_back(it->second.texture_id);
+            it = gfx_texture_cache.map.erase(it);
+        } else {
+            ++it;
         }
     }
 }
@@ -2367,7 +2377,7 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
     const uint8_t num_inputs = comb->num_inputs;
     const bool used_textures[2] = { comb->used_textures[0], comb->used_textures[1] };
 
-    struct GfxClipParameters clip_parameters = gfx_rapi->get_clip_parameters();
+    const struct GfxClipParameters& clip_parameters = g_clip_parameters;
 
     for (int i = 0; i < 3; i++) {
         float z = v_arr[i]->z, w = v_arr[i]->w;
@@ -3909,7 +3919,7 @@ extern "C" void gfx_run(Gfx* commands) {
                                             gfx_current_window_dimensions.height, 1, false, true, true,
                                             !game_renders_to_framebuffer);
     gfx_rapi->start_frame();
-    gfx_rapi->start_draw_to_framebuffer(game_renders_to_framebuffer ? game_framebuffer : 0,
+    gfx_start_draw_to_framebuffer_cached(game_renders_to_framebuffer ? game_framebuffer : 0,
                                         (float)gfx_current_dimensions.height / SCREEN_HEIGHT);
     gfx_rapi->clear_framebuffer(true, false);
     rdp.viewport_or_scissor_changed = true;
@@ -3926,7 +3936,7 @@ extern "C" void gfx_run(Gfx* commands) {
     gfxFramebuffer = 0;
 
     if (game_renders_to_framebuffer) {
-        gfx_rapi->start_draw_to_framebuffer(0, 1);
+        gfx_start_draw_to_framebuffer_cached(0, 1);
         gfx_rapi->clear_framebuffer(true, true);
 
         if (gfx_msaa_level > 1) {
@@ -4067,7 +4077,7 @@ extern "C" void gfx_resize_framebuffer(int fb, uint32_t width, uint32_t height, 
 }
 
 extern "C" void gfx_set_framebuffer(int fb, float noise_scale) {
-    gfx_rapi->start_draw_to_framebuffer(fb, noise_scale);
+    gfx_start_draw_to_framebuffer_cached(fb, noise_scale);
     gfx_rapi->clear_framebuffer(true, true);
     active_fb = framebuffers.find(fb);
 }
@@ -4093,7 +4103,7 @@ extern "C" void gfx_copy_framebuffer(int fb_dst, int fb_src, int left, int top, 
 }
 
 extern "C" void gfx_reset_framebuffer(void) {
-    gfx_rapi->start_draw_to_framebuffer(0, (float)gfx_current_dimensions.height / SCREEN_HEIGHT);
+    gfx_start_draw_to_framebuffer_cached(0, (float)gfx_current_dimensions.height / SCREEN_HEIGHT);
     active_fb = framebuffers.end();
 }
 
