@@ -98,6 +98,7 @@ struct ColorCombiner {
     uint64_t shader_id0;
     uint32_t shader_id1;
     bool used_textures[2];
+    uint8_t num_inputs;
     struct ShaderProgram* prg[16];
     uint8_t shader_input_mapping[2][7];
 };
@@ -562,6 +563,14 @@ static void gfx_generate_cc(struct ColorCombiner* comb, const ColorCombinerKey& 
     comb->shader_id1 = shader_id1;
     comb->used_textures[0] = used_textures[0];
     comb->used_textures[1] = used_textures[1];
+    {
+        /* Shader input count is a pure function of the combiner IDs. Cache it
+         * once with the combiner instead of crossing the rendering-API
+         * function table for every submitted triangle. */
+        CCFeatures features = {};
+        gfx_cc_get_features(shader_id0, shader_id1, &features);
+        comb->num_inputs = (uint8_t)features.num_inputs;
+    }
     // comb->prg = gfx_lookup_or_create_shader_program(shader_id0, shader_id1);
     memcpy(comb->shader_input_mapping, shader_input_mapping, sizeof(shader_input_mapping));
 }
@@ -2347,10 +2356,8 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
         rendering_state.alpha_blend = use_alpha;
         rendering_state.modulate = use_modulate;
     }
-    uint8_t num_inputs;
-    bool used_textures[2];
-
-    gfx_rapi->shader_get_info(prg, &num_inputs, used_textures);
+    const uint8_t num_inputs = comb->num_inputs;
+    const bool used_textures[2] = { comb->used_textures[0], comb->used_textures[1] };
 
     struct GfxClipParameters clip_parameters = gfx_rapi->get_clip_parameters();
 
@@ -3709,6 +3716,13 @@ extern "C" void gfx_init(const GfxInitSettings *settings) {
     gfx_rapi = settings->rapi;
     gfx_wapi->init(&settings->window_settings);
     gfx_rapi->init();
+
+    /* Stable cache capacity avoids unordered_map rehash/allocation churn while
+     * walking texture-heavy rooms. The cache already has a hard 1024-entry
+     * policy, so reserving that capacity changes no eviction semantics. */
+    gfx_texture_cache.map.reserve(TEXTURE_CACHE_MAX_SIZE);
+    gfx_texture_cache.free_texture_ids.reserve(TEXTURE_CACHE_MAX_SIZE);
+
     gfx_rapi->update_framebuffer_parameters(0, settings->window_settings.width, settings->window_settings.height, 1, false, true, true, true);
     gfx_current_dimensions.internal_mul = 1;
     gfx_current_game_window_viewport.width = gfx_current_dimensions.width = settings->window_settings.width;
