@@ -3933,7 +3933,16 @@ extern "C" void gfx_set_mipmap_filter(enum MipmapFilteringMode mode) {
     gfx_rapi->set_mipmap_filter(mode);
 }
 
-extern "C" void gfx_set_fix_mip_textures(int on) { g_fix_mip_textures = !!on; }
+extern "C" void gfx_set_fix_mip_textures(int on) {
+    const bool next = !!on;
+    if (g_fix_mip_textures != next) {
+        /* Import sizing is part of the texture-cache key/input. Existing
+         * uploads must be discarded when this policy changes or the overlay
+         * would report a live value while old textures remained resident. */
+        g_fix_mip_textures = next;
+        reset_texture_state();
+    }
+}
 
 /* D212: expose the (already-implemented) rendering-API anisotropy hook to the
  * port layer. Clamp to [1, GL max] so a stale ini value can't feed an invalid
