@@ -20,7 +20,13 @@ static void langFixupLoadedBank(char *name, void *p)
 
 // bss
 //CODE.bss:8008C640
+#ifdef PORT
+/* Runtime-only host state: unlike ROM text-bank entries, these are real
+ * allocation/target pointers and must not be forced through s32. */
+void *g_LangBanks[45];
+#else
 s32 g_LangBanks[45];
+#endif
 
 
 //CODE.bss:8008C6F4
@@ -442,10 +448,19 @@ u8 * langGet(s32 slotID)
 #endif
     u32 textslot_offset = textbank_ptr[slotID & 0x03FF]; /* load the textbank ptr table then get the slot's offset */
 
+#ifdef PORT
+    /* textslot_offset is serialized u32 data; the bank base is a native
+     * runtime pointer. Keep those roles separate at the final rebase. */
+    #ifdef DEBUG
+    return (textslot_offset != 0) ? ((u8 *)textbank_ptr + textslot_offset) : (u8 *)"Sorry, string not loaded.";
+    #endif
+    return (textslot_offset != 0) ? ((u8 *)textbank_ptr + textslot_offset) : NULL;
+#else
     u32 output_slot = textslot_offset; /* add the text slot offset to the base ptr to get the ptr to text file's slot */
     output_slot += (u32)textbank_ptr;
     #ifdef DEBUG
     return (textslot_offset != 0) ? (u8 *)output_slot : "Sorry, string not loaded.";
     #endif
     return (textslot_offset != 0) ? (u8*)output_slot : NULL;
+#endif
 }

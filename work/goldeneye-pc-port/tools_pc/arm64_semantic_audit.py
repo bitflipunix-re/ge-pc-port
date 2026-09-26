@@ -58,6 +58,10 @@ REQUIRED = {
         ("MODEL_U32_PTR(ModelAnimBitField, anim->bitDescriptors)", "animation bit-descriptor token must zero-extend at the pointer boundary"),
         ("MODEL_U32_PTR(u8, model->unk34)", "cached animation frame addresses must zero-extend at the pointer boundary"),
     ],
+    "src/game/language.c": [
+        ("void *g_LangBanks[45];", "PORT language banks must retain native runtime pointers"),
+        ("((u8 *)textbank_ptr + textslot_offset)", "language text offsets must rebase onto a native pointer"),
+    ],
 }
 
 for root in SCAN_ROOTS:
