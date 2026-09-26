@@ -1587,7 +1587,7 @@ void chrlvInitActAttackWalk(ChrRecord *chr, s32 arg1)
             else
             {
                 // bug/mistake/typo.
-                sp70.p[0] = sp70.p[0] = 1;
+                sp70.p[0] = 1;
             }
         }
         else if (phi_v1 == 1)

@@ -115,7 +115,11 @@ void init(void)
     inflateSegmentRomStart = get_inflateSegmentRomStart();
     inflateromSize = (u8 *) get_inflateSegmentRomEnd() - inflateSegmentRomStart;
     copylen = cdataSegmentRomSize + inflateromSize;
+#ifdef PORT
+    datazipram = (u8 *)(uintptr_t)(RZIPLOADADDR - cdataSegmentRomSize);
+#else
     datazipram = (u8 *) (RZIPLOADADDR - cdataSegmentRomSize);
+#endif
     dataziprom = csegmentSegmentVaddrStart;
 
     for (j = copylen - 1; j >= 0; j--)
@@ -123,13 +127,25 @@ void init(void)
         datazipram[j] = dataziprom[j];
     }
 
+#ifdef PORT
+    decompress_result = jump_decompressfile(datazipram, csegmentSegmentVaddrStart, (void *)(uintptr_t)RZIPBUFADDR);
+#else
     decompress_result = jump_decompressfile(datazipram, csegmentSegmentVaddrStart, RZIPBUFADDR);
+#endif
     if (decompress_result);
 
+#ifdef PORT
+    inflate_code_size = (s32)((uintptr_t)&_inflateSegmentRomStart - (uintptr_t)&_codeSegmentRomStart);
+#else
     inflate_code_size = (s32) ((u32) &_inflateSegmentRomStart - (u32) &_codeSegmentRomStart);
+#endif
     if (inflate_code_size > MAXCODESIZE)
     {
+#ifdef PORT
+        osPiRawStartDma(OS_READ, (u32)(uintptr_t)&_alt_startSegmentRomStart, &_alt_startSegmentStart, inflate_code_size - MAXCODESIZE);
+#else
         osPiRawStartDma(OS_READ, &_alt_startSegmentRomStart, &_alt_startSegmentStart, inflate_code_size - MAXCODESIZE);
+#endif
         while ((osPiGetStatus() & PI_STATUS_DMA_BUSY))
         {
         }
@@ -141,7 +157,11 @@ void init(void)
     initTLBPrepareContext();
 
     // Copy the TLB miss handler to proper place
+#ifdef PORT
+    src = (s32 *)(uintptr_t)&resolve_TLBaddress_for_InvalidHit;
+#else
     src = &resolve_TLBaddress_for_InvalidHit;
+#endif
     dest = (s32 *) K0BASE;
     while (dest < (s32 *) XUT_VEC)
     {

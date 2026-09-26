@@ -1,6 +1,9 @@
 #ifndef _IMAGE_BANK_H_
 #define _IMAGE_BANK_H_
 #include <ultra64.h>
+#ifdef PORT
+#include <stdint.h>
+#endif
 #include <bondtypes.h>
 #include "bondview.h"
 
@@ -25,10 +28,18 @@ extern struct sImageTableEntry *flareimage5;
 extern u8* img_curpos;
 extern s32 img_bitcount;
 extern s32 *pGlobalimagetable;
+#ifdef PORT
+extern uintptr_t globalbank_rdram_offset;
+#else
 extern s32 globalbank_rdram_offset;
+#endif
 
 void texReset(void);
 u32 texReadBits(s32 bitCount);
+#ifdef PORT
+void texSetBitstring(const void *pos);
+#else
 void texSetBitstring(s32 pos);
+#endif
 
 #endif

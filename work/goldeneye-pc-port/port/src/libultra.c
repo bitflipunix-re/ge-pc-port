@@ -1196,9 +1196,15 @@ static void geEepromLoad(void)
     const char *path = sysResolvePath(GE_EEP_PATH);
     FILE *fp = fopen(path, "rb");
     if (fp) {
-        fread(s_eeprom, 1, GE_EEP_SIZE, fp);
+        size_t nread = fread(s_eeprom, 1, GE_EEP_SIZE, fp);
         fclose(fp);
-        sysLogPrintf(LOG_INFO, "eeprom: loaded %s", path);
+        if (nread < GE_EEP_SIZE) {
+            memset(s_eeprom + nread, 0, GE_EEP_SIZE - nread);
+            sysLogPrintf(LOG_WARNING, "eeprom: short read %zu/%u from %s; zero-filled remainder",
+                         nread, (unsigned)GE_EEP_SIZE, path);
+        } else {
+            sysLogPrintf(LOG_INFO, "eeprom: loaded %s", path);
+        }
     } else {
         memset(s_eeprom, 0, GE_EEP_SIZE);
         sysLogPrintf(LOG_INFO, "eeprom: no %s yet (fresh save)", path);

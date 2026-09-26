@@ -165,7 +165,11 @@ void bossInitMainthreadData(void)
     OSMesg bossmsg;
     OSTimer bosstimer;
     OSMesgQueue bossmq;
+#ifdef PORT
+    uintptr_t start;
+#else
     u32 start;
+#endif
     u32 unused;
     s32 i;
 
@@ -241,12 +245,12 @@ void bossInitMainthreadData(void)
                 {
                     sprintf(portTokenBuf, "-level_%c%c -hard%c %s",
                             lvl[0], lvl[1], hard[0],
-                            memallocstringtable[k].string);
+                            (const char *)memallocstringtable[k].string);
                 }
                 else
                 {
                     sprintf(portTokenBuf, "-level_%c%c %s",
-                            lvl[0], lvl[1], memallocstringtable[k].string);
+                            lvl[0], lvl[1], (const char *)memallocstringtable[k].string);
                 }
 
                 tokenSetString(portTokenBuf);
@@ -261,8 +265,14 @@ void bossInitMainthreadData(void)
         g_CurentMMallocValue = (s32) (strtol(tokenFind(1, "-m"), 0, 0) << 0xa);
     }
 
+#ifdef PORT
+    start = (uintptr_t)PHYS_TO_K0(osVirtualToPhysical(&_bssSegmentEnd));
+    mempCheckMemflagTokens(start,
+        (s32)((uintptr_t)tlbmanageGetTlbAllocatedBlock() - start));
+#else
     start = (PHYS_TO_K0(osVirtualToPhysical(&_bssSegmentEnd)));
     mempCheckMemflagTokens(start, ((u32)tlbmanageGetTlbAllocatedBlock() - (u32)start));
+#endif
     mempResetBank(MEMPOOL_PERMANENT);
     langInit();
     lvInit();

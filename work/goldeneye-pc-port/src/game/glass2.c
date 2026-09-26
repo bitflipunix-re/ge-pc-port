@@ -1,5 +1,6 @@
 #include <ultra64.h>
 #include <limits.h>
+#include <string.h>
 #include "bg.h"
 #include "bgroomtrans.h"
 #include "bondview.h"

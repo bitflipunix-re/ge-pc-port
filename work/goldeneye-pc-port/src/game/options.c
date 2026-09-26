@@ -1979,8 +1979,8 @@ Gfx *draw_text_mission_status(Gfx *gdl)
     char *txtptr_1;
     char *txtptr_2;
     s32 sp64;
-    s32 sp60;
-    s32 sp5C;
+    s32 sp60 = 0;
+    s32 sp5C = 0;
     s32 sp58;
     struct font *pFontFile;
     struct fontchar *pFontChars;
@@ -2534,7 +2534,9 @@ Gfx *unused_draw_watch_inventory_page(Gfx *gdl, Mtx *param_2) {
         temp_2 = sp70;
 
         sp6C = 0x1E;
-        gdl = microcode_constructor_related_to_menus(gdl, temp_2, 0x1E, sp60, sp5C, 0x800050);
+        sp60 = temp_2 + sp54;
+        sp5C = sp6C + sp58;
+        gdl = microcode_constructor_related_to_menus(gdl, temp_2, sp6C, sp60, sp5C, 0x800050);
 
         if (watch_inventory_text_is_settled)
         {
@@ -3044,8 +3046,8 @@ Gfx *sub_GAME_7F0A9AB8(Gfx *gdl)
         char strPlus[] = "(+)\n";
         char strS[] = "(S)\n";
         char str3D[] = "(3D)\n";
-        u8 *ctext;
-        u8 *dpadtext;
+        u8 *ctext = dirtext1;
+        u8 *dpadtext = dirtext1;
         s32 buttons;
         s32 showmovesight;
         volatile unsigned int y;
@@ -4033,25 +4035,25 @@ Gfx *draw_watch_mission_briefing_page(Gfx *gdl, Mtx *param_2)
         switch (mission_brief_index)
         {
             case BRIEF_INDEX_BACKGROUND:
-                sprintf(pageTitle, langGet(0xac38));
+                snprintf(pageTitle, sizeof(pageTitle), "%s", langGet(0xac38));
                 textWrap(0xd2, get_ptr_text_for_watch_breifing_page(BRIEFING_OVERVIEW), wrappedText, chars, font);
                 mission_brief_background_navigation();
                 break;
 
             case BRIEF_INDEX_M:
-                sprintf(pageTitle, langGet(0xac39));
+                snprintf(pageTitle, sizeof(pageTitle), "%s", langGet(0xac39));
                 textWrap(0xd2, get_ptr_text_for_watch_breifing_page(BRIEFING_M), wrappedText, chars, font);
                 mission_brief_m_briefing_navigation();
                 break;
 
             case BRIEF_INDEX_Q:
-                sprintf(pageTitle, langGet(0xac3a));
+                snprintf(pageTitle, sizeof(pageTitle), "%s", langGet(0xac3a));
                 textWrap(0xd2, get_ptr_text_for_watch_breifing_page(BRIEFING_Q), wrappedText, chars, font);
                 mission_brief_q_branch_navigation();
                 break;
 
             case BRIEF_INDEX_MONEYPENNY:
-                sprintf(pageTitle, langGet(0xac3b));
+                snprintf(pageTitle, sizeof(pageTitle), "%s", langGet(0xac3b));
                 textWrap(0xd2, get_ptr_text_for_watch_breifing_page(BRIEFING_MONEYPENNY), wrappedText, chars, font);
                 mission_brief_moneypenny_navigation();
                 break;
@@ -4063,7 +4065,7 @@ Gfx *draw_watch_mission_briefing_page(Gfx *gdl, Mtx *param_2)
 #else
                 char objectiveBuffer[200] = "";
 #endif
-                u32 colour;
+                u32 colour = 0x00ff00b0;
                 s32 i;
                 s32 j;
                 char *objectiveText;
@@ -4076,7 +4078,7 @@ Gfx *draw_watch_mission_briefing_page(Gfx *gdl, Mtx *param_2)
                 visibleObjectiveIndex = 0;
 
                 setTextOverlapCorrection((j_text_trigger) ? (1) : (5));
-                sprintf(pageTitle, langGet(0xac3c));
+                snprintf(pageTitle, sizeof(pageTitle), "%s", langGet(0xac3c));
 
                 for (i = 0; i < objectiveGetCount(); i++)
                 {

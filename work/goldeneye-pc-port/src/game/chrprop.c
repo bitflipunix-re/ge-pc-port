@@ -928,9 +928,9 @@ void chraiDefaultWeaponFireHandler(s32 hand)
     s32 gotbghit;
     coord3d visiblehitpos;
     s32 bestroom;
-    s32 besttexture;
+    s32 besttexture = -1;
     HitThing bghit;
-    f32 negz;
+    f32 negz = 0.0f;
     coord3d besthitpos;
     s32 pad;
     StandTile *fromtile;
@@ -2325,7 +2325,7 @@ f32 chrpropScoreAutoAimTarget(PropRecord *targetprop, coord3d *aimpos, f32 *worl
     f32 autoaim_right;
     f32 score;
     bool passes_horizontal_check;
-    f32 horizontal_tolerance;
+    f32 horizontal_tolerance = 1.0f;
     PropRecord *playerprop;
     StandTile* line_stan;
     f32 player_los_height;
@@ -2366,12 +2366,16 @@ f32 chrpropScoreAutoAimTarget(PropRecord *targetprop, coord3d *aimpos, f32 *worl
         screen_left_edge[0] = floorFloat(screen_left_edge[0]);
         screen_right_edge[0] = ceilFloat(screen_right_edge[0]);
 
+        /* Used by both the X-autoaim and crosshair-only scoring paths. */
+        horizontal_tolerance = (screen_right_edge[0] - screen_left_edge[0]) * 1.5f;
+        if (horizontal_tolerance < 1.0f) {
+            horizontal_tolerance = 1.0f;
+        }
+
         if (currentPlayerGetXAutoAimEnabledRedirect())
         {
             if (screen_left_edge[0] <= autoaim_right && autoaim_left <= screen_right_edge[0])
             {
-                horizontal_tolerance = (screen_right_edge[0] - screen_left_edge[0]) * 1.5f;
-
                 if (getPlayerCount() == 1)
                 {
                     horizontal_tolerance = horizontal_tolerance * difficulty;
@@ -3510,6 +3514,17 @@ void sub_GAME_7F03EC3C(struct ModelRoData_BoundingBoxRecord *bbox, Mtxf *arg1, s
 
 void sub_GAME_7F03ECC0(f32 x1, f32 x2, f32 y1, f32 y2, f32 z1, f32 z2, Mtxf *m, struct rect4f *poly, struct collision_data *collision)
 {
+#ifdef PORT
+    /* collision_data owns eight coord2d points. Some callers historically pass
+     * a rect4f view of the first four points as 'poly'; using the canonical
+     * collision array on PORT avoids object-size UB while preserving layout. */
+    coord2d *port_poly_points = collision->polygon;
+#endif
+#ifdef PORT
+#define PORT_COLLISION_POINT(i) port_poly_points[(i)]
+#else
+#define PORT_COLLISION_POINT(i) poly->points[(i)]
+#endif
     f64 pts[8][2];
     f64 pad[1];
     s32 i;
@@ -3601,8 +3616,8 @@ filterloop:
     }
 
     cnt = 0;
-    poly->points[cnt].x = pts[minxi][0];
-    poly->points[cnt].y = pts[minxi][1];
+    PORT_COLLISION_POINT(cnt).x = pts[minxi][0];
+    PORT_COLLISION_POINT(cnt).y = pts[minxi][1];
     cnt++;
 
     for (i = 0; i < 4; i++)
@@ -3611,15 +3626,15 @@ filterloop:
 
         if (((pts[index][0] - pts[minzi][0]) * (pts[minxi][1] - pts[minzi][1])) < ((pts[minxi][0] - pts[minzi][0]) * (pts[index][1] - pts[minzi][1])))
         {
-            poly->points[cnt].x = pts[index][0];
-            poly->points[cnt].y = pts[index][1];
+            PORT_COLLISION_POINT(cnt).x = pts[index][0];
+            PORT_COLLISION_POINT(cnt).y = pts[index][1];
             cnt++;
             break;
         }
     }
 
-    poly->points[cnt].x = pts[minzi][0];
-    poly->points[cnt].y = pts[minzi][1];
+    PORT_COLLISION_POINT(cnt).x = pts[minzi][0];
+    PORT_COLLISION_POINT(cnt).y = pts[minzi][1];
     cnt++;
 
     for (i = 0; i < 4; i++)
@@ -3628,15 +3643,15 @@ filterloop:
 
         if (((pts[index][0] - pts[maxxi][0]) * (pts[minzi][1] - pts[maxxi][1])) < ((pts[minzi][0] - pts[maxxi][0]) * (pts[index][1] - pts[maxxi][1])))
         {
-            poly->points[cnt].x = pts[index][0];
-            poly->points[cnt].y = pts[index][1];
+            PORT_COLLISION_POINT(cnt).x = pts[index][0];
+            PORT_COLLISION_POINT(cnt).y = pts[index][1];
             cnt++;
             break;
         }
     }
 
-    poly->points[cnt].x = pts[maxxi][0];
-    poly->points[cnt].y = pts[maxxi][1];
+    PORT_COLLISION_POINT(cnt).x = pts[maxxi][0];
+    PORT_COLLISION_POINT(cnt).y = pts[maxxi][1];
     cnt++;
 
     for (i = 0; i < 4; i++)
@@ -3645,15 +3660,15 @@ filterloop:
 
         if (((pts[index][0] - pts[maxzi][0]) * (pts[maxxi][1] - pts[maxzi][1])) < ((pts[maxxi][0] - pts[maxzi][0]) * (pts[index][1] - pts[maxzi][1])))
         {
-            poly->points[cnt].x = pts[index][0];
-            poly->points[cnt].y = pts[index][1];
+            PORT_COLLISION_POINT(cnt).x = pts[index][0];
+            PORT_COLLISION_POINT(cnt).y = pts[index][1];
             cnt++;
             break;
         }
     }
 
-    poly->points[cnt].x = pts[maxzi][0];
-    poly->points[cnt].y = pts[maxzi][1];
+    PORT_COLLISION_POINT(cnt).x = pts[maxzi][0];
+    PORT_COLLISION_POINT(cnt).y = pts[maxzi][1];
     cnt++;
 
     for (i = 0; i < 4; i++)
@@ -3662,8 +3677,8 @@ filterloop:
 
         if (((pts[index][0] - pts[minxi][0]) * (pts[maxzi][1] - pts[minxi][1])) < ((pts[maxzi][0] - pts[minxi][0]) * (pts[index][1] - pts[minxi][1])))
         {
-            poly->points[cnt].x = pts[index][0];
-            poly->points[cnt].y = pts[index][1];
+            PORT_COLLISION_POINT(cnt).x = pts[index][0];
+            PORT_COLLISION_POINT(cnt).y = pts[index][1];
             cnt++;
             break;
         }
@@ -3673,9 +3688,11 @@ filterloop:
 
     for (i = 0; i < cnt; i++)
     {
-        poly->points[i].x += m->m[3][0];
-        poly->points[i].y += m->m[3][2];
+        PORT_COLLISION_POINT(i).x += m->m[3][0];
+        PORT_COLLISION_POINT(i).y += m->m[3][2];
     }
+#undef PORT_COLLISION_POINT
+
 }
 
 

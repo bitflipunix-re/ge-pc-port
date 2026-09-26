@@ -38,6 +38,7 @@ extern int snprintf(char *str, size_t maxsize, const char *format, ...);
 #else
   #include <unistd.h>
   #include <sys/wait.h>
+  #include <errno.h>
 #endif
 
 #include "system.h"
@@ -121,8 +122,12 @@ static int rcRunConverter(const char *exePath, const char *rom, const char *out)
         _exit(127);   /* execv failed */
     }
     int status = 0;
-    while (waitpid(pid, &status, 0) < 0)
-        ;   /* EINTR */
+    pid_t waited;
+    do {
+        waited = waitpid(pid, &status, 0);
+    } while (waited < 0 && errno == EINTR);
+    if (waited < 0)
+        return -1;
     if (WIFEXITED(status))
         return WEXITSTATUS(status);
     return -1;

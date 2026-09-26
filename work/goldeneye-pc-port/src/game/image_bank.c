@@ -16,7 +16,11 @@ s32 img_bitcount;
 //8008D0AC
 s32 dword_CODE_bss_8008D0AC;
 //8008D0B0;
+#ifdef PORT
+uintptr_t globalbank_rdram_offset;
+#else
 s32 globalbank_rdram_offset;
+#endif
 //8008D0B4;
 s32 *pGlobalimagetable;
 //8008D0B8;
@@ -88,11 +92,19 @@ struct sImageTableEntry *mpstageselimages;
 extern u8* _GlobalimagetableSegmentRomStart;
 
 
+#ifdef PORT
+void texSetBitstring(const void *pos) {
+    img_curpos = (u8 *)pos;
+    img_curdatatable = 0;
+    img_bitcount = 0;
+}
+#else
 void texSetBitstring(s32 pos) {
     img_curpos = pos;
     img_curdatatable = 0;
     img_bitcount = 0;
 }
+#endif
 
 
 
@@ -241,9 +253,15 @@ void texReset(void)
     u32 size;
     s32 i;
 
+#ifdef PORT
+    size = (u32)((uintptr_t)&_GlobalimagetableSegmentEnd - (uintptr_t)&_GlobalimagetableSegmentStart);
+    pGlobalimagetable = mempAllocBytesInBank(size + 0x1000, MEMPOOL_STAGE);
+    pGlobalimagetable = (s32 *)(((uintptr_t)pGlobalimagetable + 0xFFFu) & ~(uintptr_t)0xFFFu);
+#else
     size = (u32)&_GlobalimagetableSegmentEnd - (u32)&_GlobalimagetableSegmentStart;
     pGlobalimagetable = mempAllocBytesInBank(size + 0x1000, MEMPOOL_STAGE);
     pGlobalimagetable = ((u32)pGlobalimagetable + 0xFFFU) & 0xFFFFF000;
+#endif
 
     romCopy(pGlobalimagetable, &_GlobalimagetableSegmentRomStart, size);
 
@@ -254,7 +272,14 @@ void texReset(void)
     gimgFixupGlobalimagetable((u8 *)pGlobalimagetable);
 #endif
 
+#ifdef PORT
+    /* GIMG_OFF is an N64 VMA (0x02000000 + segment offset). Store the
+     * host-side rebasing base at full pointer width and add the VMA token at
+     * the individual use sites. */
+    globalbank_rdram_offset = (uintptr_t)pGlobalimagetable - (uintptr_t)0x02000000u;
+#else
     globalbank_rdram_offset = (u32)pGlobalimagetable + 0xFE000000;
+#endif
     genericimage = (void *) (globalbank_rdram_offset + GIMG_OFF(s_genericimage));
     impactimages = (void *) (globalbank_rdram_offset + GIMG_OFF(s_impactimages));
     explosion_smokeimages = (void *) (globalbank_rdram_offset + GIMG_OFF(s_explosion_smokeimages));

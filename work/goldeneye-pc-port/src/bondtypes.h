@@ -3751,8 +3751,18 @@ typedef union
     typedef struct TankRecord
     {
         inherits ObjectRecord;
+#ifdef PORT
+        /*
+         * N64 layout: this 0x80 word is the first 32-bit word of an inline
+         * collision_data overlay; rect and unkA4..unkC0 provide the following
+         * 64 bytes. It was previously typed as collision_data*, which widened
+         * to 8 bytes on LP64 and shifted the overlay by four bytes.
+         */
+        s32 collision;      /* N64 0x80 collision_data.edges overlay */
+#else
         collision_data *collision /*0x80*/;
-        rect4f  rect;       /*0x84*/
+#endif
+        rect4f  rect;       /* N64 0x84, collision_data.polygon[0..3] */
         //s32 unk88;
         //s32 unk8C;
         //s32 unk90;

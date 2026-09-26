@@ -27,11 +27,11 @@
 /* --- Segment start/end getters (normally linker-script symbols) --------- */
 /* On the PC the ROM is loaded by romdata.c; these are unused. Return 0.   */
 
-u32 get_csegmentSegmentStart(void)   { return 0; }
-u32 get_cdataSegmentRomStart(void)   { return 0; }
-u32 get_cdataSegmentRomEnd(void)     { return 0; }
-u32 get_inflateSegmentRomStart(void) { return 0; }
-u32 get_inflateSegmentRomEnd(void)   { return 0; }
+void *get_csegmentSegmentStart(void)   { return NULL; }
+void *get_cdataSegmentRomStart(void)   { return NULL; }
+void *get_cdataSegmentRomEnd(void)     { return NULL; }
+void *get_inflateSegmentRomStart(void) { return NULL; }
+void *get_inflateSegmentRomEnd(void)   { return NULL; }
 
 /*
  * Linker segment boundary symbols.
@@ -59,7 +59,7 @@ u32 *_gameSegmentVaddrEnd        = NULL;
 
 /* --- Decompressor (src/inflate, not built for PC) ----------------------- */
 /* init() calls this to unpack the data segment. Unused on the PC.         */
-u32 jump_decompressfile(u32 source, u32 target, u32 buffer)
+u32 jump_decompressfile(void *source, void *target, void *buffer)
 {
     (void)source; (void)target; (void)buffer;
     return 0;

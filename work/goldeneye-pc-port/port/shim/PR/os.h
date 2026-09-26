@@ -29,9 +29,10 @@
 
 #if defined(PORT)
 #    include "include/PR/os.h"
+#    include <stdint.h>
 
 #    undef OS_K0_TO_PHYSICAL
-#    define OS_K0_TO_PHYSICAL(x) ((u32)((char *)(x) - 0x70000000))
+#    define OS_K0_TO_PHYSICAL(x) ((u32)((uintptr_t)(x) - (uintptr_t)0x70000000u))
 
 #    undef OS_PHYSICAL_TO_K0
 #    define OS_PHYSICAL_TO_K0(x) ((void *)(x))

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <SDL_atomic.h>
 
 #if defined(_WIN32)
 #include <direct.h>
@@ -342,17 +343,26 @@ void videoRequestLiveConfig(void)
  * SDL_SetWindowFullscreen pump the Win32 message loop and must run on the
  * window's creating thread. The overlay posts a request here; the host-thread
  * event pump drains it in videoDrainWindowRequests(). */
-static volatile int winReqKind = 0;          /* 0 none, 1 resize, 2 fullscreen */
-static volatile int winReqA = 0, winReqB = 0;
+static SDL_SpinLock winReqLock = 0;
+static int winReqKind = 0;          /* 0 none, 1 resize, 2 fullscreen */
+static int winReqA = 0, winReqB = 0;
 
 void videoRequestWindowSize(int w, int h)
 {
-    winReqA = w; winReqB = h; winReqKind = 1;
+    SDL_AtomicLock(&winReqLock);
+    winReqA = w;
+    winReqB = h;
+    winReqKind = 1;
+    SDL_AtomicUnlock(&winReqLock);
 }
 
 void videoRequestFullscreen(int on)
 {
-    winReqA = on ? 1 : 0; winReqKind = 2;
+    SDL_AtomicLock(&winReqLock);
+    winReqA = on ? 1 : 0;
+    winReqB = 0;
+    winReqKind = 2;
+    SDL_AtomicUnlock(&winReqLock);
 }
 
 void videoGetWindowSize(int *w, int *h)
@@ -370,7 +380,7 @@ void videoGetDesktopSize(int *w, int *h)
     SDL_DisplayMode m;
     memset(&m, 0, sizeof(m));
     if (SDL_GetDesktopDisplayMode(0, &m) != 0 || m.w <= 0 || m.h <= 0) {
-        m.w = 1920; m.h = 1080;
+        m.w = GE_NATIVE_W; m.h = GE_NATIVE_H;
     }
     if (w) *w = m.w;
     if (h) *h = m.h;
@@ -384,15 +394,20 @@ int videoIsFullscreen(void)
 
 static void videoDrainWindowRequests(void)
 {
-    int kind = winReqKind;
+    int kind, a, b;
+    SDL_AtomicLock(&winReqLock);
+    kind = winReqKind;
+    a = winReqA;
+    b = winReqB;
+    winReqKind = 0;
+    SDL_AtomicUnlock(&winReqLock);
+
     if (!kind || !wmAPI) {
-        winReqKind = 0;
         return;
     }
-    winReqKind = 0;
 
     if (kind == 1) {
-        int w = winReqA, h = winReqB;
+        int w = a, h = b;
         int32_t px = 100, py = 100;
         if (wmAPI->get_fullscreen_state && wmAPI->get_fullscreen_state()) {
             if (wmAPI->set_fullscreen) wmAPI->set_fullscreen(false);
@@ -408,7 +423,7 @@ static void videoDrainWindowRequests(void)
         cfgWinW = w; cfgWinH = h;
         sysLogPrintf(LOG_INFO, "video: window -> %dx%d", w, h);
     } else if (kind == 2) {
-        int on = winReqA;
+        int on = a;
         if (wmAPI->set_fullscreen) wmAPI->set_fullscreen(on != 0);
         gfx_sdl_update_cached_size();
         cfgFullscreen = on ? 1 : 0;

@@ -2407,6 +2407,19 @@ struct player
    * `model` now a full inline `struct Model` that gap no longer even sits
    * clear of the struct. Give it its own generously-sized buffer. */
   u32 gaitRwData[256];
+
+  /*
+   * Host-width mirrors for N64 fields that are semantically pointers but must
+   * stay 32-bit in the retail-layout portion of struct player. Appending these
+   * fields keeps every existing N64 offset stable while avoiding LP64 pointer
+   * truncation in the camera path.
+   */
+  Mtx   *port_field_5C;
+  Mtx   *port_field_60;
+  Mtxf  *port_field_64;
+  Mtxf  *port_field_68;
+  Mtx   *port_field_10E0;
+  LookAt *port_field_10E4;
 #endif
 };
 
@@ -2887,8 +2900,17 @@ f32 bondviewGetPlayerYawRadians(void);
 Mtxf *camGetWorldToScreenMtxf(void);
 void transformAndNormalizeByLength2Dto3D(struct coord2d *in, coord3d *out, f32 value);
 void bondviewTransformManyPosToViewMatrix(RenderPosView *arg0, s32 arg1);
-s32 sub_GAME_7F078474(void);
+#ifdef PORT
+void set_BONDdata_field_10E0(Mtx *arg0);
+Mtx *get_BONDdata_field_10E0(void);
+void sub_GAME_7F078464(LookAt *arg0);
+LookAt *sub_GAME_7F078474(void);
+#else
+void set_BONDdata_field_10E0(s32 arg0);
 s32 get_BONDdata_field_10E0(void);
+void sub_GAME_7F078464(s32 arg0);
+s32 sub_GAME_7F078474(void);
+#endif
 Mtx *currentPlayerGetProjectionMatrix(void);
 Gfx *bondviewRenderProp(PropRecord *arg0, Gfx *arg1, s32 arg2);
 f32 getPlayer_c_lodscalez(void);

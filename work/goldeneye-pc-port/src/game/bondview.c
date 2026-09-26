@@ -821,6 +821,15 @@ Mtx *currentPlayerGetProjectionMatrix(void) {
     return g_CurrentPlayer->projmatrix;
 }
 
+#ifdef PORT
+void set_BONDdata_field_10E0(Mtx *arg0) {
+    g_CurrentPlayer->port_field_10E0 = arg0;
+}
+
+Mtx *get_BONDdata_field_10E0(void) {
+    return g_CurrentPlayer->port_field_10E0;
+}
+#else
 void set_BONDdata_field_10E0(s32 arg0) {
     g_CurrentPlayer->field_10E0 = arg0;
 }
@@ -828,10 +837,12 @@ void set_BONDdata_field_10E0(s32 arg0) {
 s32 get_BONDdata_field_10E0(void) {
     return g_CurrentPlayer->field_10E0;
 }
+#endif
 
 void *currentPlayerSetMatrix10CC(Mtxf *matrix) {
     g_CurrentPlayer->field_10E8 = g_CurrentPlayer->field_10CC;
     g_CurrentPlayer->field_10CC = matrix;
+    return matrix;
 }
 
 Mtxf *camGetWorldToScreenMtxf(void) {
@@ -871,6 +882,16 @@ Mtxf *currentPlayerGetMatrix10EC(void) {
     return g_CurrentPlayer->field_10EC;
 }
 
+#ifdef PORT
+void sub_GAME_7F078464(LookAt *arg0) {
+    g_CurrentPlayer->port_field_10E4 = arg0;
+}
+
+LookAt *sub_GAME_7F078474(void)
+{
+    return g_CurrentPlayer->port_field_10E4;
+}
+#else
 void sub_GAME_7F078464(s32 arg0) {
     g_CurrentPlayer->field_10E4 = arg0;
 }
@@ -879,6 +900,7 @@ s32 sub_GAME_7F078474(void)
 {
     return g_CurrentPlayer->field_10E4;
 }
+#endif
 
 f32 getPlayer_c_lodscalez(void)
 {

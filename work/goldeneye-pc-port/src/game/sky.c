@@ -3,6 +3,7 @@
 #ifdef PORT
 #include <stdio.h>
 #include <stdlib.h>
+#include "port_math.h"
 #endif
 #include "sky.h"
 #include "player.h"

@@ -2160,6 +2160,8 @@ void explosionCreateBulletImpact(struct coord3d *pos, struct coord3d *arg1, s16 
                 osSyncPrintf("Wallhit colour %d not implemented, substituting black\n", sp50->apptype);
 #endif
                 var_s0 = 0;
+                sp61 = 0;
+                sp62 = 0;
             break;
 
             case 1:

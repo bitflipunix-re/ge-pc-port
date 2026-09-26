@@ -8421,10 +8421,17 @@ void bondviewUpdateCameraMatrices(coord3d* cam_pos, coord3d* cam_look_dir, coord
     i = bondviewGetCurrentPlayersRoom();
     bondviewUpdateCurrentRoomPosition(i);
 
+#ifdef PORT
+    g_CurrentPlayer->port_field_5C = dynAllocateMatrix();
+    g_CurrentPlayer->port_field_60 = dynAllocateMatrix();
+    g_CurrentPlayer->port_field_64 = (Mtxf *)dynAllocateMatrix();
+    g_CurrentPlayer->port_field_68 = (Mtxf *)dynAllocateMatrix();
+#else
     g_CurrentPlayer->field_5C = dynAllocateMatrix();
     g_CurrentPlayer->field_60 = dynAllocateMatrix();
     g_CurrentPlayer->field_64 = dynAllocateMatrix();
     g_CurrentPlayer->field_68 = dynAllocateMatrix();
+#endif
 
     lookat = dynAllocateLights(2);
 
@@ -8448,6 +8455,17 @@ void bondviewUpdateCameraMatrices(coord3d* cam_pos, coord3d* cam_look_dir, coord
         clpos.x, clpos.y, clpos.z,
         cam_up->x, cam_up->y, cam_up->z);
 
+#ifdef PORT
+    matrix_4x4_set_lookat(g_CurrentPlayer->port_field_64,
+        cam_pos->x, cam_pos->y, cam_pos->z,
+        cam_look_dir->x, cam_look_dir->y, cam_look_dir->z,
+        cam_up->x, cam_up->y, cam_up->z);
+
+    matrix_4x4_set_basis_and_position(g_CurrentPlayer->port_field_68,
+        cam_pos->x, cam_pos->y, cam_pos->z,
+        cam_look_dir->x, cam_look_dir->y, cam_look_dir->z,
+        cam_up->x, cam_up->y, cam_up->z);
+#else
     matrix_4x4_set_lookat((Mtxf*) g_CurrentPlayer->field_64,
         cam_pos->x, cam_pos->y, cam_pos->z,
         cam_look_dir->x, cam_look_dir->y, cam_look_dir->z,
@@ -8457,6 +8475,7 @@ void bondviewUpdateCameraMatrices(coord3d* cam_pos, coord3d* cam_look_dir, coord
         cam_pos->x, cam_pos->y, cam_pos->z,
         cam_look_dir->x, cam_look_dir->y, cam_look_dir->z,
         cam_up->x, cam_up->y, cam_up->z);
+#endif
 
     temp_s0 = dynAllocateMatrix();
 
@@ -8479,11 +8498,26 @@ void bondviewUpdateCameraMatrices(coord3d* cam_pos, coord3d* cam_look_dir, coord
 	}
 
     guMtxF2L((f32 (*)[4]) &sp60, temp_s0);
+#ifdef PORT
+    set_BONDdata_field_10E0(temp_s0);
+#else
     set_BONDdata_field_10E0((s32) temp_s0);
+#endif
 
     scale = bgGetLevelVisibilityScale();
 
     matrix_scalar_multiply(scale, spC4.m[0]);
+#ifdef PORT
+    guMtxF2L((f32 (*)[4]) &spC4, g_CurrentPlayer->port_field_5C);
+    sub_GAME_7F059334((s32 *)g_CurrentPlayer->port_field_5C, (s32 *)g_CurrentPlayer->port_field_60);
+
+    currentPlayerSetMatrix10C8(g_CurrentPlayer->port_field_5C);
+    currentPlayerSetMatrix10C4(g_CurrentPlayer->port_field_60);
+    currentPlayerSetMatrix10CC(g_CurrentPlayer->port_field_64);
+    currentPlayerSetViewToWorldMtxf(g_CurrentPlayer->port_field_68);
+
+    sub_GAME_7F078464(lookat);
+#else
     guMtxF2L((f32 (*)[4]) &spC4, (Mtx* ) g_CurrentPlayer->field_5C);
     sub_GAME_7F059334((s32* ) g_CurrentPlayer->field_5C, (s32* ) g_CurrentPlayer->field_60);
 
@@ -8493,6 +8527,7 @@ void bondviewUpdateCameraMatrices(coord3d* cam_pos, coord3d* cam_look_dir, coord
     currentPlayerSetViewToWorldMtxf((Mtxf* ) g_CurrentPlayer->field_68);
 
     sub_GAME_7F078464((s32) lookat);
+#endif
     bondviewUpdateFrustumPlanes();
     store_BONDdata_curpos_to_previous();
 }
@@ -10357,7 +10392,7 @@ Gfx *sub_GAME_7F08AAE8(Gfx *gdl)
     f32 theta_x;
     s32 debug_boxbottom;
     s32 pad;
-    s32 *roomid;
+    char *roomid;
     s32 debug_angle;
     DirectionLabels directions;
 
@@ -11171,7 +11206,11 @@ Gfx *bondviewRenderProp(PropRecord *arg0, Gfx *arg1, s32 arg2)
  */
 Gfx* bondviewGfxPlayerField5cMatrix(Gfx* gdl)
 {
+#ifdef PORT
+    gSPMatrix(gdl++, g_CurrentPlayer->port_field_5C, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+#else
     gSPMatrix(gdl++, g_CurrentPlayer->field_5C, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+#endif
     return gdl;
 }
 
@@ -11270,7 +11309,11 @@ void sub_GAME_7F08BEEC(Mtxf *matrices, s32 count)
 
     for (i = 0, j = 0; i < count; i++, j += sizeof(Mtxf))
     {
+#ifdef PORT
+        matrix_4x4_multiply_homogeneous(currentPlayerGetViewToWorldMtxf(), (Mtxf *)((uintptr_t)matrices + (uintptr_t)j), &sp40);
+#else
         matrix_4x4_multiply_homogeneous(currentPlayerGetViewToWorldMtxf(), (Mtxf *)((u32)matrices + j), &sp40);
+#endif
 
         sp40.m[3][0] -= g_CurrentPlayer->current_model_pos.f[0];
         sp40.m[3][1] -= g_CurrentPlayer->current_model_pos.f[1];

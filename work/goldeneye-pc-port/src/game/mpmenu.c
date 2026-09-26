@@ -343,7 +343,7 @@ void mpCalculateAwards(bool gameoverdelay)
     s32 prev_player_num;
     s32 duration;
 
-    struct AwardMetrics metrics[4];
+    struct AwardMetrics metrics[4] = {0};
 
     player_count = getPlayerCount();
     duration = getMissiontimer();
@@ -970,29 +970,29 @@ void write_playerrank_to_buffer(char *buffer, s32 playernum)
     switch (j)
     {
         case 0:
-            sprintf(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_11_RANK1ST))); /* Rank: 1st */
+            strcpy(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_11_RANK1ST))); /* Rank: 1st */
             break;
         case 1:
-            sprintf(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_12_RANK2ND))); /* Rank: 2nd */
+            strcpy(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_12_RANK2ND))); /* Rank: 2nd */
             break;
         case 2:
             if ((scenario != SCENARIO_2v2) && (scenario != SCENARIO_2v1))
             {
-                sprintf(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_13_RANK3RD))); /* Rank: 3rd */
+                strcpy(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_13_RANK3RD))); /* Rank: 3rd */
             }
             else
             {
-                sprintf(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_12_RANK2ND))); /* Rank: 2nd */
+                strcpy(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_12_RANK2ND))); /* Rank: 2nd */
             }
             break;
         case 3:
             if (scenario != SCENARIO_3v1)
             {
-                sprintf(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_14_RANK4TH))); /* Rank: 4th */
+                strcpy(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_14_RANK4TH))); /* Rank: 4th */
             }
             else
             {
-                sprintf(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_12_RANK2ND))); /* Rank: 2nd */
+                strcpy(buffer, langGet(getStringID(LMPMENU, MPMENU_STR_12_RANK2ND))); /* Rank: 2nd */
             }
             break;
     }
@@ -1082,7 +1082,7 @@ Gfx *mp_watch_menu_display(Gfx *gdl)
     char rankbuffer[4];
 #endif
     s32 two_player_x_offset;
-    char *text;
+    char *text = (char *)ascii_MP_watch_menu_BLANK;
     s32 scores[4];
     s32 i;
     TEXTCOLORS current_colour;

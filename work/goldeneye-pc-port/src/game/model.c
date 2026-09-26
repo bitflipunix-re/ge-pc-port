@@ -3582,7 +3582,7 @@ void modelTickAnim(struct Model *model, s32 numticks, s32 update_chrstuff)
             f32 playspeed;
             f32 speed;
             f32 limit;
-            f32 endframe;
+            f32 endframe = model->endframe;
             f32 saved_newspeed;
             f32 saved_oldspeed;
             f32 saved_timespeed;
@@ -5916,7 +5916,7 @@ s32 sub_GAME_7F074CAC(Model *model, ModelNode *node, coord3d *raypos, coord3d *r
     ModelOp17MainStack rayData[1];
     f32 centerProjection;
     Mtxf *otherNodeMtx;
-    ModelOp17AxisStack axisData[1];
+    ModelOp17AxisStack axisData[1] = {0};
     f32 scaledProjection;
     f32 projectionScalar;
     f32 secondAxisScale;
@@ -6150,7 +6150,11 @@ u32 modelFindNextProjectileHitCandidate(Model *model, coord3d *arg1, coord3d *ar
 u32 *sub_GAME_7F07549C(void *arg0, f32 *arg1, f32 *arg2, ModelNode **nodeptr)
 {
     *nodeptr = NULL;
+#ifdef PORT
+    return (u32 *)(uintptr_t)modelFindNextProjectileHitCandidate(arg0, arg1, arg2, nodeptr);
+#else
     return modelFindNextProjectileHitCandidate(arg0, arg1, arg2, nodeptr);
+#endif
 }
 
 
@@ -6220,21 +6224,28 @@ void modelResetAnimationsScratchBuffer(void)
 }
 
 
+#ifdef PORT
+#define PROMOTE(var) \
+    if (var) \
+        var = (void *)((uintptr_t)(var) + diff)
+
+/* Vertex.LinkedTo remains a 32-bit N64 address token by design. */
+#define PROMOTE32(var) \
+    if (var) \
+        var = (u32)((uintptr_t)(var) + diff)
+
+void modelPromoteNodeOffsetsToPointers(ModelNode *node, uintptr_t vma, uintptr_t fileramaddr)
+{
+    intptr_t diff = (intptr_t)fileramaddr - (intptr_t)vma;
+#else
 #define PROMOTE(var) \
     if (var) \
         var = (void *)((u32)var + diff)
 
-#ifdef PORT
-/* PC port (D43/D45): Vertex.LinkedTo is a raw vma (u32), not a pointer —
- * rebases the same way, keeps sizeof(Vertex) at 16 bytes. */
-#define PROMOTE32(var) \
-    if (var) \
-        var = (u32)((u32)var + diff)
-#endif
-
 void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr)
 {
     s32 diff = fileramaddr - vma;
+#endif
     s32 i;
 
     while (node)
@@ -6436,8 +6447,13 @@ void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr
 /**
  * Address 7F075A90.
 */
+#ifdef PORT
+void sub_GAME_7F075A90(ModelFileHeader *header, uintptr_t vma, uintptr_t addr) {
+    intptr_t diff = (intptr_t)addr - (intptr_t)vma;
+#else
 void sub_GAME_7F075A90(ModelFileHeader *header, s32 vma, u32 addr) {
     s32 diff = addr - vma;
+#endif
     s32 i;
 
     for(i = 0;i < header->numSwitches;i++)

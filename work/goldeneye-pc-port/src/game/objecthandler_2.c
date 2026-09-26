@@ -14,6 +14,7 @@
 #ifdef PORT
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "pcmodels.h" /* D50: PC-layout model sidecars (Plan B, D48/D49) */
 #include "pccg.h"     /* D69: PC-layout bg/stan sidecars */
 extern resource_lookup_data_entry resource_lookup_data_array[]; /* ob.c */
@@ -28,6 +29,93 @@ extern resource_lookup_data_entry resource_lookup_data_array[]; /* ob.c */
 */
 void sub_GAME_7F0762E0(ModelFileHeader *objheader, u8 *name, u8 *dst, struct texpool *buffer)
 {
+#ifdef PORT
+    ModelNode *node = NULL;
+    Gfx *gdl = NULL;
+    const s32 filenum = fileGetIndex((char *)name);
+    const s32 romremaining = get_rom_remaining_buffer_for_index(filenum);
+    const s32 pcremaining = get_pc_remaining_buffer_for_index(filenum);
+    const uintptr_t filebase = (uintptr_t)objheader->Switches;
+
+    modelIterateDisplayLists(objheader, &node, &gdl);
+
+    if (gdl != NULL)
+    {
+        const uintptr_t first_offset = (uintptr_t)gdl & (uintptr_t)0x00ffffffu;
+        uintptr_t replacementgdl = (uintptr_t)gdl;
+        const intptr_t delta = (intptr_t)romremaining - (intptr_t)pcremaining;
+
+        if ((s32)first_offset > pcremaining)
+        {
+            fprintf(stderr,
+                    "objecthandler: invalid first GDL offset 0x%lx (pc remaining=%d) for %s\n",
+                    (unsigned long)first_offset, pcremaining, (const char *)name);
+            return;
+        }
+
+        const size_t tail_bytes = (size_t)pcremaining - (size_t)first_offset;
+        const uintptr_t source_addr = filebase + first_offset;
+        const uintptr_t shifted_addr = (uintptr_t)((intptr_t)source_addr + delta);
+
+        texCopyGdls((Gfx *)source_addr, (Gfx *)shifted_addr, (s32)tail_bytes);
+        texLoadFromModelFileHeader(objheader, buffer);
+
+        if (node != NULL)
+        {
+            do
+            {
+                ModelNode *curnode = node;
+                Gfx *curgdl = gdl;
+                size_t gdl_bytes;
+
+                modelIterateDisplayLists(objheader, &node, &gdl);
+
+                if (gdl != NULL)
+                {
+                    const uintptr_t cur = (uintptr_t)curgdl;
+                    const uintptr_t nxt = (uintptr_t)gdl;
+                    if (nxt < cur)
+                    {
+                        fprintf(stderr, "objecthandler: non-monotonic GDL range for %s\n", (const char *)name);
+                        return;
+                    }
+                    gdl_bytes = (size_t)(nxt - cur);
+                }
+                else
+                {
+                    const uintptr_t cur_offset = (uintptr_t)curgdl & (uintptr_t)0x00ffffffu;
+                    if ((s32)cur_offset > pcremaining)
+                    {
+                        fprintf(stderr,
+                                "objecthandler: invalid GDL offset 0x%lx (pc remaining=%d) for %s\n",
+                                (unsigned long)cur_offset, pcremaining, (const char *)name);
+                        return;
+                    }
+                    gdl_bytes = (size_t)pcremaining - (size_t)cur_offset;
+                }
+
+                modelNodeReplaceGdl((u32)(uintptr_t)objheader, curnode, curgdl, (Gfx *)replacementgdl);
+
+                const uintptr_t cur_source =
+                    filebase + ((uintptr_t)curgdl & (uintptr_t)0x00ffffffu) + (uintptr_t)delta;
+                const uintptr_t replacement_dest =
+                    filebase + (replacementgdl & (uintptr_t)0x00ffffffu);
+
+                replacementgdl += (uintptr_t)texLoadFromGdl(
+                    (Gfx *)cur_source,
+                    (s32)gdl_bytes,
+                    (Gfx *)replacement_dest,
+                    buffer);
+            }
+            while (node != NULL);
+        }
+
+        const u32 final_size =
+            (u32)((replacementgdl & (uintptr_t)0x00ffffffu) + 0x0fu) & ~0x0fu;
+        fileSetSize(filenum, (u8 *)filebase, final_size, dst == 0);
+    }
+#else
+
     ModelNode *node;
     s32 romremaining;
     Gfx *gdl;
@@ -88,9 +176,9 @@ void sub_GAME_7F0762E0(ModelFileHeader *objheader, u8 *name, u8 *dst, struct tex
 
         fileSetSize(filenum, (u8 *) filedata, (((s32) name + 0xf) & (~0xf)), dst == 0);
     }
+
+#endif
 }
-
-
 /***
  * NTSC addres 0x7F0764A4.
 */
@@ -147,7 +235,11 @@ void load_object_fill_header(struct ModelFileHeader *objheader, u8 *name, u8* ds
         fflush(stderr);
     }
 #endif
+#ifdef PORT
+    sub_GAME_7F075A90(objheader, (uintptr_t)0x5000000u, (uintptr_t)filedata);
+#else
     sub_GAME_7F075A90(objheader, 0x5000000, filedata);
+#endif
     sub_GAME_7F0762E0(objheader, name, dst, buffer);
 }
 

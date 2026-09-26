@@ -1227,7 +1227,7 @@ Gfx *frontDrawCursor(Gfx *DL)
 {
     f32 xypos[2];
     f32 halfedxy[2];
-    sImageTableEntry *image;
+    sImageTableEntry *image = crosshairimage;
     s32 unused;
     s32 option;
 
@@ -2524,6 +2524,7 @@ s32 interface_menu05_fileselect(void)
     {
         frontChangeMenu(MENU_LEGAL_SCREEN, TRUE);
     }
+    return 0;
 }
 
 
@@ -3470,6 +3471,7 @@ Gfx *constructor_menu07_missionsel(Gfx *DL)
 
     DL = frontAddPreviousTabText(DL);
     DL = frontDrawCursor(DL);
+    return DL;
 }
 
 
@@ -6869,7 +6871,7 @@ const struct MatchHack_front_rodata_3000 asc_D_80050C54 = { "\n" };
 
 Gfx *constructor_menu0A_briefing(Gfx *DL)
 {
-    u8 *spC0C;
+    u8 *spC0C = (u8 *)"";
     s32 spC08;
     s32 spC04;
     struct MatchHack_front_rodata_3000 sp4C;
@@ -7395,7 +7397,7 @@ Gfx *constructor_menu0D_missioncomplete(Gfx *DL)
                     sprintf(stagename, "     (%s  %02d:%02d)", langGet(getStringID(LTITLE, TITLE_STR_273_BESTTIME)), besttime / 60, besttime % 60); //Best Time:
                 }
                 else {
-                    sprintf(stagename, "");
+                    stagename[0] = '\0';
                 }
                 DL = frontPrintText(DL, &x, &y, stagename, ptrFontZurichBoldChars, ptrFontZurichBold, 0xFF, viGetX(), viGetY(), 0, 0);
             }
@@ -7513,6 +7515,7 @@ Gfx *constructor_menu0D_missioncomplete(Gfx *DL)
     DL = frontAddNextTabText(DL);
     DL = frontAddPreviousTabText(DL);
     DL = frontDrawCursor(DL);
+    return DL;
 }
 
 

@@ -118,10 +118,15 @@ uint32_t pcmodelsReserveSize(const uint8_t *romImg)
         sysLogPrintf(LOG_ERROR, "pcmodels: cannot open %s", s_binPath);
         return 0;
     }
-    uint32_t size = (uint32_t)fsSize(f);
+    int32_t fileSize = fsSize(f);
     fsClose(f);
-    s_total = size;
-    return size;
+    if (fileSize <= 0) {
+        sysLogPrintf(LOG_ERROR, "pcmodels: invalid or empty sidecar %s", s_binPath);
+        s_total = 0;
+        return 0;
+    }
+    s_total = (uint32_t)fileSize;
+    return s_total;
 }
 
 int pcmodelsLoadSidecars(uintptr_t cartBase, uint32_t romSize)
@@ -150,7 +155,12 @@ int pcmodelsLoadSidecars(uintptr_t cartBase, uint32_t romSize)
         return 0;
     }
     int32_t msize = fsSize(f);
-    char *buf = (char *)malloc((unsigned long long)(msize > 0 ? msize + 1 : 1));
+    if (msize <= 0) {
+        fsClose(f);
+        sysLogPrintf(LOG_ERROR, "pcmodels: invalid manifest size for %s", s_manPath);
+        return 0;
+    }
+    char *buf = (char *)malloc((unsigned long long)msize + 1ull);
     if (!buf) {
         fsClose(f);
         return 0;
@@ -182,8 +192,18 @@ int pcmodelsLoadSidecars(uintptr_t cartBase, uint32_t romSize)
         }
         struct pcmodelsRow *r = &s_rows[s_rowCount];
         snprintf(r->name, sizeof(r->name), "%s", line);
-        r->offset = (uint32_t)strtol(c1 + 1, NULL, 10);
-        r->size   = (uint32_t)strtol(c2 + 1, NULL, 10);
+        char *end1 = NULL;
+        char *end2 = NULL;
+        unsigned long long off = strtoull(c1 + 1, &end1, 10);
+        unsigned long long len = strtoull(c2 + 1, &end2, 10);
+        if (!end1 || end1 == c1 + 1 || *end1 != '\0' ||
+            !end2 || end2 == c2 + 1 || *end2 != '\0' ||
+            off > s_total || len > (unsigned long long)s_total - off) {
+            sysLogPrintf(LOG_WARNING, "pcmodels: ignoring invalid manifest row '%s'", line);
+            continue;
+        }
+        r->offset = (uint32_t)off;
+        r->size   = (uint32_t)len;
         s_rowCount++;
     }
     free(buf);
