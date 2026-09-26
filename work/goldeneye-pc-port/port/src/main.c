@@ -32,6 +32,7 @@
 #include "input.h"
 #include "mixer.h"
 #include "crash.h"
+#include "benchmark.h"
 #include "thread_config.h"
 #include "game/language.h" /* D295/M-148: JPN glyph-cache types + j_text_trigger */
 
@@ -71,7 +72,14 @@ static void portPrintHelp(const char *argv0)
            "                    (removes ge007.eep save and ge007.ini; the\n"
            "                    ini is re-written with defaults on exit)\n"
            "  -level_XX         boot straight into a solo level (per-level\n"
-           "                    memory pools are auto-injected)\n\n"
+           "                    memory pools are auto-injected)\n"
+           "  --benchmark       record frame pacing/CPU/RAM telemetry and\n"
+           "                    exit automatically after the measured run\n"
+           "  --benchmark-seconds N   measured duration (default 20)\n"
+           "  --benchmark-warmup N    warmup after first rendered frame (default 5)\n"
+           "  --benchmark-timeout N   no-frame timeout (default 60)\n"
+           "  --benchmark-name NAME   scenario label written to the report\n"
+           "  --benchmark-out PATH    JSON result path (default ge007-benchmark.json)\n\n"
            "config: ge007.ini in the data dir (written on first run).\n\n"
            "solo levels (-level_XX):\n", argv0 ? argv0 : "ge007");
     for (size_t i = 0; i < sizeof(kSoloLevels) / sizeof(kSoloLevels[0]); ++i) {
@@ -199,6 +207,7 @@ int main(int argc, char **argv)
     audioInit();
     mixerInit();
     inputInit();
+    benchmarkInit();
 
     /* 4. Run the game. mainproc() runs as the N64 mainThread (a real OS
      *    thread with its own stack); it creates the rmon/idle/scheduler/
@@ -242,10 +251,16 @@ int main(int argc, char **argv)
      *    videoPumpEvents() exits the process on quit. */
     for (;;) {
         videoPumpEvents();
-        sysSleep(8);
+        benchmarkHostTick();
+        if (benchmarkDone()) {
+            benchmarkFinish();
+            break;
+        }
+        sysSleep(8000);
     }
 
-    /* Unreachable in practice; clean up if we ever get here. */
+    /* Benchmark mode reaches here after its requested measurement window;
+     * normal play still exits directly from videoPumpEvents(). */
     inputDestroy();
     mixerDestroy();
     audioDestroy();

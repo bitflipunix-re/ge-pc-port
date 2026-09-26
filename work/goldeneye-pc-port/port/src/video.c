@@ -32,6 +32,7 @@ extern void exit(int status);
 #include "damlab.h"
 #include "input.h"
 #include "optionsoverlay.h"
+#include "benchmark.h"
 #include "../include/crash.h"
 
 #if defined(__aarch64__)
@@ -1011,6 +1012,11 @@ void videoEndFrame(void)
         return;
     }
     gfx_end_frame();
+
+    /* Native benchmark hook: record the actual delivered frame cadence at
+     * the renderer boundary. The module is a no-op unless --benchmark was
+     * requested, so ordinary gameplay pays only one predictable branch. */
+    benchmarkFrame();
 
     ++frames;
     ++fpsNumFrames;
