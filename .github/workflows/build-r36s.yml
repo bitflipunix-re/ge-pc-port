@@ -1,6 +1,6 @@
 name: GoldenEye AArch64 R36S GLES Build
 
-# Discord build-feed smoke test; no build semantics changed.
+# Discord green-build + changelog end-to-end smoke test; no build semantics changed.
 
 on:
   push:

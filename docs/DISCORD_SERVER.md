@@ -270,8 +270,9 @@ Trigger chain:
 `push to main -> build-r36s.yml -> workflow_run completed -> discord-main-builds.yml -> #main-builds`
 
 It ignores:
+- failed or cancelled builds;
 - pull-request runs;
 - feature branches;
-- cancelled experimental work not originating from a main push.
+- experimental work not originating from a successful main push.
 
-This keeps #main-builds as the authoritative chronological record of the default branch rather than a firehose.
+Each successful post includes the verified commit, commit changelog (or changed-file fallback), diff statistics, artifact name, build-run link and commit link. This keeps #main-builds as the authoritative green-build/changelog record of the default branch rather than a firehose.
