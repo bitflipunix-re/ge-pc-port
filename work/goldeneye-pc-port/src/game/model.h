@@ -2,6 +2,9 @@
 #define _MODEL_H_
 
 #include <ultra64.h>
+#ifdef PORT
+#include <stdint.h>
+#endif
 #include <bondtypes.h>
 #include "bondconstants.h"
 
@@ -122,8 +125,13 @@ void sub_GAME_7F074534(ModelRenderData* data, Model* model, ModelNode* node);
 void subdraw(ModelRenderData *arg0, struct Model *);
 s32 loadAnimationFrame(ModelAnimation* anim, s32 frame, ModelSkeleton* unused);
 void modelResetAnimationsScratchBuffer(void);
+#ifdef PORT
+void modelPromoteNodeOffsetsToPointers(ModelNode *node, uintptr_t vma, uintptr_t fileramaddr);
+void sub_GAME_7F075A90(ModelFileHeader *header, uintptr_t vma, uintptr_t addr);
+#else
 void modelPromoteNodeOffsetsToPointers(ModelNode *node, u32 vma, u32 fileramaddr);
 void sub_GAME_7F075A90(ModelFileHeader *header, s32 vma, u32 addr);
+#endif
 s32 modelCalculateRwDataIndexes(ModelNode *basenode);
 void modelCalculateRwDataLen(struct ModelFileHeader *objheader);
 void modelInitRwData(Model *model, ModelNode *startnode);
