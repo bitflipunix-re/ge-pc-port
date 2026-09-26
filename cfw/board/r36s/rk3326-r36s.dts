@@ -29,9 +29,14 @@
 		compatible = "gpio-mux";
 		#mux-control-cells = <0>;
 
-		/* Exact G80CA single-ADC mux select lines. */
-		mux-gpios = <&gpio2 RK_PC0 GPIO_ACTIVE_LOW>,
-			    <&gpio2 RK_PB7 GPIO_ACTIVE_LOW>;
+		/*
+		 * The vendor joypad driver used raw GPIO values and ignored its
+		 * ACTIVE_LOW flags. gpio-mux honors polarity and maps descriptor 0
+		 * to selector bit 0, so list B first then A as active-high to
+		 * reproduce the vendor electrical truth table exactly.
+		 */
+		mux-gpios = <&gpio2 RK_PB7 GPIO_ACTIVE_HIGH>,
+			    <&gpio2 RK_PC0 GPIO_ACTIVE_HIGH>;
 	};
 
 	joystick_mux: adc-mux {
@@ -42,6 +47,7 @@
 
 		mux-controls = <&joystick_mux_controller>;
 		channels = "0", "1", "2", "3";
+		settle-time-us = <20>;
 	};
 
 	analog_sticks: adc-joystick {
