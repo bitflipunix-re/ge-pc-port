@@ -2131,6 +2131,22 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
     uint32_t tm = 0;
     uint32_t tex_width[2], tex_height[2], tex_width2[2], tex_height2[2];
 
+    /* Cortex-A35 hot path: texture coordinate denominators and N64 shift
+     * scales are invariant for all three vertices in this triangle. Compute
+     * them once per used texture instead of repeating floating-point divides
+     * for every vertex. */
+    float tex_u_scale[2] = { 1.0f / 32.0f, 1.0f / 32.0f };
+    float tex_v_scale[2] = { 1.0f / 32.0f, 1.0f / 32.0f };
+    float tex_u_bias[2] = { 0.0f, 0.0f };
+    float tex_v_bias[2] = { 0.0f, 0.0f };
+    float inv_tex_width[2] = { 0.0f, 0.0f };
+    float inv_tex_height[2] = { 0.0f, 0.0f };
+    float clamp_s_norm[2] = { 0.0f, 0.0f };
+    float clamp_t_norm[2] = { 0.0f, 0.0f };
+    const bool perspective_texcoords = (rdp.other_mode_h & G_TP_PERSP) != 0;
+    const bool linear_tex_filter =
+        (rdp.other_mode_h & (3U << G_MDSFT_TEXTFILT)) != G_TF_POINT;
+
     /* D74 (Video.WrapFix): per-texunit pre-wrap window. N64 wraps a render
      * tile's UVs at the TILE period (uls/ult + lrs/lrt window) when the tile
      * is a sub-region of the uploaded image; GL wraps at the full image size.
@@ -2181,6 +2197,29 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
 
             tex_width2[i] = (rdp.texture_tile[tile].lrs - rdp.texture_tile[tile].uls + 4) / 4;
             tex_height2[i] = (rdp.texture_tile[tile].lrt - rdp.texture_tile[tile].ult + 4) / 4;
+
+            const int shifts = rdp.texture_tile[tile].shifts;
+            const int shiftt = rdp.texture_tile[tile].shiftt;
+            if (shifts != 0) {
+                if (shifts <= 10) {
+                    tex_u_scale[i] /= (float)(1u << shifts);
+                } else {
+                    tex_u_scale[i] *= (float)(1u << (16 - shifts));
+                }
+            }
+            if (shiftt != 0) {
+                if (shiftt <= 10) {
+                    tex_v_scale[i] /= (float)(1u << shiftt);
+                } else {
+                    tex_v_scale[i] *= (float)(1u << (16 - shiftt));
+                }
+            }
+            tex_u_bias[i] = -(float)rdp.texture_tile[tile].uls / 4.0f;
+            tex_v_bias[i] = -(float)rdp.texture_tile[tile].ult / 4.0f;
+            inv_tex_width[i] = 1.0f / (float)tex_width[i];
+            inv_tex_height[i] = 1.0f / (float)tex_height[i];
+            clamp_s_norm[i] = ((float)tex_width2[i] - 0.5f) * inv_tex_width[i];
+            clamp_t_norm[i] = ((float)tex_height2[i] - 0.5f) * inv_tex_height[i];
 
             uint32_t tex_width1 = tex_width[i] << (cms & G_TX_MIRROR);
             uint32_t tex_height1 = tex_height[i] << (cmt & G_TX_MIRROR);
@@ -2238,12 +2277,11 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
             }
 
             if (rendering_state.textures[i]) {
-                bool linear_filter = (rdp.other_mode_h & (3U << G_MDSFT_TEXTFILT)) != G_TF_POINT;
-                if (linear_filter != rendering_state.textures[i]->second.linear_filter ||
+                if (linear_tex_filter != rendering_state.textures[i]->second.linear_filter ||
                     cms != rendering_state.textures[i]->second.cms || cmt != rendering_state.textures[i]->second.cmt) {
                     gfx_flush();
-                    gfx_rapi->set_sampler_parameters(i, linear_filter, cms, cmt, rdp.tex_lod);
-                    rendering_state.textures[i]->second.linear_filter = linear_filter;
+                    gfx_rapi->set_sampler_parameters(i, linear_tex_filter, cms, cmt, rdp.tex_lod);
+                    rendering_state.textures[i]->second.linear_filter = linear_tex_filter;
                     rendering_state.textures[i]->second.cms = cms;
                     rendering_state.textures[i]->second.cmt = cmt;
                 }
@@ -2415,28 +2453,8 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
             // TODO: fix this; for now just ignore smaller mips
             const uint32_t tile = gfx_lod_tile_offset(t);
 
-            float u = v_arr[i]->u / 32.0f;
-            float v = v_arr[i]->v / 32.0f;
-
-            int shifts = rdp.texture_tile[rdp.first_tile_index + tile].shifts;
-            int shiftt = rdp.texture_tile[rdp.first_tile_index + tile].shiftt;
-            if (shifts != 0) {
-                if (shifts <= 10) {
-                    u /= 1 << shifts;
-                } else {
-                    u *= 1 << (16 - shifts);
-                }
-            }
-            if (shiftt != 0) {
-                if (shiftt <= 10) {
-                    v /= 1 << shiftt;
-                } else {
-                    v *= 1 << (16 - shiftt);
-                }
-            }
-
-            u -= rdp.texture_tile[rdp.first_tile_index + tile].uls / 4.0f;
-            v -= rdp.texture_tile[rdp.first_tile_index + tile].ult / 4.0f;
+            float u = v_arr[i]->u * tex_u_scale[t] + tex_u_bias[t];
+            float v = v_arr[i]->v * tex_v_scale[t] + tex_v_bias[t];
 
             // D74 (Video.WrapFix, opt-in): pre-wrap UVs at the tile-window
             // period when the render tile is a sub-region of the uploaded
@@ -2463,20 +2481,20 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
             }
 
             if (!is_rect) {
-                if (!(rdp.other_mode_h & G_TP_PERSP)) {
+                if (!perspective_texcoords) {
                     u *= 0.5f;
                     v *= 0.5f;
                 }
 
-                if ((rdp.other_mode_h & (3U << G_MDSFT_TEXTFILT)) != G_TF_POINT) {
+                if (linear_tex_filter) {
                     // Linear filter adds 0.5f to the coordinates
                     u += 0.5f;
                     v += 0.5f;
                 }
             }
 
-            buf_vbo[buf_vbo_len++] = u / tex_width[t];
-            buf_vbo[buf_vbo_len++] = v / tex_height[t];
+            buf_vbo[buf_vbo_len++] = u * inv_tex_width[t];
+            buf_vbo[buf_vbo_len++] = v * inv_tex_height[t];
 
 #if defined(PORT) && defined(GE_DEV_PROBES)
             {
@@ -2499,10 +2517,10 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
             bool clampT = tm & (1 << (2 * t + 1));
 
             if (clampS) {
-                buf_vbo[buf_vbo_len++] = (tex_width2[t] - 0.5f) / tex_width[t];
+                buf_vbo[buf_vbo_len++] = clamp_s_norm[t];
             }
             if (clampT) {
-                buf_vbo[buf_vbo_len++] = (tex_height2[t] - 0.5f) / tex_height[t];
+                buf_vbo[buf_vbo_len++] = clamp_t_norm[t];
             }
         }
 
