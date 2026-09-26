@@ -1690,6 +1690,12 @@ void lvlUnloadStageTextData(void)
     cleanupObjectives();
     cleanupSFXRelated();
     cleanupplayersoundrelated();
+#ifdef PORT
+    /* Final catch-all after the game-specific owners have released their
+     * sounds: serialize a complete SFX-player reset on the audio thread so
+     * no stage-owned voice/retrigger/event can accumulate into later levels. */
+    sndPortFlushStageSfx();
+#endif
     set_missionstate_zero();
     cleanup_rooms();
 #ifdef PORT
