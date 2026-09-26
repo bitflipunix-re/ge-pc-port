@@ -1,40 +1,102 @@
 # R36S CFW
 
-Private-development firmware work for the RK3326/Mali-G31 R36S target.
+Private-development firmware for the exact handheld identified by the hardware probe as:
+
+`G80CA-MB V1.2-20250422 Panel 8`
+
+This is no longer treated as a generic R36S/Panel-4 target.
 
 ## Locked baseline
 
 - Architecture: AArch64
 - SoC: Rockchip RK3326
-- GPU: Mali-G31 MP2
+- GPU: Mali-G31
 - Kernel: Linux 6.12.111 LTS
 - GPU kernel driver: Panfrost
 - Mesa: 26.2.3
 - Root filesystem builder: Buildroot 2026.08
+- C library: glibc
 - Display path: Rockchip DRM/KMS -> GBM/EGL
-- Initial userspace: BusyBox + diagnostics
-- Initial bootloader policy: keep the known-good R36S boot chain until the kernel/rootfs/display stack is proven
+- Initial userspace: BusyBox + hardware diagnostics
+- Initial bootloader policy: keep the known-good installed R36S SPL/U-Boot until the new kernel/rootfs/display stack is proven
 
-No X11, Wayland compositor, EmulationStation, RetroArch, PortMaster, GL4ES, or game runtime is part of milestone 0.
+No X11 desktop, Wayland compositor, EmulationStation, RetroArch, PortMaster or GL4ES is required for the bring-up image.
 
-## Milestone 0: first controlled boot
+## Current milestone status
 
-The first image is successful when it:
+### Kernel / board layer — compiled and validated
 
-1. boots Linux 6.12.111 on the R36S;
-2. mounts the minimal root filesystem;
-3. exposes the eMMC/SD, input, thermal and power interfaces needed for bring-up;
-4. initializes Rockchip DRM/KMS and the 640x480 panel;
-5. binds Panfrost to the Mali-G31 and creates /dev/dri/card0 plus a render node;
-6. records a complete boot log and hardware report.
+The exact-board CI build passes for:
 
-Mesa is milestone 1. A launcher and game ports are later milestones.
+- Linux 6.12.111;
+- exact G80CA Panel-8 board verifier;
+- RK3326 device tree;
+- captured KD35T133-compatible Panel-8 DSI program;
+- Rockchip DRM/KMS;
+- Panfrost;
+- DSI PHY;
+- RK817 PMIC/regulators;
+- dual SD slots;
+- GPIO buttons;
+- ADC volume keys;
+- single-ADC analogue-stick mux;
+- RK817 audio infrastructure;
+- thermal/cpufreq;
+- serial bring-up console.
+
+Validated workflow head:
+
+`ab340be4eb48bbe070fbaded111f898d46ab3b0f`
+
+Workflow run:
+
+`36204659613`
+
+### Base userspace — compiled and validated
+
+Buildroot 2026.08/glibc rootfs builds successfully as a 256 MiB ext4 filesystem labeled `ROOTFS`.
+
+It includes the first-boot hardware report service and DRM/input diagnostics.
+
+### First-device bundle — ready
+
+A non-destructive first-test bundle has been produced from the successful kernel artifact and successful base rootfs.
+
+It intentionally keeps the currently working raw SPL/U-Boot sectors. The first device test therefore changes only the boot partition payload and root filesystem.
+
+### Mesa/Panfrost userspace — in progress
+
+The graphics image builds Mesa 26.2.3 with the Panfrost Gallium driver, GBM, EGL, GLES/OpenGL, `kmscube`, and our `r36s-gpu-probe`.
+
+Target LLVM is explicitly rejected. Required Panfrost compiler tooling is built for the build host instead.
+
+## Hardware contract
+
+See `docs/G80CA_PANEL8.md`.
+
+The Panel-8 command stream is checked byte-for-byte against the known-good DTB for the exact board revision before every kernel build.
+
+## First hardware success criteria
+
+1. Existing SPL/U-Boot loads our `Image` and exact G80CA DTB.
+2. Linux 6.12.111 reaches userspace.
+3. The 640x480 Panel-8 display initializes.
+4. The Buildroot console becomes visible.
+5. Both physical SD interfaces enumerate correctly.
+6. Rockchip DRM creates a card device.
+7. Panfrost creates a render node.
+8. The bring-up log is captured.
+
+Mesa hardware rendering is the next gate after this base boot succeeds.
 
 ## Tree
 
-- `versions.env` - pinned upstream versions and hashes
-- `scripts/fetch-sources.sh` - reproducible source fetch
-- `config/kernel-r36s.fragment` - kernel options required for bring-up
-- `docs/BRINGUP.md` - staged validation order
+- `board/r36s/` — exact G80CA board and panel support
+- `config/` — kernel and Buildroot configurations
+- `scripts/` — reproducible source/build/verification tooling
+- `rootfs-overlay/` — first-boot userspace additions
+- `package/r36s-gpu-probe/` — direct DRM/GBM/EGL hardware renderer probe
+- `boot/` — first-stage boot payload
+- `docs/` — hardware contract, graphics and device-test procedures
 
-All firmware work stays under `cfw/` until it is split into its own repository.
+All CFW work remains isolated under `cfw/` on the `r36s-cfw` branch while the firmware is under bring-up.
