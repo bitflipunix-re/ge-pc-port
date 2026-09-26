@@ -625,7 +625,7 @@ void texSelect(Gfx **gdlptr, struct sImageTableEntry *tconfig, u32 arg2, s32 arg
     
             for (tile = 0; tile < lod; tile++)
             {
-                s32 line;
+                s32 line = 0;
 
                 if (tile > 0)
                 {
