@@ -14,6 +14,7 @@
 #ifdef PORT
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "pcmodels.h" /* D50: PC-layout model sidecars (Plan B, D48/D49) */
 #include "pccg.h"     /* D69: PC-layout bg/stan sidecars */
 extern resource_lookup_data_entry resource_lookup_data_array[]; /* ob.c */
@@ -147,7 +148,11 @@ void load_object_fill_header(struct ModelFileHeader *objheader, u8 *name, u8* ds
         fflush(stderr);
     }
 #endif
+#ifdef PORT
+    sub_GAME_7F075A90(objheader, (uintptr_t)0x5000000u, (uintptr_t)filedata);
+#else
     sub_GAME_7F075A90(objheader, 0x5000000, filedata);
+#endif
     sub_GAME_7F0762E0(objheader, name, dst, buffer);
 }
 
