@@ -1236,7 +1236,15 @@ void bondviewCalcIntroSwirlCamera(s32 index, f32 time, coord3d *pos, coord3d *lo
 {
     struct SetupIntroSwirl *base;
     struct SetupIntroSwirl *loopbase;
+#ifdef PORT
+    /* Four coord3d spline control points are written at offsets 0,3,6,9.
+     * The original 10-float N64 stack layout lets the final point spill two
+     * floats into adjacent scratch; that is undefined behavior on a host and
+     * trips hardened stacks. Give the host path the actual 4*3 capacity. */
+    f32 pointbuf[12];
+#else
     f32 pointbuf[10];
+#endif
     struct SetupIntroSwirl *swirl;
     f32 frac;
     f32 *dst;
