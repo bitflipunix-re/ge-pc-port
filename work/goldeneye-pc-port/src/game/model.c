@@ -1498,9 +1498,7 @@ void sub_GAME_7F06DB5C(ModelRenderData *arg0, Model *arg1, ModelNode *arg2, quat
     sp54 = spA0->MatrixID0;
     sp50 = spA0->MatrixID1;
     sp4C = spA0->MatrixID2;
-    new_var = &sp1C;
     sp48 = arg1->render_pos;
-    sp1C = (s32)arg2->Parent;
 
 #ifdef PORT
     /* D101: this function stashes `arg2->Parent` (a ModelNode*) and
@@ -1531,6 +1529,9 @@ void sub_GAME_7F06DB5C(ModelRenderData *arg0, Model *arg1, ModelNode *arg2, quat
         }
     }
 #else
+    new_var = &sp1C;
+    sp1C = (s32)arg2->Parent;
+
     if (*new_var != 0) {
         sp9C = arg0->basemtx;
         sp9C = modelFindNodeMtx(arg1, (ModelNode *)sp1C, 0);
@@ -4926,10 +4927,17 @@ void sub_GAME_7F073038(ModelRenderData *renderdata, struct sImageTableEntry *tco
 }
 
 
+#ifdef PORT
+void sub_GAME_7F07306C(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3)
+{
+    return;
+}
+#else
 void sub_GAME_7F07306C(s32 param_1,struct Model *param_2,struct ModelNode *param_3)
 {
     return;
 }
+#endif
 
 
 void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
@@ -5192,16 +5200,30 @@ void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node)
 }
 
 
+#ifdef PORT
+void sub_GAME_7F0737EC(ModelRenderData *param_1,struct Model *param_2, struct ModelNode *param_3)
+{
+    return;
+}
+#else
 void sub_GAME_7F0737EC(s32 param_1,struct Model *param_2, struct ModelNode *param_3)
 {
     return;
 }
+#endif
 
 
+#ifdef PORT
+void sub_GAME_7F0737FC(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3)
+{
+    return;
+}
+#else
 void sub_GAME_7F0737FC(s32 param_1,struct Model *param_2,struct ModelNode *param_3)
 {
     return;
 }
+#endif
 
 
 // PD: modelRenderNodeChrGunfire
@@ -5510,16 +5532,30 @@ void doshadow(ModelRenderData *renderdata, Model *model, ModelNode *node)
 }
 
 
+#ifdef PORT
+void sub_GAME_7F074514(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3)
+{
+    return;
+}
+#else
 void sub_GAME_7F074514(s32 param_1,struct Model *param_2,struct ModelNode *param_3)
 {
     return;
 }
+#endif
 
 
+#ifdef PORT
+void sub_GAME_7F074524(ModelRenderData *param_1,struct Model *param_2, struct ModelNode *param_3)
+{
+    return;
+}
+#else
 void sub_GAME_7F074524(Gfx *param_1,struct Model *param_2, struct ModelNode *param_3)
 {
     return;
 }
+#endif
 
 
 void sub_GAME_7F074534(ModelRenderData* data, Model* model, ModelNode* node) {
@@ -5636,7 +5672,11 @@ void sub_GAME_7F074790(ModelRenderData* arg0, Model* arg1)
 {
     subcalcpos(arg1);
     subcalcmatrices(arg0, arg1);
+#ifdef PORT
+    subdraw(arg0, arg1);
+#else
     subdraw((s32) arg0, arg1);
+#endif
 }
 
 

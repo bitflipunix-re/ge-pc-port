@@ -67,6 +67,10 @@ REQUIRED = {
         ("u8 *dword_CODE_bss_80069588;", "title RLE source buffer must retain its native host pointer"),
         ("GE_ANIMDATA_PTR(bond_eye_walk)", "gunbarrel walk animation must use the host-width animation boundary"),
     ],
+    "src/game/model.c": [
+        ("subdraw(arg0, arg1);", "PORT render-data pointer must not truncate through s32 in sub_GAME_7F074790"),
+        ("void sub_GAME_7F074514(ModelRenderData *param_1", "PORT model node stubs must accept native render-data pointers"),
+    ],
 }
 
 for root in SCAN_ROOTS:

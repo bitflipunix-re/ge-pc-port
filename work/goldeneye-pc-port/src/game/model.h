@@ -97,6 +97,17 @@ void modelRenderNodeGundl(ModelRenderData* renderdata, ModelNode* arg1);
 void modelRenderNodeDl(ModelRenderData *renderdata, Model *model, ModelNode *node);
 void dorottex(ModelRenderData *renderdata, ModelNode *node);
 void sub_GAME_7F073038(ModelRenderData *renderdata, struct sImageTableEntry *tconfig, s32 arg2);
+#ifdef PORT
+void sub_GAME_7F07306C(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3);
+void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node);
+void sub_GAME_7F0737EC(ModelRenderData *param_1,struct Model *param_2, struct ModelNode *param_3);
+void sub_GAME_7F0737FC(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3);
+void dogfnegx(ModelRenderData *renderdata, Model *model, ModelNode *node);
+void sub_GAME_7F073FC8(s32 arg0);
+void doshadow(ModelRenderData *renderdata, Model *model, ModelNode *node);
+void sub_GAME_7F074514(ModelRenderData *param_1,struct Model *param_2,struct ModelNode *param_3);
+void sub_GAME_7F074524(ModelRenderData *param_1,struct Model *param_2, struct ModelNode *param_3);
+#else
 void sub_GAME_7F07306C(s32 param_1,struct Model *param_2,struct ModelNode *param_3);
 void dotube(ModelRenderData* renderdata, Model* model, ModelNode* node);
 void sub_GAME_7F0737EC(s32 param_1,struct Model *param_2, struct ModelNode *param_3);
@@ -106,6 +117,7 @@ void sub_GAME_7F073FC8(s32 arg0);
 void doshadow(ModelRenderData *renderdata, Model *model, ModelNode *node);
 void sub_GAME_7F074514(s32 param_1,struct Model *param_2,struct ModelNode *param_3);
 void sub_GAME_7F074524(Gfx *param_1,struct Model *param_2, struct ModelNode *param_3);
+#endif
 void sub_GAME_7F074534(ModelRenderData* data, Model* model, ModelNode* node);
 void subdraw(ModelRenderData *arg0, struct Model *);
 s32 loadAnimationFrame(ModelAnimation* anim, s32 frame, ModelSkeleton* unused);
