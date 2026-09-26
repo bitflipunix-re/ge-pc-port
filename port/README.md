@@ -31,3 +31,16 @@ Runtime logs are written to:
 Select+Start exits back to EmulationStation.
 
 Thanks to the n64decomp/007 contributors and the GoldenEye PC-port contributors. ARM64/R36S work and PortMaster packaging by bitflipunix and Tomobobo710.
+
+
+## Port Control overlay
+
+Press **F10** to open ARM-GE's scalable Glass Control Deck.
+
+The VIDEO page exposes output resolution, internal render scale, live MSAA, TXAA-style temporal AA, texture/mipmap filtering, anisotropy, FOV, draw distance and LOD controls.
+
+The SYSTEM page exposes live CPU/FPS/RAM telemetry plus conservative CPU/GPU governor and RAM profiles. Performance-profile changes are saved to `ge007.ini`, applied by this PortMaster launcher on the next run when the firmware exposes writable endpoints, and restored when the game exits.
+
+The temporal AA option is ARM-GE's own temporal accumulation implementation; it is not NVIDIA TXAA.
+
+For debugging, check `ge007/log.txt`. A healthy overlay startup includes a `control map ... wired (0 missing)` line.
