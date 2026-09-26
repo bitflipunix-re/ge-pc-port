@@ -647,12 +647,12 @@
 };
 
 &io_domains {
-	vccio1-supply = <&vcc_3v0>;
+	vccio1-supply = <&vcc_backlight>;
 	vccio2-supply = <&vccio_sd>;
-	vccio3-supply = <&vcc_3v0>;
+	vccio3-supply = <&vcc1v8_soc>;
 	vccio4-supply = <&vcc_3v0>;
 	vccio5-supply = <&vcc_3v0>;
-	vccio6-supply = <&vcc_3v0>;
+	vccio6-supply = <&vcc1v8_soc>;
 	status = "okay";
 };
 
