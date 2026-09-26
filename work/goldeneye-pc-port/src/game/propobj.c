@@ -1291,6 +1291,7 @@ bool projectileTestObjectCollision(ObjectRecord *obj, coord3d *worldRayOrigin, c
 
     instsize = getinstsize(modelstack[0] = obj->model);
     prop = obj->prop;
+    partialpos = prop->pos;
     value = 0.0f;
 
     if (prop->parent == NULL) {
@@ -3708,6 +3709,7 @@ bool chrobjSeparatingAxisTheorem(rect4f* rect1, s32 numvertices0, rect4f* rect2,
         else
         {
             sum1 = rect1->points[i].x * diff1 + rect1->points[i].y * diff2;
+            sum2 = sum1;
             j = (next + 1) % numvertices0;
 
             while (j != i)
@@ -4239,7 +4241,7 @@ s32 objTick(struct PropRecord *prop)
 
 	struct coord3d sp658;
 	struct coord3d sp64C;
-	struct WeaponObjRecord *weaponObj;
+	struct WeaponObjRecord *weaponObj = NULL;
 	f32 temp_f12_5;
 	struct ModelRoData_BoundingBoxRecord *projectileBBox;
 	f32 sp63C;
@@ -8451,7 +8453,7 @@ coord3d  D_80032088 = {0, 0, 0};
 
 bool bgTestHitOnObj(coord3d *arg0, coord3d *arg1, coord3d *arg2, Gfx *gdl, Gfx *gdl2, Vertex *vertices, struct HitThing *hitthing)
 {
-    Vertex *vtxbase;
+    Vertex *vtxbase = vertices;
     HitThing hitbuf;
     Vertex *pt0;
     Vertex *pt1;
@@ -12769,7 +12771,7 @@ s32 sub_GAME_7F0537B8(f32 distance, f32 min, f32 max)
 
 s32 sub_GAME_7F053894(coord3d *pos, f32 low, f32 high)
 {
-    PropRecord *prop;
+    PropRecord *prop = NULL;
     s32 index;
     f32 shortest_distance;
     f32 diffx;
@@ -12803,7 +12805,9 @@ s32 sub_GAME_7F053894(coord3d *pos, f32 low, f32 high)
         geTracePrintf("audiotrace.log",
             "[DISTVOL] pos=(%.0f,%.0f,%.0f) player=(%.0f,%.0f,%.0f) dist=%.1f vol=%d\n",
             (double)pos->x, (double)pos->y, (double)pos->z,
-            (double)prop->pos.x, (double)prop->pos.y, (double)prop->pos.z,
+            (double)(prop ? prop->pos.x : pos->x),
+            (double)(prop ? prop->pos.y : pos->y),
+            (double)(prop ? prop->pos.z : pos->z),
             (double)shortest_distance,
             (int)sub_GAME_7F0537B8(shortest_distance, low, high));
     }
