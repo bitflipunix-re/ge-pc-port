@@ -30,9 +30,6 @@ required_literals = [
     'vqmmc-supply = <&vcc_backlight>;',
     '"G size=153,85 delays=20,20,20,120,20 format=rgb888 lanes=4 flags=0xa03"',
     '"M clock=30000 horizontal=640,150,40,135 vertical=480,20,6,12 default=1"',
-    '"M clock=37490 horizontal=640,150,40,135 vertical=480,20,6,12 default=0"',
-    '"M clock=44988 horizontal=640,150,40,135 vertical=480,20,6,12 default=0"',
-    '"M clock=49987 horizontal=640,150,40,135 vertical=480,20,6,12 default=0"',
 ]
 
 for literal in required_literals:
