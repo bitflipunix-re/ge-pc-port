@@ -78,6 +78,12 @@ REQUIRED: dict[str, list[tuple[str, str]]] = {
         ("GE_ANIMTABLE_ENTRY_PTR(animation_table_ptrs1, animID)", "dense animation table entries must zero-extend at the host pointer boundary"),
         ("GE_ANIMDATA_MATCH(objecthandlerGetModelAnim(self->model), fire_kneel_forward_one_handed_weapon_slow)", "animation comparisons must retain host pointer width"),
     ],
+    "src/bondtypes.h": [
+        ("s32 collision;      /* N64 0x80 collision_data.edges overlay */", "tank collision overlay must keep its N64 32-bit head word on LP64"),
+    ],
+    "src/game/chrprop.c": [
+        ("coord2d *port_poly_points = collision->polygon;", "PORT collision hull generation must use canonical eight-point storage"),
+    ],
 }
 
 for root in SCAN_ROOTS:
