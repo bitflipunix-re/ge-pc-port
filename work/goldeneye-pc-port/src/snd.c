@@ -157,6 +157,9 @@ void sndApplyVolumeAllSfxSlot(u16 arg0);
 void sndSetScalerApplyVolumeAllSfxSlot(f32 arg0);
 u16 sndGetSfxSlotNaturalVolume(u8 arg0);
 void sndSetSfxSlotVolume(u8 arg0, u16 arg1);
+#ifdef PORT
+static void sndPortHandleStageFlush(ALSndPlayer *sndp);
+#endif
 
 // end forward declarations
 
@@ -261,6 +264,14 @@ ALMicroTime sndPlayerVoiceHandler(void *node)
 
 
 void sndHandleEvent(ALSndPlayer *sndp, ALSndpEvent *event) {
+#ifdef PORT
+    /* Global host-only event: handle before touching event->common.state,
+     * which is deliberately NULL for this message. */
+    if (event->common.type == AL_SNDP_PORT_STAGE_FLUSH_EVT) {
+        sndPortHandleStageFlush(sndp);
+        return;
+    }
+#endif
     ALVoiceConfig config;
     ALVoice *voice;  // dead but load-bearing. Do not remove.
     s32 delta;
@@ -1283,6 +1294,97 @@ ALSoundState *sndPlaySfx(struct ALBankAlt_s *soundBank, s16 soundIndex, ALSoundS
 
     return nextState;
 }
+
+#ifdef PORT
+/* Stage-boundary cleanup for long-session audio stability.
+ *
+ * The retail cleanup paths know about owned tank/object/alarm/player sounds,
+ * but the port can also have fire-and-forget, retriggering, or previously
+ * orphaned SFX states still resident in the global sound-player list. Across
+ * a full campaign those states can consume the 8-SFX soft pool, fill the
+ * 64-entry event queue, and leave physical synth voices busy.
+ *
+ * Request side (game thread): discard queued SFX-state events from the stage
+ * being torn down while preserving the recurring API heartbeat, then enqueue
+ * ONE global flush event. This both guarantees queue space for the reset and
+ * avoids posting one deactivate event per live state into an already-stressed
+ * queue.
+ *
+ * Execute side (audio thread): dispose every tracked SFX state under the same
+ * interrupt-mask critical section used by the rest of libaudio. sndDisposeSound
+ * removes any newly queued per-state events and frees its physical voice.
+ */
+void sndPortFlushStageSfx(void)
+{
+    ALEventQueue *evtq = &g_sndPlayerPtr->evtq;
+    ALLink *node;
+    OSIntMask mask;
+    ALSndpEvent flushEvt;
+    s32 removed = 0;
+
+    if (g_sndPlayerPtr == NULL)
+        return;
+
+    mask = osSetIntMask(OS_IM_NONE);
+
+    node = evtq->allocList.next;
+    while (node != NULL) {
+        ALLink *next = node->next;
+        ALEventListItem *item = (ALEventListItem *)node;
+        ALEventListItem *nextItem = (ALEventListItem *)next;
+
+        if (item->evt.type != AL_SNDP_API_EVT) {
+            if (nextItem != NULL)
+                nextItem->delta += item->delta;
+            alUnlink(node);
+            alLink(node, &evtq->freeList);
+            removed++;
+        }
+        node = next;
+    }
+
+    flushEvt.common.type = AL_SNDP_PORT_STAGE_FLUSH_EVT;
+    flushEvt.common.state = NULL;
+    alEvtqPostEvent(evtq, (ALEvent *)&flushEvt, 0);
+
+    osSetIntMask(mask);
+
+    osSyncPrintf("PORT_AUDIO stage-flush queued removed_events=%d sfx_count=%d\n",
+                 (int)removed, (int)g_sndAllocatedVoicesCount);
+}
+
+static void sndPortHandleStageFlush(ALSndPlayer *sndp)
+{
+    ALSoundState *state;
+    s32 disposed = 0;
+    s32 countBefore = g_sndAllocatedVoicesCount;
+    OSIntMask mask = osSetIntMask(OS_IM_NONE);
+
+    state = (ALSoundState *)D_800243E4.node.next;
+    while (state != NULL) {
+        ALSoundState *next = (ALSoundState *)state->link.next;
+        sndDisposeSound(state);
+        disposed++;
+        state = next;
+    }
+
+    /* With no tracked SFX states left, a non-zero soft count is necessarily
+     * stale accounting. Repair it here so the next stage cannot begin with
+     * the 8-voice admission gate already partially consumed. */
+    if (D_800243E4.node.next == NULL && g_sndAllocatedVoicesCount != 0) {
+        osSyncPrintf("PORT_AUDIO stage-flush repairing stale sfx_count=%d\n",
+                     (int)g_sndAllocatedVoicesCount);
+        g_sndAllocatedVoicesCount = 0;
+    }
+
+    osSetIntMask(mask);
+
+    osSyncPrintf("PORT_AUDIO stage-flush done disposed=%d count=%d->%d\n",
+                 (int)disposed, (int)countBefore,
+                 (int)g_sndAllocatedVoicesCount);
+    (void)sndp;
+}
+#endif
 
 /**
  * 9C20    70009020
