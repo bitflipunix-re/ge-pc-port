@@ -143,11 +143,13 @@ static struct RSP {
     const struct NormalColor *vertex_colors; //[MAX_VERTEX_COLORS];
 } rsp;
 
+#ifdef GE_DEV_PROBES
 /* D236 pass 16 (TEMP): segment byte (top byte of the raw segmented address)
  * of the most recent G_VTX load, so a later triangle-time probe can report
  * which segment the tree class's vertices actually came from. See the
  * G_VTX case comment below for why. Remove once D236 pass 16 concludes. */
 static uint8_t g_d236_last_vtx_seg = 0xFF;
+#endif
 
 struct RawTexMetadata {
     uint16_t width, height;
@@ -741,6 +743,7 @@ static const uint8_t* gfx_tex_normalize_source(const uint8_t* addr, uint32_t ext
     uint32_t* dst = (uint32_t*)buf.data();
     for (uint32_t i = 0; i < n / 4; i++)
         dst[i] = PD_BE32(src[i]);
+#ifdef GE_DEV_PROBES
     {
         static int ge_d71log = -1;
         if (ge_d71log < 0) ge_d71log = getenv("GE_D71LOG") != NULL;
@@ -748,6 +751,7 @@ static const uint8_t* gfx_tex_normalize_source(const uint8_t* addr, uint32_t ext
             fprintf(stderr, "[D71] normalized C-array texture source %p (%u bytes)\n",
                     (const void*)addr, extent);
     }
+#endif
     return s_c_array_tex_norms.emplace(addr, std::move(buf)).first->second.data();
 }
 
@@ -777,7 +781,7 @@ static void import_texture_rgba16(int tile, const LoadedTexture& loaded_texture,
     const uint32_t width = rdp.texture_tile[tile].line_size_bytes / 2;
     const uint32_t height = size_bytes / rdp.texture_tile[tile].line_size_bytes;
 
-#ifdef PORT
+#if defined(PORT) && defined(GE_DEV_PROBES)
     /* D252 diag (temporary): compare the line_size_bytes-derived width/height
      * against the SETTILESIZE-derived rdp.texture_tile[tile].width/height, and
      * dump the raw texel data once per distinct (addr,size) pair so a fire
@@ -1175,6 +1179,7 @@ static void import_texture(int i, int tile, bool importReplacement) {
         }
     }
 
+#ifdef GE_DEV_PROBES
     /* GE_DTEX: dump the load parameters for the first N textures of a frame so
      * RC2 (mip-chain contamination -> over-tall upload) can be told apart from a
      * decode/row-swap bug. tile_h = base-tile height from SETTILESIZE; if the
@@ -1209,7 +1214,9 @@ static void import_texture(int i, int tile, bool importReplacement) {
         }
     }
 
-#ifdef PORT
+#endif
+
+#if defined(PORT) && defined(GE_DEV_PROBES)
     /* D157-I (M-158): import census for the D219/D252 rainbow-spark repro.
      * Logs every small-texture (<= 16 KiB) import inside the known-bad frame
      * window of the Bunker1 -level_09 repro, deduped per source address (first
@@ -1239,6 +1246,7 @@ static void import_texture(int i, int tile, bool importReplacement) {
     }
 #endif
 
+#ifdef GE_DEV_PROBES
     static int ge_texdump = -1;
     if (ge_texdump < 0) ge_texdump = getenv("GE_TEXDUMP") != NULL;
     if (ge_texdump) {
@@ -1279,6 +1287,8 @@ static void import_texture(int i, int tile, bool importReplacement) {
         }
     }
 
+#endif
+
     /* D161: a CI-format tile drawn with the TLUT disabled (G_TT_NONE) must NOT
      * do a palette lookup -- the N64 RDP feeds the raw TMEM texel straight into
      * the colour pipe, i.e. it behaves as a plain intensity (I) texture. GE's
@@ -1304,7 +1314,7 @@ static void import_texture(int i, int tile, bool importReplacement) {
      * with the loaded source, so real RGBA16 textures are untouched. */
     if (fmt_eff == G_IM_FMT_RGBA && siz == G_IM_SIZ_16b &&
         loaded_texture.src_fmt == G_IM_FMT_CI) {
-#ifdef PORT
+#if defined(PORT) && defined(GE_DEV_PROBES)
         static int ge_d229_a = -1;
         if (ge_d229_a < 0) ge_d229_a = getenv("GE_D229") != NULL;
         if (ge_d229_a) {
@@ -1620,7 +1630,7 @@ static void gfx_sp_vertex(size_t n_vertices, size_t dest_index, const Vtx* verti
             d->color.b = vcn->b;
         }
 
-#ifdef PORT
+#if defined(PORT) && defined(GE_DEV_PROBES)
         /* D157 diag (temporary, session 2026-09-16/17): does bullet_spark_render
          * (glass2.c) actually draw with G_LIGHTING on? The M-110 mechanism
          * (this vertex's v.cn[]/n.n[] union reinterpretation above) was
@@ -1816,6 +1826,7 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
             return;
         }
 
+#ifdef GE_DEV_PROBES
         /* D288 diag (M-152, frame-gated M-155): the silo intro's
          * screen-filling stray triangle (bounded to level_20 frames
          * ~562-741) isn't explained by this function's existing D233/D106
@@ -1847,8 +1858,10 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
                 }
             }
         }
+#endif
     }
 
+#ifdef GE_DEV_PROBES
     /* D236 pass 10 (M-155, TEMP): does the 0x0c184b50 render-mode class's
      * per-frame triangle count actually vary frame-to-frame WITHIN one
      * deterministic -level_36 boot, or is D280's "run-to-run dependent"
@@ -1969,6 +1982,8 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
         }
     }
 
+#endif
+
     if ((rsp.geometry_mode & G_CULL_BOTH) != 0) {
         float dx1 = v1->x / (v1->w) - v2->x / (v2->w);
         float dy1 = v1->y / (v1->w) - v2->y / (v2->w);
@@ -2007,6 +2022,7 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
     bool depth_test = ((rsp.geometry_mode & G_ZBUFFER) == G_ZBUFFER || (rdp.other_mode_l & G_ZS_PRIM) == G_ZS_PRIM) &&
                       ((rdp.other_mode_h & G_CYC_1CYCLE) == G_CYC_1CYCLE || (rdp.other_mode_h & G_CYC_2CYCLE) == G_CYC_2CYCLE);
     bool depth_update = (rdp.other_mode_l & Z_UPD) == Z_UPD;
+#ifdef GE_DEV_PROBES
     /* D236 pass 12 (M-191, TEMP, diagnostic-only): both the noise "wall"
      * (oml=0xc81049d8) and the discrete tree-card class (oml=0x0c184b50) are
      * Z_CMP=1/Z_UPD=0 decals, and GE_D236ORDER above shows the noise class is
@@ -2026,6 +2042,7 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
     if (s_d236zfix && rdp.other_mode_l == 0x0c184b50u) {
         depth_update = true;
     }
+#endif
     bool depth_compare = (rdp.other_mode_l & Z_CMP) == Z_CMP;
     bool depth_source_prim = (rdp.other_mode_l & G_ZS_PRIM) == G_ZS_PRIM /* && gDP.primDepth.z == 1.0f */;
     uint16_t zmode = rdp.other_mode_l & ZMODE_DEC;
@@ -2232,7 +2249,7 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
                 }
             }
 
-#ifdef PORT
+#if defined(PORT) && defined(GE_DEV_PROBES)
             /* D229 probe (env-gated, inert): green/pulsating IsWater water.
              * The water quad is a 2-cycle LERP(TEXEL1, TEXEL0) draw binding
              * BOTH tiles to the same TMEM with tile 1 offset by uls/ult --
@@ -2279,7 +2296,7 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
         }
     }
 
-#ifdef PORT
+#if defined(PORT) && defined(GE_DEV_PROBES)
     /* D172 probe (env-gated, inert): the magenta/cyan blood/spark bug. The
      * particle records (assets/oddtextures.c globalDL_0x078..) draw a 2-cycle
      * G_CC_INTERFERENCE combine (TEXEL0*TEXEL1) binding two tiles of two
@@ -2461,7 +2478,7 @@ static void gfx_sp_tri1(uint8_t vtx1_idx, uint8_t vtx2_idx, uint8_t vtx3_idx, bo
             buf_vbo[buf_vbo_len++] = u / tex_width[t];
             buf_vbo[buf_vbo_len++] = v / tex_height[t];
 
-#ifdef PORT
+#if defined(PORT) && defined(GE_DEV_PROBES)
             {
                 static int ge_d116 = -1;
                 if (ge_d116 < 0) ge_d116 = getenv("GE_D116") ? 1 : 0;
@@ -3190,6 +3207,7 @@ static void gfx_dp_texture_rectangle(int32_t ulx, int32_t uly, int32_t lrx, int3
         ur->v = lrt;
     }
 
+#ifdef GE_DEV_PROBES
     {
         static int ge_d116 = -1;
         if (ge_d116 < 0) ge_d116 = getenv("GE_D116") ? 1 : 0;
@@ -3204,6 +3222,8 @@ static void gfx_dp_texture_rectangle(int32_t ulx, int32_t uly, int32_t lrx, int3
                 tt.siz, tt.fmt, tt.line_size_bytes, tt.uls, tt.lrs, tt.width, tt.height, tt.cms);
         }
     }
+
+#endif
 
     uint8_t saved_tile = rdp.first_tile_index;
     if (saved_tile != tile) {
@@ -3444,7 +3464,9 @@ static void gfx_run_dl(Gfx* cmd) {
                  * "not room background at all" (a different segment, e.g. a
                  * model/CPU-built-quad source) without guessing from source
                  * review alone. Remove once D236 pass 16 concludes. */
+#ifdef GE_DEV_PROBES
                 g_d236_last_vtx_seg = (uint8_t)(cmd->words.w1 >> 24);
+#endif
                 gfx_sp_vertex(C0(0, 16) / sizeof(Vtx), C0(16, 4), (const Vtx*)seg_addr(cmd->words.w1));
                 break;
             case G_DL: {
@@ -3534,7 +3556,7 @@ static void gfx_run_dl(Gfx* cmd) {
                 gfx_dp_set_grayscale_color(C1(24, 8), C1(16, 8), C1(8, 8), C1(0, 8));
                 break;
             case G_SETCOMBINE:
-#ifdef PORT
+#if defined(PORT) && defined(GE_DEV_PROBES)
                 /* D172 probe (env-gated, inert): log every SETCOMBINE with the
                  * cycle-type active at that moment. Particle records
                  * (explosion.c g_ExplosionDisplayLists[]) set a 2-cycle
