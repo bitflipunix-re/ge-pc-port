@@ -540,6 +540,8 @@ static void overlayInit(void)
         if (rows[i].found) s_verifiedRows++;
         else s_missingRows++;
     }
+
+    s_graphicsPreset = graphicsPresetDetect();
     sysLogPrintf(s_missingRows ? LOG_WARNING : LOG_INFO,
                  "optionsoverlay: control map %d/%d wired (%d missing)",
                  s_verifiedRows, NUM_ROWS, s_missingRows);
@@ -599,7 +601,7 @@ static double rowGet(const struct Row *r)
 {
     if (strcmp(r->key, "__ScreenMode") == 0) return (double)cur_player_get_screen_setting();
     if (strcmp(r->key, "__ScreenRatio") == 0) return (double)get_screen_ratio();
-    if (strcmp(r->key, "__GraphicsPreset") == 0) return (double)graphicsPresetDetect();
+    if (strcmp(r->key, "__GraphicsPreset") == 0) return (double)s_graphicsPreset;
     if (strcmp(r->key, "__AudioPreset") == 0) return (double)s_audioPreset;
     if (strcmp(r->key, "__AutoAim") == 0) return (double)cur_player_get_autoaim();
     if (strcmp(r->key, "__AimControl") == 0) return (double)cur_player_get_aim_control();
@@ -655,9 +657,10 @@ static int rowConfigInt(const char *key, int *out)
     }
 }
 
-/* Preset name is derived from the live config, not a sticky UI variable.
- * A manual tweak therefore reads CUSTOM immediately, and a preset remains
- * selected only while every field still matches its full definition. */
+/* Detect the starting preset from the loaded renderer config. After init the
+ * UI keeps explicit preset state: applying a preset selects it, while any
+ * manual Video.* edit marks it CUSTOM. This preserves normal enum wrapping
+ * through CUSTOM without allowing a stale label after manual changes. */
 static int graphicsPresetDetect(void)
 {
     for (int p = 0; p < 5; ++p) {
