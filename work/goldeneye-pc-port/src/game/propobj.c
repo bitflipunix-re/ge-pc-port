@@ -1291,7 +1291,6 @@ bool projectileTestObjectCollision(ObjectRecord *obj, coord3d *worldRayOrigin, c
 
     instsize = getinstsize(modelstack[0] = obj->model);
     prop = obj->prop;
-    partialpos = prop->pos;
     value = 0.0f;
 
     if (prop->parent == NULL) {
@@ -1883,6 +1882,7 @@ s32 objTryMovePropWithCollision(ObjectRecord *obj, coord3d *targetpos, coord3d *
     s32 pad;
 
     prop = obj->prop;
+    partialpos = prop->pos;
     stan = prop->stan;
     width = objGetWidth(obj);
     result = 1;
