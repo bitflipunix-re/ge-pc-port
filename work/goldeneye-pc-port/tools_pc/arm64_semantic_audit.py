@@ -29,10 +29,6 @@ FORBIDDEN = [
         ),
         "audio queue pointer formed before NULL guard",
     ),
-    (
-        re.compile(r"ptr_bg_data\s*=\s*\(\s*s32\s*\)\s*header"),
-        "native stack BG probe routed through 32-bit address carrier",
-    ),
 ]
 
 SUSPICIOUS = [
@@ -53,6 +49,10 @@ REQUIRED = {
     ],
     "src/game/bg.h": [
         ("(u8 *)(base) + (u32)((u32)(off) + 0xF1000000u)", "BG segment rebasing must retain the full host base pointer"),
+    ],
+    "src/game/bg.c": [
+        ("obLoadBGFileBytesAtOffset(levelinfotable[levelentry_index].bg_seg_filename, (u8 *)header, 0, 0x40);", "BG header probe must use the native stack pointer directly"),
+        ("bg_room_data *probe_rooms =", "BG header probe must remain local/full-width on PORT"),
     ],
 }
 
