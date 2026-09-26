@@ -277,6 +277,19 @@ static SDL_GameController *pads[MAX_PADS];
 static int padShoulderPrev[MAX_PADS];   /* LB/RB edge state for weapon cycling */
 static int padSelectPrev = 0;           /* Select (BACK) edge: overlay toggle */
 
+/* Start+Select is the handheld escape chord. Keep it in the native input path
+ * rather than an external SIGKILL watcher so normal atexit handlers persist
+ * config/window state and the PortMaster launcher gets a clean return code. */
+static void inputExitComboCheck(SDL_GameController *pad)
+{
+    if (!pad) return;
+    if (SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_START) &&
+        SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_BACK)) {
+        sysLogPrintf(LOG_INFO, "input: Start+Select exit chord -> clean exit");
+        exit(0);
+    }
+}
+
 static int mouseEnabled   = 1;
 static int mouseGrabbed    = 1;     /* released while the window is unfocused */
 
@@ -777,6 +790,10 @@ unsigned inputComputePad(int idx, signed char *stick_x, signed char *stick_y)
      * overlay instead. Mirrors the WI-1 "cursor free in a stage -> withhold
      * input" pattern. Controllers 1-3 are untouched. */
     if (idx == 0 && optionsOverlayIsOpen()) {
+        /* Exit chord wins over overlay navigation/close, including when
+         * Select opened the overlay one poll before Start was pressed. */
+        inputExitComboCheck(pads[0]);
+
         /* Select closes the overlay. padSelectPrev is tracked on this path
          * and the open path below alike, so a button held across the
          * transition cannot immediately re-toggle it. */
@@ -1221,6 +1238,10 @@ unsigned inputComputePad(int idx, signed char *stick_x, signed char *stick_y)
             }
             *prev = (rbNow ? 1 : 0) | (lbNow ? 2 : 0);
         }
+        /* Start+Select is reserved for returning to EmulationStation. Check
+         * it before either button is forwarded/toggled so Select cannot steal
+         * the chord by opening Port Control first. */
+        inputExitComboCheck(pad);
         if (SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_START))
             button |= GE_CONT_START;
         if (SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_DPAD_UP))
@@ -1232,9 +1253,8 @@ unsigned inputComputePad(int idx, signed char *stick_x, signed char *stick_y)
         if (SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT))
             button |= GE_CONT_RIGHT;
 
-        /* Select (BACK) opens the F10 options overlay -- the gamepad
-         * equivalent of the F10 key for controller-only machines (Steam
-         * Deck). The game never reads BACK, so nothing is withheld. */
+        /* Select (BACK) opens Port Control when pressed alone. Start+Select
+         * has already been consumed above as the clean exit chord. */
         {
             int selNow = SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_BACK);
             if (selNow && !padSelectPrev) optionsOverlayToggle();
